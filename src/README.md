@@ -12,4 +12,4 @@ Responsabilidades (detalle en `../BookTracker_Plan_de_desarrollo.md`, sección 1
 - `theme/`: tokens (colores, tipografía, espaciado); sin colores sueltos en componentes.
 - `utils/`: funciones puras y testeables (fechas, ISBN, rachas, estadísticas).
 
-Las carpetas están vacías hasta la Fase 1; crear archivos solo al implementar cada función.
+`hooks/` está vacía hasta la Fase 2. Crear archivos solo al implementar cada función.

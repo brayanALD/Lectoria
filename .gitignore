@@ -8,6 +8,26 @@ node_modules/
 .expo/
 dist/
 web-build/
+expo-env.d.ts
+*.tsbuildinfo
+
+# Nativo generado (Continuous Native Generation)
+/ios
+/android
+.kotlin/
+*.orig.*
+*.jks
+*.p8
+*.p12
+*.key
+*.pem
+*.mobileprovision
+
+# Metro y logs
+.metro-health-check*
+npm-debug.*
+yarn-debug.*
+yarn-error.*
 
 # Sistema
 .DS_Store

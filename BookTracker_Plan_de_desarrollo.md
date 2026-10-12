@@ -1,6 +1,6 @@
 # Lectoria — Plan de desarrollo de la aplicación móvil
 
-> Estado: **planificación**. Todavía no existe proyecto ejecutable (sin `package.json`, sin dependencias instaladas).
+> Estado: **Fase 1 implementada en código** (proyecto Expo SDK 57 + TypeScript, autenticación, navegación condicional, tema y reglas de Firestore). Pendiente de tu parte para ejecutarla de extremo a extremo: crear el proyecto de Firebase y completar `.env` (ver sección 12).
 > Nota de nombre: este archivo conserva el nombre `BookTracker_Plan_de_desarrollo.md` por compatibilidad con referencias existentes. «BookTracker» es el tipo de app; el nombre del producto es **Lectoria**.
 
 Leyenda de estado usada en todo el documento:
@@ -42,8 +42,8 @@ Basado en la plantilla reutilizable para apps móviles.
 | Cámara / ISBN | `expo-camera` (verificar compatibilidad con la versión de Expo elegida) | [Recomendado] |
 | Notificaciones locales | `expo-notifications` (versión 1.4; verificar limitaciones) | [Recomendado] |
 | Proveedor bibliográfico | Open Library o Google Books, detrás de `bookCatalogService` | [Pendiente] |
-| Pruebas | Jest (vía `jest-expo`) para `utils`; emulador de Firestore para reglas | [Recomendado] |
-| Versión exacta de Expo / SDK | Se fija al crear el proyecto, leyendo la documentación de esa versión (docs.expo.dev) | [Pendiente] |
+| Pruebas | Jest (`jest-expo`) para `utils`; emulador de Firestore + `@firebase/rules-unit-testing` para reglas | [Confirmado] (2026-10-12, Fase 1) |
+| Versión de Expo / SDK | **SDK 57** (`expo ~57.0.28`, React Native 0.86.3, React 19.2.3, TypeScript ~6.0). `firebase` 13 (Expo exige ≥ 12). React Navigation 7. Siempre instalar con `npx expo install` | [Confirmado] (2026-10-12, Fase 1) |
 
 **Notas de adaptación respecto a la plantilla**
 
@@ -230,40 +230,19 @@ interface ReadingSession {
 
 Las reglas de Firestore deben impedir que un usuario lea o modifique datos de otro; ocultar pantallas no es suficiente.
 
-Reglas iniciales (base de partida; **no probadas**, deben validarse con el emulador). Se enumeran las subcolecciones en lugar de un comodín, para que cada nueva colección se añada de forma consciente:
+Las reglas viven en `firestore.rules` (fuente de verdad; no se duplican aquí). Estado tras la Fase 1:
 
-```javascript
-rules_version = '2';
+- Acceso solo del propietario a `users/{uid}`, `books` y `sessions`; el resto de rutas está denegado. Cada colección nueva se añade de forma explícita.
+- Validación de campos, tipos y límites en perfil, libros y sesiones (campos desconocidos rechazados, `rating` 1–5, páginas y duraciones acotadas, `dateKey` con formato `YYYY-MM-DD`, sesión con páginas o minutos > 0).
+- `createdAt` y `updatedAt` los fija el servidor: **el cliente debe escribirlos con `serverTimestamp()`**; `createdAt` no puede modificarse.
+- Verificadas con 13 pruebas en el emulador de Firestore (`npm run test:rules`, sección 13).
 
-service cloud.firestore {
-  match /databases/{database}/documents {
+**Requisitos antes de usar con usuarios reales** (Fase 7):
 
-    function signedInAs(uid) {
-      return request.auth != null && request.auth.uid == uid;
-    }
-
-    match /users/{uid} {
-      allow read, write: if signedInAs(uid);
-
-      match /books/{bookId}       { allow read, write: if signedInAs(uid); }
-      match /sessions/{sessionId} { allow read, write: if signedInAs(uid); }
-      // collections y reminders se añaden al implementar esas versiones
-    }
-
-    match /{document=**} {
-      allow read, write: if false;
-    }
-  }
-}
-```
-
-**Requisitos antes de usar con usuarios reales** (parte de la Fase 1 y la Fase 7):
-
-1. Validar campos permitidos, tipos y límites (páginas ≥ 0, `rating` 1–5, duraciones y fechas razonables, longitud de textos).
-2. Proteger campos de perfil que no deban cambiarse libremente.
-3. Nunca dejar Firestore en modo de prueba abierto (plantilla).
-4. Probar las reglas con el emulador de Firestore.
-5. Claves de Firebase en variables `EXPO_PUBLIC_*` dentro de `.env` fuera de git; las claves de Firebase para cliente no son secretos por sí mismas, pero la seguridad real depende de las reglas. No incluir claves privadas ni cuentas de servicio en el repositorio.
+1. Ampliar las pruebas de reglas a medida que se añadan colecciones (colecciones, recordatorios) y revisar límites de tamaño.
+2. Nunca dejar Firestore en modo de prueba abierto (plantilla).
+3. Desplegar las reglas al proyecto de Firebase real (`firebase deploy --only firestore:rules`; no ejecutado todavía).
+4. Claves de Firebase en variables `EXPO_PUBLIC_*` dentro de `.env` fuera de git; las claves de Firebase para cliente no son secretos por sí mismas, pero la seguridad real depende de las reglas. No incluir claves privadas ni cuentas de servicio en el repositorio.
 
 **Privacidad** [Recomendado]: reseñas y notas privadas por defecto; exportación de datos (1.5); **eliminación de cuenta**: Firestore no borra subcolecciones al eliminar el documento padre, por lo que el borrado completo requiere eliminar `books` y `sessions` desde la app (o una función en backend) además de `deleteUser`. Las tiendas de aplicaciones suelen exigir poder eliminar la cuenta desde la app [Pendiente: verificar requisitos vigentes antes de publicar].
 
@@ -306,16 +285,20 @@ Ejemplos de logros: primer libro, 7 días seguidos, 10 libros, primer libro de u
 
 ## 11. Estructura de carpetas
 
-Estructura inicial creada (solo lo necesario para el MVP; el resto se añade al implementarlo):
+Estructura (solo lo necesario para el MVP; el resto se añade al implementarlo):
 
 ```text
 Lectoria/
 ├── CLAUDE.md
 ├── BookTracker_Plan_de_desarrollo.md
-├── .env.example
-├── .gitignore
-├── assets/                  Imágenes, iconos, fuentes
+├── App.tsx, index.ts        Punto de entrada y providers
+├── firebaseConfig.ts        Inicialización de Firebase (variables EXPO_PUBLIC_*)
+├── firestore.rules, firestore.indexes.json, firebase.json
+├── package.json, app.json, tsconfig.json, jest.rules.config.js
+├── .env.example, .gitignore
+├── assets/                  Imágenes, iconos, fuentes (iconos por defecto de Expo, a reemplazar)
 ├── docs/palette-original.txt
+├── tests/rules/             Pruebas de reglas de Firestore (requieren el emulador)
 └── src/
     ├── README.md            Responsabilidades de cada carpeta
     ├── components/          UI reutilizable
@@ -327,12 +310,12 @@ Lectoria/
     │       ├── home/  library/  reading/  calendar/  statistics/  profile/
     ├── services/            Firebase y catálogo (única capa que habla con Firestore)
     ├── hooks/               Acceso a datos desde las pantallas
-    ├── types/               Modelos TypeScript
+    ├── types/               Modelos TypeScript y declaraciones de tipos
     ├── theme/               Tokens de color, tipografía, espaciado
-    └── utils/               Funciones puras (fechas, ISBN, rachas, estadísticas)
+    └── utils/               Funciones puras (fechas, ISBN, rachas, estadísticas) y sus pruebas (*.test.ts)
 ```
 
-Archivos que se crearán al hacer el scaffold (Fase 1), en la raíz: `App.tsx`, `firebaseConfig.ts`, `firestore.rules`, `firestore.indexes.json`, `package.json`, `app.json`.
+Las pruebas unitarias de `utils` se ubican junto al archivo que prueban (`*.test.ts`); las de reglas, en `tests/rules/`.
 
 **Adaptación frente a la plantilla:** la plantilla define `screens/auth` y `screens/app` planos; con unas 16 pantallas previstas, `screens/app` se agrupa por dominio (`home`, `library`, `reading`, `calendar`, `statistics`, `profile`) sin crear niveles adicionales. Se añaden `services`, `hooks` y `types` (ya previstos en el plan original). `screens` orquestan, `components` pintan, `utils` calculan, `context` comparte estado, `services` accede a datos.
 
@@ -342,7 +325,7 @@ Convenciones [Recomendado]: código e identificadores en inglés; textos de inte
 
 | Fase | Contenido | Versión |
 |---|---|---|
-| 1. Preparar | Fijar versiones (Expo, RN, React Navigation) leyendo su documentación; scaffold TypeScript; Firebase y `.env`; tema; `AuthContext`; navegación condicional; reglas iniciales con validación | 1.0 |
+| 1. Preparar — **implementada** (2026-10-12; falta crear el proyecto de Firebase y completar `.env`) | Fijar versiones (Expo, RN, React Navigation) leyendo su documentación; scaffold TypeScript; Firebase y `.env`; tema; `AuthContext`; navegación condicional; reglas iniciales con validación | 1.0 |
 | 2. Biblioteca | `UserBook`; CRUD; `BookCard`, `BookCover`, `BookFilters`; búsqueda, filtros, estados de carga/error/vacío | 1.0 |
 | 3. ISBN | Servicio de catálogo; formulario manual; escáner; duplicados y errores | 1.0 |
 | 4. Sesiones | Formulario de sesión; progreso; calendario y rachas | 1.0 |
@@ -350,9 +333,18 @@ Convenciones [Recomendado]: código e identificadores en inglés; textos de inte
 | 6. Experiencia lectora | Deseos/compras, notas y reseñas (1.1); autores, sagas, colecciones (1.2); ruleta y logros (1.3) | 1.1–1.3 |
 | 7. Pulir | Estantería realista y recordatorios (1.3–1.4); pruebas de reglas; accesibilidad, rendimiento; capturas y documentación | 1.4–1.5 |
 
-Orden de la Fase 1 (plantilla): theme → AuthContext → AppNavigator → Login/Registro → primera pantalla con datos de Firestore.
+Orden de la Fase 1 (plantilla): theme → AuthContext → AppNavigator → Login/Registro → primera pantalla con datos de Firestore. En Lectoria, la primera escritura en Firestore es el perfil `users/{uid}` (`ensureUserProfile`), creado tras el primer inicio de sesión; la primera pantalla con datos reales de Firestore llega en la Fase 2 (biblioteca).
+
+**Pasos manuales para completar la Fase 1** (requieren tu cuenta de Firebase):
+
+1. Crear el proyecto en la consola de Firebase, registrar una app web y activar Authentication (correo/contraseña) y Firestore.
+2. Copiar `.env.example` a `.env` y completar los valores.
+3. Desplegar las reglas: `firebase deploy --only firestore:rules` (necesita `firebase login` y el proyecto asociado).
+4. Ejecutar `npx expo start`, registrar una cuenta y comprobar: sesión persistente al reabrir, cierre de sesión y creación de `users/{uid}`.
 
 ## 13. Estrategia de pruebas y criterios de aceptación
+
+**Comandos** [Confirmado, ejecutados en la Fase 1]: `npm run typecheck`, `npm test` (unitarias), `npm run test:rules` (reglas; levanta el emulador de Firestore y necesita Java). Ver `CLAUDE.md`.
 
 **Pruebas** [Recomendado]: pruebas unitarias de `utils` (ISBN, rachas, estadísticas, estimaciones, fechas con cambios de zona horaria y de mes); pruebas de reglas de Firestore con el emulador (acceso cruzado entre usuarios, campos inválidos); verificación manual de flujos y estados de error en dispositivo.
 
@@ -383,10 +375,10 @@ Orden de la Fase 1 (plantilla): theme → AuthContext → AppNavigator → Login
 
 **Pendientes**
 
-1. Versión exacta de Expo/SDK y librerías asociadas.
+1. ~~Versión exacta de Expo/SDK~~ — resuelto: SDK 57 (sección 2).
 2. Proveedor bibliográfico (Open Library vs. Google Books) y manejo de su clave.
 3. Tema oscuro: ¿en 1.0 o después? (y su `primary`).
-4. Comportamiento sin conexión: persistencia de sesión con AsyncStorage y caché de Firestore en React Native **por verificar** en la documentación de la versión elegida; 1.0 solo exige recuperar datos al reabrir con conexión.
+4. Comportamiento sin conexión: la sesión se persiste con AsyncStorage (`getReactNativePersistence`, implementado en la Fase 1 pero **aún no probado en un dispositivo**). La caché sin conexión de Firestore en React Native sigue **por verificar**; 1.0 solo exige recuperar datos al reabrir con conexión.
 5. Unidades adicionales de objetivos (páginas) y objetivos anuales.
 6. Entidades propias de autores y sagas (1.2); caché compartida de catálogo.
 7. Modelo para audiolibros.

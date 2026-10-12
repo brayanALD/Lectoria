@@ -1,0 +1,122 @@
+rules_version = '2';
+
+// Reglas de Lectoria. Ver BookTracker_Plan_de_desarrollo.md, secciones 6 y 7.
+// Convención: los timestamps de control (createdAt, updatedAt) los fija el servidor
+// (serverTimestamp() en el cliente) y deben coincidir con request.time.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedInAs(uid) {
+      return request.auth != null && request.auth.uid == uid;
+    }
+
+    function optionalString(d, field, maxLength) {
+      return !(field in d) || (d[field] is string && d[field].size() <= maxLength);
+    }
+
+    function optionalInt(d, field, min, max) {
+      return !(field in d) || (d[field] is int && d[field] >= min && d[field] <= max);
+    }
+
+    function optionalTimestamp(d, field) {
+      return !(field in d) || d[field] is timestamp;
+    }
+
+    function optionalStringList(d, field, maxItems) {
+      return !(field in d) || (d[field] is list && d[field].size() <= maxItems);
+    }
+
+    // ---- Perfil: users/{uid} ----
+    function validProfile(d) {
+      return d.keys().hasOnly(['createdAt', 'timeZone', 'dailyGoalMinutes', 'monthlyBooksGoal'])
+        && d.keys().hasAll(['createdAt', 'timeZone'])
+        && d.timeZone is string && d.timeZone.size() > 0 && d.timeZone.size() <= 64
+        && optionalInt(d, 'dailyGoalMinutes', 1, 1440)
+        && optionalInt(d, 'monthlyBooksGoal', 1, 1000);
+    }
+
+    // ---- Libro personal: users/{uid}/books/{bookId} ----
+    function validBook(d) {
+      return d.keys().hasOnly([
+          'title', 'authors', 'genres', 'seriesName', 'seriesOrder', 'isbn13', 'coverUrl', 'pageCount',
+          'status', 'acquisition', 'currentPage', 'rating', 'review', 'notes',
+          'startedAt', 'finishedAt', 'createdAt', 'updatedAt'
+        ])
+        && d.keys().hasAll(['title', 'authors', 'status', 'acquisition', 'currentPage', 'createdAt', 'updatedAt'])
+        && d.title is string && d.title.size() > 0 && d.title.size() <= 300
+        && d.authors is list && d.authors.size() <= 20
+        && d.status in ['want_to_read', 'reading', 'paused', 'finished', 'abandoned']
+        && d.acquisition in ['wishlist', 'owned']
+        && d.currentPage is int && d.currentPage >= 0 && d.currentPage <= 100000
+        && optionalStringList(d, 'genres', 20)
+        && optionalString(d, 'seriesName', 200)
+        && optionalInt(d, 'seriesOrder', 0, 1000)
+        && optionalString(d, 'isbn13', 13)
+        && optionalString(d, 'coverUrl', 2000)
+        && optionalInt(d, 'pageCount', 1, 100000)
+        && optionalInt(d, 'rating', 1, 5)
+        && optionalString(d, 'review', 10000)
+        && optionalString(d, 'notes', 10000)
+        && optionalTimestamp(d, 'startedAt')
+        && optionalTimestamp(d, 'finishedAt')
+        && d.updatedAt == request.time;
+    }
+
+    // ---- Sesión de lectura: users/{uid}/sessions/{sessionId} ----
+    function validSession(d) {
+      return d.keys().hasOnly([
+          'bookId', 'date', 'dateKey', 'startPage', 'endPage', 'pagesRead', 'durationMinutes', 'notes', 'createdAt'
+        ])
+        && d.keys().hasAll(['bookId', 'date', 'dateKey', 'pagesRead', 'durationMinutes', 'createdAt'])
+        && d.bookId is string && d.bookId.size() > 0 && d.bookId.size() <= 128
+        && d.date is timestamp
+        && d.dateKey is string && d.dateKey.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$')
+        && d.pagesRead is int && d.pagesRead >= 0 && d.pagesRead <= 100000
+        && d.durationMinutes is int && d.durationMinutes >= 0 && d.durationMinutes <= 1440
+        && (d.pagesRead > 0 || d.durationMinutes > 0)
+        && optionalInt(d, 'startPage', 0, 100000)
+        && optionalInt(d, 'endPage', 0, 100000)
+        && (!('startPage' in d && 'endPage' in d) || d.endPage >= d.startPage)
+        && optionalString(d, 'notes', 5000);
+    }
+
+    match /users/{uid} {
+      allow read: if signedInAs(uid);
+      allow create: if signedInAs(uid)
+        && validProfile(request.resource.data)
+        && request.resource.data.createdAt == request.time;
+      allow update: if signedInAs(uid)
+        && validProfile(request.resource.data)
+        && request.resource.data.createdAt == resource.data.createdAt;
+      allow delete: if signedInAs(uid);
+
+      match /books/{bookId} {
+        allow read: if signedInAs(uid);
+        allow create: if signedInAs(uid)
+          && validBook(request.resource.data)
+          && request.resource.data.createdAt == request.time;
+        allow update: if signedInAs(uid)
+          && validBook(request.resource.data)
+          && request.resource.data.createdAt == resource.data.createdAt;
+        allow delete: if signedInAs(uid);
+      }
+
+      match /sessions/{sessionId} {
+        allow read: if signedInAs(uid);
+        allow create: if signedInAs(uid)
+          && validSession(request.resource.data)
+          && request.resource.data.createdAt == request.time;
+        allow update: if signedInAs(uid)
+          && validSession(request.resource.data)
+          && request.resource.data.createdAt == resource.data.createdAt;
+        allow delete: if signedInAs(uid);
+      }
+
+      // collections y reminders se añaden al implementar esas versiones (1.2 y 1.4).
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
