@@ -340,7 +340,7 @@ Orden de la Fase 1 (plantilla): theme → AuthContext → AppNavigator → Login
 
 1. Crear el proyecto en la consola de Firebase, registrar una app web y activar Authentication (correo/contraseña) y Firestore.
 2. Copiar `.env.example` a `.env` y completar los valores.
-3. Desplegar las reglas: `firebase deploy --only firestore:rules` (necesita `firebase login` y el proyecto asociado).
+3. Desplegar las reglas: `firebase deploy --only firestore --project lectoria-1208a` (necesita `firebase login`). **Hecho el 2026-10-12**: base de datos `(default)` creada en `us-east1` (Firestore estándar, modo nativo) y reglas e índices desplegados. La región no se puede cambiar.
 4. Ejecutar `npx expo start`, registrar una cuenta y comprobar: sesión persistente al reabrir, cierre de sesión y creación de `users/{uid}`.
 
 **Pasos manuales para el acceso con Google.** Android: completado y probado (2026-10-12). iOS: pendiente (requiere cuenta de Apple Developer y `GoogleService-Info.plist`). Pasos de referencia:
