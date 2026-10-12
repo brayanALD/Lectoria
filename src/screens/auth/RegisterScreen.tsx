@@ -1,6 +1,6 @@
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { useState } from 'react';
-import { StyleSheet, Text } from 'react-native';
+import { useRef, useState } from 'react';
+import { ScrollView, StyleSheet, Text, TextInput } from 'react-native';
 
 import { AuthLayout } from '../../components/AuthLayout';
 import { Button } from '../../components/Button';
@@ -32,6 +32,17 @@ export function RegisterScreen({ navigation }: Props) {
   const [confirmation, setConfirmation] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
+  const scrollRef = useRef<ScrollView>(null);
+  const nicknameRef = useRef<TextInput>(null);
+  const emailRef = useRef<TextInput>(null);
+  const passwordRef = useRef<TextInput>(null);
+  const confirmationRef = useRef<TextInput>(null);
+
+  // Al enfocar los últimos campos, baja hasta el final una vez que el teclado ha terminado de aparecer.
+  const scrollToEnd = () => {
+    setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 250);
+  };
 
   const handleSubmit = async () => {
     if (!isValidDisplayName(displayName)) {
@@ -66,7 +77,7 @@ export function RegisterScreen({ navigation }: Props) {
   };
 
   return (
-    <AuthLayout title="Crear cuenta" subtitle="Tu biblioteca será privada y solo tuya.">
+    <AuthLayout title="Crear cuenta" subtitle="Tu biblioteca será privada y solo tuya." scrollRef={scrollRef}>
       <TextField
         label="Nombre"
         value={displayName}
@@ -74,15 +85,23 @@ export function RegisterScreen({ navigation }: Props) {
         autoCapitalize="words"
         autoComplete="name"
         maxLength={MAX_DISPLAY_NAME_LENGTH}
+        returnKeyType="next"
+        submitBehavior="submit"
+        onSubmitEditing={() => nicknameRef.current?.focus()}
       />
       <TextField
+        ref={nicknameRef}
         label="Apodo (opcional)"
         value={nickname}
         onChangeText={setNickname}
         autoCapitalize="none"
         maxLength={MAX_NICKNAME_LENGTH}
+        returnKeyType="next"
+        submitBehavior="submit"
+        onSubmitEditing={() => emailRef.current?.focus()}
       />
       <TextField
+        ref={emailRef}
         label="Correo electrónico"
         value={email}
         onChangeText={setEmail}
@@ -90,22 +109,33 @@ export function RegisterScreen({ navigation }: Props) {
         autoCapitalize="none"
         autoComplete="email"
         autoCorrect={false}
+        returnKeyType="next"
+        submitBehavior="submit"
+        onSubmitEditing={() => passwordRef.current?.focus()}
       />
       <TextField
+        ref={passwordRef}
         label="Contraseña"
         value={password}
         onChangeText={setPassword}
         secureTextEntry
         autoCapitalize="none"
         autoComplete="new-password"
+        returnKeyType="next"
+        submitBehavior="submit"
+        onFocus={scrollToEnd}
+        onSubmitEditing={() => confirmationRef.current?.focus()}
       />
       <TextField
+        ref={confirmationRef}
         label="Confirmar contraseña"
         value={confirmation}
         onChangeText={setConfirmation}
         secureTextEntry
         autoCapitalize="none"
         autoComplete="new-password"
+        returnKeyType="done"
+        onFocus={scrollToEnd}
         onSubmitEditing={handleSubmit}
       />
       {error ? (

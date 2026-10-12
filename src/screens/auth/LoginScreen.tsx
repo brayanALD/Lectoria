@@ -1,6 +1,6 @@
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { useState } from 'react';
-import { StyleSheet, Text } from 'react-native';
+import { useRef, useState } from 'react';
+import { StyleSheet, Text, TextInput } from 'react-native';
 
 import { AuthLayout } from '../../components/AuthLayout';
 import { Button } from '../../components/Button';
@@ -21,6 +21,7 @@ export function LoginScreen({ navigation }: Props) {
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const passwordRef = useRef<TextInput>(null);
 
   const handleSubmit = async () => {
     if (!isValidEmail(email) || password.length === 0) {
@@ -48,14 +49,19 @@ export function LoginScreen({ navigation }: Props) {
         autoCapitalize="none"
         autoComplete="email"
         autoCorrect={false}
+        returnKeyType="next"
+        submitBehavior="submit"
+        onSubmitEditing={() => passwordRef.current?.focus()}
       />
       <TextField
+        ref={passwordRef}
         label="Contraseña"
         value={password}
         onChangeText={setPassword}
         secureTextEntry
         autoCapitalize="none"
         autoComplete="current-password"
+        returnKeyType="done"
         onSubmitEditing={handleSubmit}
       />
       {error ? (
