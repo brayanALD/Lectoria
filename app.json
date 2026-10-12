@@ -10,7 +10,10 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.lectoria.app",
-      "googleServicesFile": "./GoogleService-Info.plist"
+      "googleServicesFile": "./GoogleService-Info.plist",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "package": "com.lectoria.app",
@@ -29,6 +32,12 @@
     "plugins": [
       "expo-font",
       "@react-native-google-signin/google-signin"
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "0da74d08-e36e-42ce-b3f0-880c2c50eaaf"
+      }
+    },
+    "owner": "aldanam4r"
   }
 }

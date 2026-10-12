@@ -24,5 +24,12 @@ export function getAuthErrorMessage(error: unknown): string {
     typeof error === 'object' && error !== null && 'code' in error
       ? String((error as { code: unknown }).code)
       : '';
-  return MESSAGES[code] ?? FALLBACK;
+
+  if (code === 'lectoria/google-failed') {
+    const detail = (error as { detail?: unknown }).detail;
+    return `No se pudo iniciar sesión con Google${detail ? ` (${String(detail)})` : ''}.`;
+  }
+  if (MESSAGES[code]) return MESSAGES[code];
+  // Código desconocido: se muestra para poder diagnosticarlo.
+  return code ? `${FALLBACK} (${code})` : FALLBACK;
 }

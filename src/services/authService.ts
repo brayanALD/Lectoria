@@ -67,7 +67,16 @@ export async function signInWithGoogle(): Promise<boolean> {
         throw coded('lectoria/google-play-services');
       }
     }
-    throw error;
+    console.warn('Fallo en el acceso con Google', error);
+    const code = typeof error === 'object' && error !== null && 'code' in error ? String(error.code) : '';
+    // Los errores de Firebase (auth/...) y los propios (lectoria/...) se traducen tal cual;
+    // el resto, de la librería de Google, se envuelve para poder ver el detalle en pantalla.
+    if (code.startsWith('auth/') || code.startsWith('lectoria/')) throw error;
+    const message = error instanceof Error ? error.message : String(error);
+    throw Object.assign(new Error(message), {
+      code: 'lectoria/google-failed',
+      detail: code ? `${code}: ${message}` : message,
+    });
   }
 }
 

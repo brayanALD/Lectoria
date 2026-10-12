@@ -343,7 +343,7 @@ Orden de la Fase 1 (plantilla): theme → AuthContext → AppNavigator → Login
 3. Desplegar las reglas: `firebase deploy --only firestore:rules` (necesita `firebase login` y el proyecto asociado).
 4. Ejecutar `npx expo start`, registrar una cuenta y comprobar: sesión persistente al reabrir, cierre de sesión y creación de `users/{uid}`.
 
-**Pasos manuales para el acceso con Google** (requieren tus cuentas de Firebase y Expo; el código ya está implementado):
+**Pasos manuales para el acceso con Google.** Android: completado y probado (2026-10-12). iOS: pendiente (requiere cuenta de Apple Developer y `GoogleService-Info.plist`). Pasos de referencia:
 
 1. En Firebase, registrar una app **Android** (paquete `com.lectoria.app`) y una app **iOS** (bundle ID `com.lectoria.app`). Descargar `google-services.json` y `GoogleService-Info.plist` y guardarlos en la raíz del proyecto.
 2. Copiar el *ID de cliente web* (Authentication > Método de acceso > Google > Configuración del SDK web) a `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID` en `.env`.
