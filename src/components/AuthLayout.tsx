@@ -1,10 +1,12 @@
 import type { ReactNode, Ref } from 'react';
-import { KeyboardAvoidingView, ScrollView, StyleSheet, Text } from 'react-native';
+import { Image, KeyboardAvoidingView, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { colors } from '../theme/colors';
 import { spacing } from '../theme/spacing';
 import { fontSize, fontWeight } from '../theme/typography';
+
+const logo = require('../../assets/logo.png');
 
 interface AuthLayoutProps {
   title: string;
@@ -31,7 +33,10 @@ export function AuthLayout({ title, subtitle, children, scrollRef }: AuthLayoutP
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="on-drag"
       >
-        <Text style={styles.brand}>Lectoria</Text>
+        <View style={styles.brandRow}>
+          <Image source={logo} style={styles.logo} accessible={false} />
+          <Text style={styles.brand}>Lectoria</Text>
+        </View>
         <Text style={styles.title}>{title}</Text>
         <Text style={styles.subtitle}>{subtitle}</Text>
         {children}
@@ -43,6 +48,8 @@ export function AuthLayout({ title, subtitle, children, scrollRef }: AuthLayoutP
 const styles = StyleSheet.create({
   flex: { flex: 1, backgroundColor: colors.background },
   content: { flexGrow: 1, paddingHorizontal: spacing.lg, gap: spacing.md },
+  brandRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  logo: { width: 56, height: 56 },
   brand: { fontSize: fontSize.xl, fontWeight: fontWeight.bold, color: colors.primary },
   title: { fontSize: fontSize.lg, fontWeight: fontWeight.bold, color: colors.textPrimary },
   subtitle: { fontSize: fontSize.md, color: colors.textSecondary, marginBottom: spacing.sm },

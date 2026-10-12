@@ -19,9 +19,8 @@
       "package": "com.lectoria.app",
       "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
+        "backgroundColor": "#F1F5F2",
         "foregroundImage": "./assets/android-icon-foreground.png",
-        "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
       "predictiveBackGestureEnabled": false
@@ -31,7 +30,15 @@
     },
     "plugins": [
       "expo-font",
-      "@react-native-google-signin/google-signin"
+      "@react-native-google-signin/google-signin",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 280,
+          "backgroundColor": "#F1F5F2"
+        }
+      ]
     ],
     "extra": {
       "eas": {
