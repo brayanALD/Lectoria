@@ -1,0 +1,31 @@
+/* Coolors Exported Palette - https://coolors.co/14281d-355834-6e633d-c2a878-f1f5f2 */
+
+- CSV
+
+14281d,355834,6e633d,c2a878,f1f5f2
+
+- With #
+
+#14281d, #355834, #6e633d, #c2a878, #f1f5f2
+
+- Array
+
+["14281d","355834","6e633d","c2a878","f1f5f2"]
+
+- Object
+
+{"Evergreen":"14281d","Hunter Green":"355834","Olive Bark":"6e633d","Soft Fawn":"c2a878","Porcelain":"f1f5f2"}
+
+- Extended Array
+
+[{"name":"Evergreen","hex":"14281d","rgb":[20,40,29],"cmyk":[50,0,27,84],"hsb":[147,50,16],"hsl":[147,33,12],"lab":[14,-11,5]},{"name":"Hunter Green","hex":"355834","rgb":[53,88,52],"cmyk":[40,0,41,65],"hsb":[118,41,35],"hsl":[118,26,27],"lab":[34,-21,17]},{"name":"Olive Bark","hex":"6e633d","rgb":[110,99,61],"cmyk":[0,10,45,57],"hsb":[47,45,43],"hsl":[47,29,34],"lab":[42,-2,23]},{"name":"Soft Fawn","hex":"c2a878","rgb":[194,168,120],"cmyk":[0,13,38,24],"hsb":[39,38,76],"hsl":[39,38,62],"lab":[70,3,28]},{"name":"Porcelain","hex":"f1f5f2","rgb":[241,245,242],"cmyk":[2,0,1,4],"hsb":[135,2,96],"hsl":[135,17,95],"lab":[96,-2,1]}]
+
+- XML
+
+<palette>
+  <color name="Evergreen" hex="14281d" r="20" g="40" b="29" />
+  <color name="Hunter Green" hex="355834" r="53" g="88" b="52" />
+  <color name="Olive Bark" hex="6e633d" r="110" g="99" b="61" />
+  <color name="Soft Fawn" hex="c2a878" r="194" g="168" b="120" />
+  <color name="Porcelain" hex="f1f5f2" r="241" g="245" b="242" />
+</palette>
