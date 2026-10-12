@@ -13,6 +13,11 @@ describe('getAuthErrorMessage', () => {
     expect(getAuthErrorMessage({ code: 'auth/wrong-password' })).toBe(invalid);
   });
 
+  it('traduce los errores propios del acceso con Google', () => {
+    expect(getAuthErrorMessage({ code: 'lectoria/google-unavailable' })).toMatch(/Expo Go/);
+    expect(getAuthErrorMessage({ code: 'auth/account-exists-with-different-credential' })).toMatch(/otro método/);
+  });
+
   it('devuelve un mensaje genérico para códigos desconocidos o valores no esperados', () => {
     const fallback = 'No se pudo completar la operación. Inténtalo de nuevo.';
     expect(getAuthErrorMessage({ code: 'auth/otro' })).toBe(fallback);

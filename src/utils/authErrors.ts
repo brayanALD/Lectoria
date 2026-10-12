@@ -8,6 +8,13 @@ const MESSAGES: Record<string, string> = {
   'auth/user-disabled': 'Esta cuenta está deshabilitada.',
   'auth/too-many-requests': 'Demasiados intentos. Inténtalo de nuevo más tarde.',
   'auth/network-request-failed': 'Sin conexión. Revisa tu red e inténtalo de nuevo.',
+  'auth/account-exists-with-different-credential':
+    'Ya existe una cuenta con ese correo que usa otro método de acceso.',
+  'lectoria/google-not-configured': 'El acceso con Google no está configurado en esta versión de la app.',
+  'lectoria/google-unavailable':
+    'El acceso con Google no está disponible aquí. Requiere la app de desarrollo, no funciona en Expo Go.',
+  'lectoria/google-play-services': 'Google Play Services no está disponible o está desactualizado.',
+  'lectoria/google-no-token': 'Google no devolvió las credenciales necesarias. Inténtalo de nuevo.',
 };
 
 const FALLBACK = 'No se pudo completar la operación. Inténtalo de nuevo.';

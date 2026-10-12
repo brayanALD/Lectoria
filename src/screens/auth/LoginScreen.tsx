@@ -4,6 +4,7 @@ import { StyleSheet, Text } from 'react-native';
 
 import { AuthLayout } from '../../components/AuthLayout';
 import { Button } from '../../components/Button';
+import { GoogleSignInButton } from '../../components/GoogleSignInButton';
 import { TextField } from '../../components/TextField';
 import { useAuth } from '../../context/AuthContext';
 import type { AuthStackParamList } from '../../navigation/types';
@@ -63,6 +64,7 @@ export function LoginScreen({ navigation }: Props) {
         </Text>
       ) : null}
       <Button title="Entrar" onPress={handleSubmit} loading={loading} />
+      <GoogleSignInButton onError={setError} disabled={loading} />
       <Button title="Crear una cuenta" variant="secondary" onPress={() => navigation.navigate('Register')} />
     </AuthLayout>
   );

@@ -16,7 +16,7 @@ const alice = () => env.authenticatedContext('alice').firestore();
 const bob = () => env.authenticatedContext('bob').firestore();
 const anonymous = () => env.unauthenticatedContext().firestore();
 
-const validProfile = () => ({ createdAt: serverTimestamp(), timeZone: 'America/Bogota' });
+const validProfile = () => ({ createdAt: serverTimestamp(), timeZone: 'America/Bogota', displayName: 'Ana' });
 
 const validBook = () => ({
   title: 'Dune',
@@ -75,6 +75,27 @@ describe('aislamiento entre usuarios', () => {
 describe('perfil users/{uid}', () => {
   it('permite crear un perfil válido', async () => {
     await assertSucceeds(setDoc(doc(alice(), 'users/alice'), validProfile()));
+  });
+
+  it('acepta apodo opcional y exige nombre al crear', async () => {
+    await assertSucceeds(setDoc(doc(alice(), 'users/alice'), { ...validProfile(), nickname: 'Lectora' }));
+    const { displayName: _omitted, ...withoutName } = validProfile();
+    await assertFails(setDoc(doc(bob(), 'users/bob'), withoutName));
+  });
+
+  it('rechaza nombre o apodo vacíos o demasiado largos', async () => {
+    const ref = doc(alice(), 'users/alice');
+    await assertFails(setDoc(ref, { ...validProfile(), displayName: '' }));
+    await assertFails(setDoc(ref, { ...validProfile(), displayName: 'a'.repeat(61) }));
+    await assertFails(setDoc(ref, { ...validProfile(), nickname: '' }));
+    await assertFails(setDoc(ref, { ...validProfile(), nickname: 'a'.repeat(31) }));
+  });
+
+  it('permite actualizar un perfil anterior que no tiene nombre', async () => {
+    await env.withSecurityRulesDisabled(async (context) => {
+      await setDoc(doc(context.firestore(), 'users/alice'), { createdAt: Timestamp.now(), timeZone: 'UTC' });
+    });
+    await assertSucceeds(updateDoc(doc(alice(), 'users/alice'), { dailyGoalMinutes: 20 }));
   });
 
   it('rechaza campos desconocidos y createdAt fijado por el cliente', async () => {

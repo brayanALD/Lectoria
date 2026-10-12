@@ -27,10 +27,13 @@ service cloud.firestore {
     }
 
     // ---- Perfil: users/{uid} ----
+    // displayName es obligatorio solo al crear (ver `allow create`): los perfiles de la Fase 1 no lo tienen.
     function validProfile(d) {
-      return d.keys().hasOnly(['createdAt', 'timeZone', 'dailyGoalMinutes', 'monthlyBooksGoal'])
+      return d.keys().hasOnly(['createdAt', 'timeZone', 'displayName', 'nickname', 'dailyGoalMinutes', 'monthlyBooksGoal'])
         && d.keys().hasAll(['createdAt', 'timeZone'])
         && d.timeZone is string && d.timeZone.size() > 0 && d.timeZone.size() <= 64
+        && (!('displayName' in d) || (d.displayName is string && d.displayName.size() > 0 && d.displayName.size() <= 60))
+        && (!('nickname' in d) || (d.nickname is string && d.nickname.size() > 0 && d.nickname.size() <= 30))
         && optionalInt(d, 'dailyGoalMinutes', 1, 1440)
         && optionalInt(d, 'monthlyBooksGoal', 1, 1000);
     }
@@ -84,6 +87,7 @@ service cloud.firestore {
       allow read: if signedInAs(uid);
       allow create: if signedInAs(uid)
         && validProfile(request.resource.data)
+        && 'displayName' in request.resource.data
         && request.resource.data.createdAt == request.time;
       allow update: if signedInAs(uid)
         && validProfile(request.resource.data)

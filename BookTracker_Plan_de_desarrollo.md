@@ -33,7 +33,8 @@ Basado en la plantilla reutilizable para apps móviles.
 | Framework | Expo (React Native) | [Confirmado] |
 | Lenguaje | **TypeScript** (la plantilla lo recomienda para proyectos nuevos; el plan ya usa tipos) | [Confirmado] |
 | Navegación | React Navigation: `native-stack` + `bottom-tabs` (las pestañas no figuran en la plantilla; se añaden por el requisito de 5 destinos) | [Confirmado] |
-| Backend | Firebase Auth (email/contraseña) + Firestore | [Confirmado] |
+| Backend | Firebase Auth (email/contraseña **y Google**) + Firestore | [Confirmado] |
+| Acceso con Google | `@react-native-google-signin/google-signin` ^16 + `expo-dev-client`; exige **development build** con EAS Build (no funciona en Expo Go). Identificador de app `com.lectoria.app` (Android e iOS) | [Confirmado] (2026-10-12) |
 | Estado global | Context API (`AuthContext`) | [Confirmado] |
 | Almacenamiento local | AsyncStorage (sesión y preferencias) | [Confirmado] |
 | Fechas | dayjs | [Confirmado] |
@@ -154,7 +155,7 @@ Regla: los tokens se centralizan en `src/theme/colors.ts`; nunca se escriben col
 Principio: el libro **personal** es la unidad de trabajo. Cada usuario guarda sus propios metadatos del libro.
 
 ```text
-users/{uid}                      Perfil, preferencias, objetivos (diario/mensual), zona horaria
+users/{uid}                      Perfil: displayName (obligatorio al crear), nickname (opcional), zona horaria, objetivos (diario/mensual)
 users/{uid}/books/{bookId}       Biblioteca personal (incluye lista de deseos: acquisition = "wishlist")
 users/{uid}/sessions/{sessionId} Historial de sesiones
 users/{uid}/collections/{id}     Colecciones personalizadas (versión 1.2)
@@ -341,6 +342,17 @@ Orden de la Fase 1 (plantilla): theme → AuthContext → AppNavigator → Login
 2. Copiar `.env.example` a `.env` y completar los valores.
 3. Desplegar las reglas: `firebase deploy --only firestore:rules` (necesita `firebase login` y el proyecto asociado).
 4. Ejecutar `npx expo start`, registrar una cuenta y comprobar: sesión persistente al reabrir, cierre de sesión y creación de `users/{uid}`.
+
+**Pasos manuales para el acceso con Google** (requieren tus cuentas de Firebase y Expo; el código ya está implementado):
+
+1. En Firebase, registrar una app **Android** (paquete `com.lectoria.app`) y una app **iOS** (bundle ID `com.lectoria.app`). Descargar `google-services.json` y `GoogleService-Info.plist` y guardarlos en la raíz del proyecto.
+2. Copiar el *ID de cliente web* (Authentication > Método de acceso > Google > Configuración del SDK web) a `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID` en `.env`.
+3. `npx eas-cli login` y `npx eas-cli init` (enlaza el proyecto con tu cuenta de Expo).
+4. `npx eas-cli build --profile development --platform android`. Cuando termine, obtener la huella SHA-1 con `npx eas-cli credentials`, añadirla a la app Android en Firebase y volver a descargar `google-services.json`; si cambia, repetir el build.
+5. iOS: requiere cuenta de Apple Developer (de pago) y registrar el dispositivo; sin ella, solo se puede probar Android.
+6. Instalar el build en el teléfono y ejecutar `npx expo start` (usa la app de desarrollo en lugar de Expo Go).
+
+Limitación conocida: si un correo ya tiene cuenta con contraseña y entra después con Google, Firebase aplica su política de «una cuenta por correo»; el vínculo explícito de proveedores no está implementado [Pendiente].
 
 ## 13. Estrategia de pruebas y criterios de aceptación
 
