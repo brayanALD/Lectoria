@@ -65,14 +65,12 @@ export function ProfileScreen() {
       keyboardShouldPersistTaps="handled"
       keyboardDismissMode="on-drag"
     >
-      <View style={styles.block}>
-        <Text style={styles.label}>Cuenta</Text>
-        <Text style={styles.email}>{user?.email}</Text>
-      </View>
+      <Text style={styles.email}>{user?.email}</Text>
 
       <View style={styles.block}>
-        <Text style={styles.sectionTitle}>Métodos de acceso</Text>
-        <Text style={styles.hint}>Vincula los dos para poder entrar con cualquiera de ellos.</Text>
+        <Text style={styles.sectionTitle} accessibilityRole="header">
+          Métodos de acceso
+        </Text>
 
         <View style={styles.method}>
           <Text style={styles.methodName}>Google</Text>
@@ -139,10 +137,8 @@ const styles = StyleSheet.create({
   scroll: { flex: 1, backgroundColor: colors.background },
   container: { padding: spacing.lg, gap: spacing.lg, paddingBottom: spacing.xl * 4 },
   block: { gap: spacing.sm },
-  label: { fontSize: fontSize.sm, color: colors.textSecondary },
   email: { fontSize: fontSize.md, fontWeight: fontWeight.semibold, color: colors.textPrimary },
   sectionTitle: { fontSize: fontSize.lg, fontWeight: fontWeight.bold, color: colors.textPrimary },
-  hint: { fontSize: fontSize.sm, color: colors.textSecondary },
   method: { gap: spacing.sm, marginTop: spacing.sm },
   methodName: { fontSize: fontSize.md, fontWeight: fontWeight.semibold, color: colors.textPrimary },
   linked: { fontSize: fontSize.md, color: colors.success },

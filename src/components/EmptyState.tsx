@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { colors } from '../theme/colors';
-import { spacing } from '../theme/spacing';
+import { iconSize, spacing } from '../theme/spacing';
 import { fontSize, fontWeight } from '../theme/typography';
 import { Button } from './Button';
 
@@ -18,7 +18,7 @@ interface EmptyStateProps {
 export function EmptyState({ icon, title, description, action }: EmptyStateProps) {
   return (
     <View style={styles.container}>
-      <Ionicons name={icon} size={56} color={colors.textSecondary} accessible={false} />
+      <Ionicons name={icon} size={iconSize.xl} color={colors.textSecondary} accessible={false} />
       <Text style={styles.title} accessibilityRole="header">
         {title}
       </Text>

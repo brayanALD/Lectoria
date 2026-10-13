@@ -1,6 +1,6 @@
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
-import { LoadingSpinner } from '../components/LoadingSpinner';
+import { StartupScreen } from '../components/StartupScreen';
 import { useAuth } from '../context/AuthContext';
 import { AddBookScreen } from '../screens/app/library/AddBookScreen';
 import { BookDetailScreen } from '../screens/app/library/BookDetailScreen';
@@ -15,7 +15,7 @@ const Stack = createNativeStackNavigator<AppStackParamList>();
 export function AppNavigator() {
   const { user, initializing } = useAuth();
 
-  if (initializing) return <LoadingSpinner />;
+  if (initializing) return <StartupScreen />;
   if (!user) return <AuthNavigator />;
 
   return (
@@ -23,11 +23,8 @@ export function AppNavigator() {
       <Stack.Screen name="Tabs" component={TabNavigator} />
       {/* Pantallas secundarias: se abren encima de las pestañas, con encabezado y botón de volver. */}
       <Stack.Screen name="AddBook" component={AddBookScreen} options={{ headerShown: true, title: 'Añadir libro' }} />
-      <Stack.Screen
-        name="BookDetail"
-        component={BookDetailScreen}
-        options={{ headerShown: true, title: 'Detalle del libro' }}
-      />
+      {/* Sin título: la propia pantalla ya muestra el nombre del libro. */}
+      <Stack.Screen name="BookDetail" component={BookDetailScreen} options={{ headerShown: true, title: '' }} />
       <Stack.Screen name="EditBook" component={EditBookScreen} options={{ headerShown: true, title: 'Editar libro' }} />
     </Stack.Navigator>
   );

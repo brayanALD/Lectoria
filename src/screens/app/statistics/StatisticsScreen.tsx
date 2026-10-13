@@ -1,10 +1,5 @@
-import { ScreenPlaceholder } from '../../../components/ScreenPlaceholder';
+import { EmptyState } from '../../../components/EmptyState';
 
 export function StatisticsScreen() {
-  return (
-    <ScreenPlaceholder
-      title="Estadísticas"
-      description="Aquí verás tus libros terminados, páginas, minutos y objetivos."
-    />
-  );
+  return <EmptyState icon="stats-chart-outline" title="Próximamente" />;
 }

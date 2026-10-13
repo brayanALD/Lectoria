@@ -1,14 +1,14 @@
 import type { ReactNode } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { colors, googleButton } from '../theme/colors';
-import { minTouchSize, radius, spacing } from '../theme/spacing';
+import { colors } from '../theme/colors';
+import { minTouchSize, opacity, radius, spacing } from '../theme/spacing';
 import { fontSize, fontWeight } from '../theme/typography';
 
 interface ButtonProps {
   title: string;
   onPress: () => void;
-  /** `google` sigue las directrices de marca de Google (solo para «Continuar con Google»). */
+  /** `google` es el fondo claro con borde de control que lleva el logo de Google (solo «Continuar con Google»). */
   /** `danger` es para acciones destructivas (p. ej. eliminar). */
   variant?: 'primary' | 'secondary' | 'google' | 'danger';
   /** Elemento decorativo a la izquierda del texto (p. ej. un logo). */
@@ -32,7 +32,7 @@ export function Button({
   const contentColor = isPrimary
     ? colors.onPrimary
     : isGoogle
-      ? googleButton.text
+      ? colors.textPrimary
       : isDanger
         ? colors.error
         : colors.primary;
@@ -47,8 +47,7 @@ export function Button({
       style={({ pressed }) => [
         styles.base,
         isPrimary ? styles.primary : isGoogle ? styles.google : isDanger ? styles.danger : styles.secondary,
-        pressed && isPrimary && { backgroundColor: colors.pressed },
-        pressed && isGoogle && { backgroundColor: googleButton.backgroundPressed },
+        pressed && (isPrimary ? { backgroundColor: colors.pressed } : styles.pressed),
         disabled && !loading && styles.disabled,
       ]}
     >
@@ -75,8 +74,9 @@ const styles = StyleSheet.create({
   primary: { backgroundColor: colors.primary },
   secondary: { backgroundColor: 'transparent', borderWidth: 1, borderColor: colors.primary },
   danger: { backgroundColor: 'transparent', borderWidth: 1, borderColor: colors.error },
-  google: { backgroundColor: googleButton.background, borderWidth: 1, borderColor: googleButton.border },
-  disabled: { opacity: 0.5 },
-  content: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm + spacing.xs },
+  google: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.outline },
+  pressed: { opacity: opacity.pressed },
+  disabled: { opacity: opacity.disabled },
+  content: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   label: { fontSize: fontSize.md, fontWeight: fontWeight.semibold },
 });

@@ -1,10 +1,5 @@
-import { ScreenPlaceholder } from '../../../components/ScreenPlaceholder';
+import { EmptyState } from '../../../components/EmptyState';
 
 export function HomeScreen() {
-  return (
-    <ScreenPlaceholder
-      title="Inicio"
-      description="Aquí verás tus libros en lectura, tu racha y el acceso rápido para registrar una sesión."
-    />
-  );
+  return <EmptyState icon="home-outline" title="Próximamente" />;
 }

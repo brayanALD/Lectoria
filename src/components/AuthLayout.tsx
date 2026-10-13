@@ -7,17 +7,17 @@ import { spacing } from '../theme/spacing';
 import { fontSize, fontWeight } from '../theme/typography';
 
 const logo = require('../../assets/logo.png');
+const LOGO_SIZE = spacing.xl + spacing.lg;
 
 interface AuthLayoutProps {
-  title: string;
-  subtitle: string;
   children: ReactNode;
   /** Permite a la pantalla desplazar el contenido (p. ej. al enfocar el último campo). */
   scrollRef?: Ref<ScrollView>;
 }
 
-// Contenedor común de Login y Registro: área segura, teclado y desplazamiento.
-export function AuthLayout({ title, subtitle, children, scrollRef }: AuthLayoutProps) {
+// Contenedor común de Login y Registro: marca, área segura, teclado y desplazamiento.
+// Sin títulos ni subtítulos: el logo y el botón principal ya indican qué se está haciendo.
+export function AuthLayout({ children, scrollRef }: AuthLayoutProps) {
   const insets = useSafeAreaInsets();
 
   // behavior="padding" en ambas plataformas: con edge-to-edge, Android ya no redimensiona la ventana
@@ -35,10 +35,10 @@ export function AuthLayout({ title, subtitle, children, scrollRef }: AuthLayoutP
       >
         <View style={styles.brandRow}>
           <Image source={logo} style={styles.logo} accessible={false} />
-          <Text style={styles.brand}>Lectoria</Text>
+          <Text style={styles.brand} accessibilityRole="header">
+            Lectoria
+          </Text>
         </View>
-        <Text style={styles.title}>{title}</Text>
-        <Text style={styles.subtitle}>{subtitle}</Text>
         {children}
       </ScrollView>
     </KeyboardAvoidingView>
@@ -48,9 +48,7 @@ export function AuthLayout({ title, subtitle, children, scrollRef }: AuthLayoutP
 const styles = StyleSheet.create({
   flex: { flex: 1, backgroundColor: colors.background },
   content: { flexGrow: 1, paddingHorizontal: spacing.lg, gap: spacing.md },
-  brandRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  logo: { width: 56, height: 56 },
+  brandRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.md },
+  logo: { width: LOGO_SIZE, height: LOGO_SIZE },
   brand: { fontSize: fontSize.xl, fontWeight: fontWeight.bold, color: colors.primary },
-  title: { fontSize: fontSize.lg, fontWeight: fontWeight.bold, color: colors.textPrimary },
-  subtitle: { fontSize: fontSize.md, color: colors.textSecondary, marginBottom: spacing.sm },
 });

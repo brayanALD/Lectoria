@@ -1,10 +1,5 @@
-import { ScreenPlaceholder } from '../../../components/ScreenPlaceholder';
+import { EmptyState } from '../../../components/EmptyState';
 
 export function CalendarScreen() {
-  return (
-    <ScreenPlaceholder
-      title="Calendario"
-      description="Aquí verás los días en que has leído y el detalle de tus sesiones."
-    />
-  );
+  return <EmptyState icon="calendar-outline" title="Próximamente" />;
 }

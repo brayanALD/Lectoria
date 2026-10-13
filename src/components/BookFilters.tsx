@@ -4,8 +4,8 @@ import { Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { colors } from '../theme/colors';
-import { minTouchSize, radius, spacing } from '../theme/spacing';
-import { fontSize, fontWeight } from '../theme/typography';
+import { iconSize, minTouchSize, opacity, radius, spacing } from '../theme/spacing';
+import { fontSize, fontWeight, maxFontScale } from '../theme/typography';
 import { READING_STATUSES, READING_STATUS_LABELS } from '../utils/book';
 import { countActiveFilters, type BookFilterOptions, type BookFilterState } from '../utils/bookFilters';
 import { Button } from './Button';
@@ -20,11 +20,13 @@ interface BookFiltersProps {
 
 type SheetFilter = 'genre' | 'author' | 'series';
 
-const SHEET_SECTIONS: { key: SheetFilter; title: string; empty: string; options: keyof BookFilterOptions }[] = [
-  { key: 'genre', title: 'Género', empty: 'Ningún libro tiene género todavía.', options: 'genres' },
-  { key: 'author', title: 'Autor', empty: 'Aún no hay autores.', options: 'authors' },
-  { key: 'series', title: 'Saga', empty: 'Ningún libro pertenece a una saga todavía.', options: 'series' },
+const SHEET_SECTIONS: { key: SheetFilter; title: string; options: keyof BookFilterOptions }[] = [
+  { key: 'genre', title: 'Género', options: 'genres' },
+  { key: 'author', title: 'Autor', options: 'authors' },
+  { key: 'series', title: 'Saga', options: 'series' },
 ];
+
+const BADGE_SIZE = spacing.md + spacing.xs;
 
 /** Búsqueda de texto, filtro por estado (siempre visible) y hoja con los filtros de género, autor y saga. */
 export function BookFilters({ filters, onChange, options }: BookFiltersProps) {
@@ -34,14 +36,22 @@ export function BookFilters({ filters, onChange, options }: BookFiltersProps) {
 
   const set = (changes: Partial<BookFilterState>) => onChange({ ...filters, ...changes });
 
+  // Solo se muestran los criterios con opciones (o con un valor ya elegido que aún se pueda quitar).
+  const sections = SHEET_SECTIONS.map((section) => {
+    const selected = filters[section.key];
+    const values = options[section.options];
+    const shown = selected && !values.includes(selected) ? [selected, ...values] : values;
+    return { ...section, selected, shown };
+  }).filter((section) => section.shown.length > 0);
+
   return (
     <View style={styles.container}>
       <View style={styles.searchRow}>
         <View style={styles.search}>
-          <Ionicons name="search" size={20} color={colors.textSecondary} accessible={false} />
+          <Ionicons name="search" size={iconSize.sm} color={colors.textSecondary} accessible={false} />
           <TextInput
             accessibilityLabel="Buscar libros"
-            placeholder="Buscar por título, autor, saga o género"
+            placeholder="Buscar libros"
             placeholderTextColor={colors.textSecondary}
             value={filters.query}
             onChangeText={(query) => set({ query })}
@@ -54,10 +64,11 @@ export function BookFilters({ filters, onChange, options }: BookFiltersProps) {
             <Pressable
               accessibilityRole="button"
               accessibilityLabel="Borrar búsqueda"
-              hitSlop={spacing.sm}
+              // Icono de 20 pt + 12 pt por lado = 44 pt de zona táctil.
+              hitSlop={spacing.md - spacing.xs}
               onPress={() => set({ query: '' })}
             >
-              <Ionicons name="close-circle" size={20} color={colors.textSecondary} />
+              <Ionicons name="close-circle" size={iconSize.sm} color={colors.textSecondary} />
             </Pressable>
           ) : null}
         </View>
@@ -68,10 +79,12 @@ export function BookFilters({ filters, onChange, options }: BookFiltersProps) {
           onPress={() => setSheetOpen(true)}
           style={({ pressed }) => [styles.filterButton, pressed && styles.pressed]}
         >
-          <Ionicons name="options-outline" size={24} color={colors.primary} />
+          <Ionicons name="options-outline" size={iconSize.md} color={colors.primary} />
           {activeCount > 0 ? (
             <View style={styles.badge}>
-              <Text style={styles.badgeText}>{activeCount}</Text>
+              <Text style={styles.badgeText} maxFontSizeMultiplier={maxFontScale}>
+                {activeCount}
+              </Text>
             </View>
           ) : null}
         </Pressable>
@@ -107,38 +120,26 @@ export function BookFilters({ filters, onChange, options }: BookFiltersProps) {
           accessibilityRole="button"
           accessibilityLabel="Cerrar filtros"
         />
-        <View style={[styles.sheet, { paddingBottom: insets.bottom + spacing.md }]}>
-          <Text style={styles.sheetTitle} accessibilityRole="header">
-            Filtros
-          </Text>
-
+        {/* accessibilityViewIsModal: el lector de pantalla no sale de la hoja hacia el contenido de detrás. */}
+        <View style={[styles.sheet, { paddingBottom: insets.bottom + spacing.md }]} accessibilityViewIsModal>
           <ScrollView contentContainerStyle={styles.sheetContent}>
-            {SHEET_SECTIONS.map((section) => {
-              const selected = filters[section.key];
-              // Si el valor elegido ya no existe en la biblioteca (p. ej. se eliminó el libro) sigue visible para poder quitarlo.
-              const values = options[section.options];
-              const shown = selected && !values.includes(selected) ? [selected, ...values] : values;
-
-              return (
-                <View key={section.key} style={styles.section}>
-                  <Text style={styles.sectionTitle}>{section.title}</Text>
-                  {shown.length === 0 ? (
-                    <Text style={styles.empty}>{section.empty}</Text>
-                  ) : (
-                    <View style={styles.wrap}>
-                      {shown.map((value) => (
-                        <Chip
-                          key={value}
-                          label={value}
-                          selected={selected === value}
-                          onPress={() => set({ [section.key]: selected === value ? null : value })}
-                        />
-                      ))}
-                    </View>
-                  )}
+            {sections.map((section) => (
+              <View key={section.key} style={styles.section}>
+                <Text style={styles.sectionTitle} accessibilityRole="header">
+                  {section.title}
+                </Text>
+                <View style={styles.wrap}>
+                  {section.shown.map((value) => (
+                    <Chip
+                      key={value}
+                      label={value}
+                      selected={section.selected === value}
+                      onPress={() => set({ [section.key]: section.selected === value ? null : value })}
+                    />
+                  ))}
                 </View>
-              );
-            })}
+              </View>
+            ))}
           </ScrollView>
 
           <View style={styles.sheetActions}>
@@ -167,26 +168,26 @@ const styles = StyleSheet.create({
     minHeight: minTouchSize,
     paddingHorizontal: spacing.md,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: colors.outline,
     borderRadius: radius.md,
     backgroundColor: colors.surface,
   },
   searchInput: { flex: 1, fontSize: fontSize.md, color: colors.textPrimary, paddingVertical: 0 },
   filterButton: { width: minTouchSize, height: minTouchSize, alignItems: 'center', justifyContent: 'center' },
-  pressed: { opacity: 0.6 },
+  pressed: { opacity: opacity.pressed },
   badge: {
     position: 'absolute',
-    top: 4,
-    right: 2,
-    minWidth: 18,
-    height: 18,
-    borderRadius: 9,
-    paddingHorizontal: 4,
+    top: spacing.xs,
+    right: 0,
+    minWidth: BADGE_SIZE,
+    minHeight: BADGE_SIZE,
+    borderRadius: BADGE_SIZE / 2,
+    paddingHorizontal: spacing.xs,
     backgroundColor: colors.accent,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  badgeText: { fontSize: 11, fontWeight: fontWeight.bold, color: colors.onAccent },
+  badgeText: { fontSize: fontSize.xs, fontWeight: fontWeight.bold, color: colors.onAccent },
   chipRow: { gap: spacing.sm, paddingHorizontal: spacing.lg },
   overlay: { flex: 1, backgroundColor: colors.overlay },
   sheet: {
@@ -196,16 +197,9 @@ const styles = StyleSheet.create({
     borderTopRightRadius: radius.md * 2,
     paddingTop: spacing.lg,
   },
-  sheetTitle: {
-    fontSize: fontSize.lg,
-    fontWeight: fontWeight.bold,
-    color: colors.textPrimary,
-    paddingHorizontal: spacing.lg,
-  },
-  sheetContent: { padding: spacing.lg, gap: spacing.lg },
+  sheetContent: { padding: spacing.lg, paddingTop: 0, gap: spacing.lg },
   section: { gap: spacing.sm },
   sectionTitle: { fontSize: fontSize.md, fontWeight: fontWeight.semibold, color: colors.textPrimary },
-  empty: { fontSize: fontSize.sm, color: colors.textSecondary },
   wrap: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   sheetActions: { gap: spacing.sm, paddingHorizontal: spacing.lg },
 });

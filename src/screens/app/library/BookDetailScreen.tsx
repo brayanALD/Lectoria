@@ -5,7 +5,7 @@ import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { BookCover } from '../../../components/BookCover';
 import { Button } from '../../../components/Button';
 import { EmptyState } from '../../../components/EmptyState';
-import { LoadingSpinner } from '../../../components/LoadingSpinner';
+import { BookDetailSkeleton } from '../../../components/BookSkeletons';
 import { ReadingProgress } from '../../../components/ReadingProgress';
 import { StatusSelector } from '../../../components/StatusSelector';
 import { useAuth } from '../../../context/AuthContext';
@@ -37,8 +37,8 @@ export function BookDetailScreen({ navigation, route }: Props) {
   const [actionError, setActionError] = useState<string | null>(null);
 
   // Mientras se elimina, el libro desaparece de la lista antes de que termine la operación:
-  // se mantiene la pantalla de carga para no mostrar «el libro no existe» un instante.
-  if (loading || deleting) return <LoadingSpinner />;
+  // se mantiene la silueta de carga para no mostrar «el libro no existe» un instante.
+  if (loading || deleting) return <BookDetailSkeleton />;
 
   if (error && !book) {
     return (
@@ -56,7 +56,6 @@ export function BookDetailScreen({ navigation, route }: Props) {
       <EmptyState
         icon="book-outline"
         title="Este libro ya no existe"
-        description="Puede que se haya eliminado."
         action={{ label: 'Volver', onPress: () => navigation.goBack() }}
       />
     );
@@ -101,12 +100,10 @@ export function BookDetailScreen({ navigation, route }: Props) {
 
   const percent = getProgressPercent(book);
   const details: { label: string; value: string }[] = [
-    book.pageCount ? { label: 'Páginas', value: String(book.pageCount) } : undefined,
     book.genres?.length ? { label: 'Géneros', value: book.genres.join(', ') } : undefined,
     book.seriesName
       ? { label: 'Saga', value: `${book.seriesName}${book.seriesOrder !== undefined ? ` #${book.seriesOrder}` : ''}` }
       : undefined,
-    { label: 'Añadido', value: formatLongDate(book.createdAt) },
     book.startedAt ? { label: 'Empezado', value: formatLongDate(book.startedAt) } : undefined,
     book.finishedAt ? { label: 'Terminado', value: formatLongDate(book.finishedAt) } : undefined,
   ].filter((row): row is { label: string; value: string } => row !== undefined);
@@ -123,10 +120,10 @@ export function BookDetailScreen({ navigation, route }: Props) {
         </View>
       </View>
 
-      <StatusSelector value={book.status} onChange={handleStatusChange} />
+      {/* Las etiquetas de estado se explican solas; el nombre del grupo se conserva para el lector de pantalla. */}
+      <StatusSelector showLabel={false} value={book.status} onChange={handleStatusChange} />
 
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Progreso</Text>
         <Text style={styles.progressText}>
           Página {book.currentPage}
           {book.pageCount ? ` de ${book.pageCount}` : ''}
@@ -134,15 +131,16 @@ export function BookDetailScreen({ navigation, route }: Props) {
         {percent !== undefined ? <ReadingProgress percent={percent} /> : null}
       </View>
 
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Datos del libro</Text>
-        {details.map((row) => (
-          <View key={row.label} style={styles.row}>
-            <Text style={styles.rowLabel}>{row.label}</Text>
-            <Text style={styles.rowValue}>{row.value}</Text>
-          </View>
-        ))}
-      </View>
+      {details.length > 0 ? (
+        <View style={styles.section}>
+          {details.map((row) => (
+            <View key={row.label} style={styles.row}>
+              <Text style={styles.rowLabel}>{row.label}</Text>
+              <Text style={styles.rowValue}>{row.value}</Text>
+            </View>
+          ))}
+        </View>
+      ) : null}
 
       {actionError ? (
         <Text style={styles.error} accessibilityRole="alert">
@@ -151,12 +149,8 @@ export function BookDetailScreen({ navigation, route }: Props) {
       ) : null}
 
       <View style={styles.actions}>
-        <Button
-          title="Editar libro"
-          variant="secondary"
-          onPress={() => navigation.navigate('EditBook', { bookId: book.id })}
-        />
-        <Button title="Eliminar libro" variant="danger" onPress={confirmDelete} />
+        <Button title="Editar" variant="secondary" onPress={() => navigation.navigate('EditBook', { bookId: book.id })} />
+        <Button title="Eliminar" variant="danger" onPress={confirmDelete} />
       </View>
     </ScrollView>
   );
@@ -170,7 +164,6 @@ const styles = StyleSheet.create({
   title: { fontSize: fontSize.xl, fontWeight: fontWeight.bold, color: colors.textPrimary },
   authors: { fontSize: fontSize.md, color: colors.textSecondary },
   section: { gap: spacing.sm },
-  sectionTitle: { fontSize: fontSize.lg, fontWeight: fontWeight.bold, color: colors.textPrimary },
   progressText: { fontSize: fontSize.md, color: colors.textPrimary },
   row: { flexDirection: 'row', justifyContent: 'space-between', gap: spacing.md },
   rowLabel: { fontSize: fontSize.md, color: colors.textSecondary },

@@ -1,10 +1,8 @@
 import { useState } from 'react';
-import { Image, StyleSheet, Text, View } from 'react-native';
+import { Image, StyleSheet } from 'react-native';
 
 import { useAuth } from '../context/AuthContext';
-import { colors } from '../theme/colors';
-import { spacing } from '../theme/spacing';
-import { fontSize } from '../theme/typography';
+import { iconSize } from '../theme/spacing';
 import { getAuthErrorMessage } from '../utils/authErrors';
 import { Button } from './Button';
 
@@ -17,7 +15,7 @@ interface GoogleSignInButtonProps {
   disabled?: boolean;
 }
 
-// Separador «o» + botón de acceso con Google, común a Login y Registro.
+// Botón de acceso con Google, común a Login y Registro.
 export function GoogleSignInButton({ onError, disabled = false }: GoogleSignInButtonProps) {
   const { signInWithGoogle } = useAuth();
   const [loading, setLoading] = useState(false);
@@ -35,28 +33,17 @@ export function GoogleSignInButton({ onError, disabled = false }: GoogleSignInBu
   };
 
   return (
-    <View style={styles.container}>
-      <View style={styles.divider}>
-        <View style={styles.line} />
-        <Text style={styles.dividerText}>o</Text>
-        <View style={styles.line} />
-      </View>
-      <Button
-        title="Continuar con Google"
-        variant="google"
-        icon={<Image source={googleLogo} style={styles.logo} accessible={false} />}
-        onPress={handlePress}
-        loading={loading}
-        disabled={disabled}
-      />
-    </View>
+    <Button
+      title="Continuar con Google"
+      variant="google"
+      icon={<Image source={googleLogo} style={styles.logo} accessible={false} />}
+      onPress={handlePress}
+      loading={loading}
+      disabled={disabled}
+    />
   );
 }
 
 const styles = StyleSheet.create({
-  container: { gap: spacing.md },
-  divider: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
-  line: { flex: 1, height: 1, backgroundColor: colors.border },
-  dividerText: { fontSize: fontSize.sm, color: colors.textSecondary },
-  logo: { width: 20, height: 20 },
+  logo: { width: iconSize.sm, height: iconSize.sm },
 });

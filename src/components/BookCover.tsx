@@ -2,11 +2,13 @@ import { useState } from 'react';
 import { Image, StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
 
 import { radius } from '../theme/spacing';
-import { fontWeight } from '../theme/typography';
+import { fontSize, fontWeight } from '../theme/typography';
 import { getCoverColors, getCoverInitials } from '../utils/bookCover';
 
 // Proporción habitual de una portada (ancho : alto = 2 : 3).
 const ASPECT_RATIO = 2 / 3;
+// Tamaño de las iniciales respecto al ancho de la portada.
+const INITIALS_SCALE = 0.32;
 
 interface BookCoverProps {
   title: string;
@@ -42,7 +44,7 @@ export function BookCover({ title, coverUrl, width, style }: BookCoverProps) {
         />
       ) : (
         <Text
-          style={[styles.initials, { color: colors.foreground, fontSize: width ? width * 0.32 : 28 }]}
+          style={[styles.initials, { color: colors.foreground, fontSize: width ? width * INITIALS_SCALE : fontSize.xl }]}
           adjustsFontSizeToFit
           numberOfLines={1}
         >
@@ -61,5 +63,5 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   image: { width: '100%', height: '100%' },
-  initials: { fontWeight: fontWeight.bold, letterSpacing: 1 },
+  initials: { fontWeight: fontWeight.bold },
 });

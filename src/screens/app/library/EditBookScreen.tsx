@@ -2,7 +2,7 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 
 import { BookForm } from '../../../components/BookForm';
 import { EmptyState } from '../../../components/EmptyState';
-import { LoadingSpinner } from '../../../components/LoadingSpinner';
+import { BookFormSkeleton } from '../../../components/BookSkeletons';
 import { useAuth } from '../../../context/AuthContext';
 import { useBook } from '../../../hooks/useBook';
 import type { AppStackParamList } from '../../../navigation/types';
@@ -15,7 +15,7 @@ export function EditBookScreen({ navigation, route }: Props) {
   const { user } = useAuth();
   const { book, loading, error, retry } = useBook(route.params.bookId);
 
-  if (loading) return <LoadingSpinner />;
+  if (loading) return <BookFormSkeleton />;
 
   if (error && !book) {
     return (
@@ -33,7 +33,6 @@ export function EditBookScreen({ navigation, route }: Props) {
       <EmptyState
         icon="book-outline"
         title="Este libro ya no existe"
-        description="Puede que se haya eliminado."
         action={{ label: 'Volver', onPress: () => navigation.goBack() }}
       />
     );

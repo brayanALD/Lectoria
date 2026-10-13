@@ -102,7 +102,7 @@ export function BookForm({
           <TextField
             ref={authorsRef}
             label="Autor(es) *"
-            hint="Separa varios autores con coma."
+            placeholder="Separa varios con coma"
             value={values.authors}
             onChangeText={setField('authors')}
             error={errors.authors}
@@ -126,7 +126,7 @@ export function BookForm({
           <TextField
             ref={genresRef}
             label="Géneros"
-            hint="Separa varios géneros con coma."
+            placeholder="Separa varios con coma"
             value={values.genres}
             onChangeText={setField('genres')}
             error={errors.genres}

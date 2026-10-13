@@ -40,7 +40,7 @@ export function LoginScreen({ navigation }: Props) {
   };
 
   return (
-    <AuthLayout title="Iniciar sesión" subtitle="Accede a tu biblioteca y a tu progreso de lectura.">
+    <AuthLayout>
       <TextField
         label="Correo electrónico"
         value={email}

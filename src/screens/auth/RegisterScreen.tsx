@@ -77,7 +77,7 @@ export function RegisterScreen({ navigation }: Props) {
   };
 
   return (
-    <AuthLayout title="Crear cuenta" subtitle="Tu biblioteca será privada y solo tuya." scrollRef={scrollRef}>
+    <AuthLayout scrollRef={scrollRef}>
       <TextField
         label="Nombre"
         value={displayName}

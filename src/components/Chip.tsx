@@ -1,8 +1,8 @@
 import { Pressable, StyleSheet, Text } from 'react-native';
 
 import { colors } from '../theme/colors';
-import { radius, spacing } from '../theme/spacing';
-import { fontSize, fontWeight } from '../theme/typography';
+import { minTouchSize, opacity, radius, spacing } from '../theme/spacing';
+import { fontSize, fontWeight, maxFontScale } from '../theme/typography';
 
 interface ChipProps {
   label: string;
@@ -11,20 +11,21 @@ interface ChipProps {
   accessibilityLabel?: string;
 }
 
-const CHIP_HEIGHT = 40;
-
-// Etiqueta pulsable de selección (filtros). Con `hitSlop` el área táctil llega a ≥ 44 pt sin hacerla más alta.
+// Etiqueta pulsable de selección (filtros). La seleccionada se distingue por el fondo relleno, no solo por el color.
 export function Chip({ label, selected, onPress, accessibilityLabel }: ChipProps) {
   return (
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel ?? label}
       accessibilityState={{ selected }}
-      hitSlop={{ top: 2, bottom: 2 }}
       onPress={onPress}
       style={({ pressed }) => [styles.chip, selected ? styles.selected : styles.idle, pressed && styles.pressed]}
     >
-      <Text style={[styles.label, { color: selected ? colors.onPrimary : colors.textPrimary }]} numberOfLines={1}>
+      <Text
+        style={[styles.label, { color: selected ? colors.onPrimary : colors.textPrimary }]}
+        numberOfLines={1}
+        maxFontSizeMultiplier={maxFontScale}
+      >
         {label}
       </Text>
     </Pressable>
@@ -33,16 +34,15 @@ export function Chip({ label, selected, onPress, accessibilityLabel }: ChipProps
 
 const styles = StyleSheet.create({
   chip: {
-    minHeight: CHIP_HEIGHT,
-    maxWidth: 240,
+    minHeight: minTouchSize,
     paddingHorizontal: spacing.md,
     borderRadius: radius.md,
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  idle: { backgroundColor: colors.surface, borderColor: colors.border },
+  idle: { backgroundColor: colors.surface, borderColor: colors.outline },
   selected: { backgroundColor: colors.primary, borderColor: colors.primary },
-  pressed: { opacity: 0.8 },
+  pressed: { opacity: opacity.pressed },
   label: { fontSize: fontSize.sm, fontWeight: fontWeight.semibold },
 });

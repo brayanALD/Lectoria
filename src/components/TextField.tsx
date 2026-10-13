@@ -3,19 +3,17 @@ import { useState, type Ref } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View, type TextInputProps } from 'react-native';
 
 import { colors } from '../theme/colors';
-import { minTouchSize, radius, spacing } from '../theme/spacing';
+import { iconSize, minTouchSize, radius, spacing } from '../theme/spacing';
 import { fontSize, fontWeight } from '../theme/typography';
 
 interface TextFieldProps extends TextInputProps {
   label: string;
   error?: string;
-  /** Texto de ayuda bajo el campo; se oculta mientras haya un error. */
-  hint?: string;
   /** Permite enfocar el campo desde fuera (p. ej. al pulsar «siguiente» en el teclado). */
   ref?: Ref<TextInput>;
 }
 
-export function TextField({ label, error, hint, style, secureTextEntry, ref, ...inputProps }: TextFieldProps) {
+export function TextField({ label, error, style, secureTextEntry, ref, ...inputProps }: TextFieldProps) {
   // Los campos de contraseña (secureTextEntry) incluyen un botón para mostrar u ocultar el texto.
   const [passwordVisible, setPasswordVisible] = useState(false);
   const isPassword = Boolean(secureTextEntry);
@@ -42,7 +40,7 @@ export function TextField({ label, error, hint, style, secureTextEntry, ref, ...
           >
             <Ionicons
               name={passwordVisible ? 'eye-outline' : 'eye-off-outline'}
-              size={22}
+              size={iconSize.md}
               color={colors.textSecondary}
             />
           </Pressable>
@@ -52,8 +50,6 @@ export function TextField({ label, error, hint, style, secureTextEntry, ref, ...
         <Text style={styles.error} accessibilityRole="alert">
           {error}
         </Text>
-      ) : hint ? (
-        <Text style={styles.hint}>{hint}</Text>
       ) : null}
     </View>
   );
@@ -67,7 +63,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     minHeight: minTouchSize,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: colors.outline,
     borderRadius: radius.md,
     backgroundColor: colors.surface,
   },
@@ -86,5 +82,4 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   error: { fontSize: fontSize.sm, color: colors.error },
-  hint: { fontSize: fontSize.sm, color: colors.textSecondary },
 });

@@ -10,18 +10,14 @@ export const palette = {
 // Único color añadido: la paleta no define un color de error (contraste 5,94:1 sobre Porcelain).
 const errorLight = '#B3261E';
 
-// Botón «Continuar con Google»: esquema claro de las directrices de marca de Google. Estos colores NO
-// pertenecen a la paleta de Lectoria; el logo multicolor solo puede ir sobre fondo blanco/neutro y no
-// debe alterarse. https://developers.google.com/identity/branding-guidelines
-export const googleButton = {
-  background: '#FFFFFF',
-  backgroundPressed: '#E6E6E6', // superposición del 12 % de #303030 sobre blanco
-  border: '#747775',
-  text: '#1F1F1F',
-} as const;
+/** Un color de la paleta con transparencia, para no repetir sus valores RGB a mano. */
+function withAlpha(hex: string, alpha: number): string {
+  const value = parseInt(hex.slice(1), 16);
+  return `rgba(${(value >> 16) & 255}, ${(value >> 8) & 255}, ${value & 255}, ${alpha})`;
+}
 
-// Tokens semánticos del tema claro. Mapa de uso: sección 5 de BookTracker_Plan_de_desarrollo.md.
-// Los valores rgba derivan de la paleta (Evergreen 20,40,29 / Hunter Green 53,88,52).
+// Tokens semánticos del tema claro. Mapa de uso y contrastes: sección 5 de BookTracker_Plan_de_desarrollo.md.
+// ÚNICO lugar del código donde se escriben colores: los componentes usan siempre estos tokens.
 export const colors = {
   background: palette.porcelain,
   surface: palette.porcelain,
@@ -31,10 +27,13 @@ export const colors = {
   onPrimary: palette.porcelain,
   accent: palette.softFawn,
   onAccent: palette.evergreen,
-  border: 'rgba(20, 40, 29, 0.12)',
-  overlay: 'rgba(20, 40, 29, 0.5)', // fondo atenuado tras hojas y diálogos
-  pressed: 'rgba(53, 88, 52, 0.85)',
-  disabled: 'rgba(20, 40, 29, 0.38)',
+  /** Separadores y bordes decorativos (no definen un control: contraste bajo a propósito). */
+  border: withAlpha(palette.evergreen, 0.12),
+  /** Borde de controles (campos, buscador, etiquetas): ≥ 3:1 sobre el fondo (WCAG 1.4.11). */
+  outline: palette.oliveBark,
+  /** Fondo atenuado tras hojas y diálogos. */
+  overlay: withAlpha(palette.evergreen, 0.5),
+  pressed: withAlpha(palette.hunterGreen, 0.85),
   success: palette.hunterGreen,
   warning: palette.softFawn,
   error: errorLight,

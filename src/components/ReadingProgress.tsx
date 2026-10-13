@@ -42,5 +42,5 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   fill: { height: '100%', borderRadius: TRACK_HEIGHT / 2, backgroundColor: colors.primary },
-  label: { fontSize: fontSize.sm, color: colors.textSecondary, minWidth: 36, textAlign: 'right' },
+  label: { fontSize: fontSize.sm, color: colors.textSecondary, minWidth: spacing.xl + spacing.xs, textAlign: 'right' },
 });

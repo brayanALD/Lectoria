@@ -2,8 +2,8 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import type { ReadingStatus, UserBookWithId } from '../types/book';
 import { colors } from '../theme/colors';
-import { radius, spacing } from '../theme/spacing';
-import { fontSize, fontWeight } from '../theme/typography';
+import { opacity, radius, spacing } from '../theme/spacing';
+import { fontSize, fontWeight, maxFontScale } from '../theme/typography';
 import { READING_STATUS_LABELS, getProgressPercent } from '../utils/book';
 import { BookCover } from './BookCover';
 import { ReadingProgress } from './ReadingProgress';
@@ -29,9 +29,6 @@ const LIST_COVER_WIDTH = 64;
 export function BookCard({ book, variant = 'list', onPress }: BookCardProps) {
   const isGrid = variant === 'grid';
   const authors = book.authors.join(', ');
-  const series = book.seriesName
-    ? `${book.seriesName}${book.seriesOrder !== undefined ? ` #${book.seriesOrder}` : ''}`
-    : undefined;
   const statusLabel = READING_STATUS_LABELS[book.status];
   const percent = getProgressPercent(book);
   const showProgress = (book.status === 'reading' || book.status === 'paused') && percent !== undefined;
@@ -69,15 +66,11 @@ export function BookCard({ book, variant = 'list', onPress }: BookCardProps) {
             {authors}
           </Text>
         ) : null}
-        {series ? (
-          <Text style={styles.series} numberOfLines={1}>
-            {series}
-          </Text>
-        ) : null}
-
         <View style={styles.badgeRow}>
           <View style={[styles.badge, { backgroundColor: badge.background, borderColor: badge.border }]}>
-            <Text style={[styles.badgeText, { color: badge.foreground }]}>{statusLabel}</Text>
+            <Text style={[styles.badgeText, { color: badge.foreground }]} maxFontSizeMultiplier={maxFontScale}>
+              {statusLabel}
+            </Text>
           </View>
         </View>
 
@@ -97,18 +90,17 @@ const styles = StyleSheet.create({
   },
   cardList: { flexDirection: 'row', gap: spacing.md, alignItems: 'flex-start' },
   cardGrid: { gap: spacing.sm },
-  pressed: { opacity: 0.85 },
+  pressed: { opacity: opacity.pressed },
   infoList: { flex: 1, gap: spacing.xs },
   infoGrid: { gap: spacing.xs },
   title: { fontSize: fontSize.md, fontWeight: fontWeight.semibold, color: colors.textPrimary },
   secondary: { fontSize: fontSize.sm, color: colors.textSecondary },
-  series: { fontSize: fontSize.sm, color: colors.textSecondary, fontStyle: 'italic' },
   badgeRow: { flexDirection: 'row', marginVertical: spacing.xs },
   badge: {
     borderWidth: 1,
     borderRadius: radius.sm,
     paddingHorizontal: spacing.sm,
-    paddingVertical: 2,
+    paddingVertical: spacing.xs,
   },
   badgeText: { fontSize: fontSize.sm, fontWeight: fontWeight.semibold },
 });

@@ -1,6 +1,6 @@
 # Lectoria — Plan de desarrollo de la aplicación móvil
 
-> Estado: **Fase 1 cerrada para Android (2026-10-12)**: Expo SDK 57 + TypeScript, autenticación con correo y Google (con nombre, apodo y vinculación de métodos), navegación condicional, tema, logo e iconos, Firestore en `us-east1` con reglas desplegadas. Verificado en dispositivo: registro, login, sesión persistente, cierre de sesión, perfil `users/{uid}` y vinculación. Siguiente: Fase 2 (biblioteca). Fuera del cierre: iOS (requiere cuenta de Apple Developer), ESLint y tema oscuro.
+> Estado: **Fase 2 (biblioteca) cerrada el 2026-10-13**; siguiente: Fase 3 (ISBN), que requiere decidir antes el proveedor de datos de libros. **Fase 1 cerrada para Android (2026-10-12)**: Expo SDK 57 + TypeScript, autenticación con correo y Google (con nombre, apodo y vinculación de métodos), navegación condicional, tema, logo e iconos, Firestore en `us-east1` con reglas desplegadas. Verificado en dispositivo: registro, login, sesión persistente, cierre de sesión, perfil `users/{uid}` y vinculación. Siguiente: Fase 2 (biblioteca). Fuera del cierre: iOS (requiere cuenta de Apple Developer), ESLint y tema oscuro.
 > Nota de nombre: este archivo conserva el nombre `BookTracker_Plan_de_desarrollo.md` por compatibilidad con referencias existentes. «BookTracker» es el tipo de app; el nombre del producto es **Lectoria**.
 
 Leyenda de estado usada en todo el documento:
@@ -122,12 +122,21 @@ Paleta oficial (archivo original copiado a `docs/palette-original.txt`). **No se
 | `onPrimary` | Porcelain | Texto/icono sobre `primary` |
 | `accent` | Soft Fawn | Resaltados, rachas, logros, insignias, fondos suaves |
 | `onAccent` | Evergreen | Texto sobre `accent` |
-| `border` | Evergreen al 12 % de opacidad | Bordes y divisores |
-| `pressed` | `primary` al 85 % de opacidad | Estado presionado |
-| `disabled` | `textPrimary` al 38 % de opacidad | Elementos deshabilitados |
+| `border` | Evergreen al 12 % de opacidad | Divisores y bordes **decorativos** (tarjetas, barra de progreso, siluetas de carga); contraste bajo a propósito |
+| `outline` | Olive Bark | Borde de **controles** (campos, buscador, etiquetas, botón de Google): 5,43:1 sobre Porcelain, cumple el 3:1 de WCAG 1.4.11 |
+| `overlay` | Evergreen al 50 % | Fondo atenuado tras hojas modales |
+| `pressed` | `primary` al 85 % de opacidad | Estado presionado del botón primario; el resto de controles bajan su opacidad (`opacity.pressed`) |
+| (deshabilitado) | opacidad `opacity.disabled` (0,5) | Elementos deshabilitados; no hay un color propio |
 | `success` | Hunter Green | Confirmaciones, objetivo cumplido |
 | `warning` | Soft Fawn | Avisos |
 | `error` | **#B3261E** (complementario) | Errores y acciones destructivas |
+
+**Principios de diseño [Confirmado, 2026-10-13]**, obligatorios en código nuevo y existente (detalle y reglas en `CLAUDE.md`):
+
+1. **Skeletons de carga:** siluetas con la forma del contenido final en lugar de pantallas en blanco o spinners de pantalla completa.
+2. **Ley de Hick:** una acción principal por pantalla; sin títulos, subtítulos ni párrafos de ayuda superfluos.
+3. **Design tokens estrictos:** ningún color ni valor de diseño escrito fuera de `src/theme/`; una prueba automática lo vigila.
+4. **Accesibilidad:** contraste de texto ≥ 4,5:1 y de controles ≥ 3:1, zonas táctiles ≥ 48 pt, roles y nombres accesibles, «reducir movimiento» y escalado de texto.
 
 **Tema oscuro** [Pendiente: decidir si entra en 1.0]: `background` = Evergreen, `textPrimary` = Porcelain, `accent` = Soft Fawn, `primary` sería un tono más claro que Hunter Green (no definido en la paleta; Hunter Green sobre Evergreen tiene contraste 1,92:1 y no sirve como texto/botón). `error` oscuro propuesto: `#F0A19B`.
 
@@ -329,7 +338,7 @@ Convenciones [Recomendado]: código e identificadores en inglés; textos de inte
 | Fase | Contenido | Versión |
 |---|---|---|
 | 1. Preparar — **cerrada** (2026-10-12, Android) | Fijar versiones (Expo, RN, React Navigation) leyendo su documentación; scaffold TypeScript; Firebase y `.env`; tema; `AuthContext`; navegación condicional; reglas iniciales con validación | 1.0 |
-| 2. Biblioteca — **en curso**: modelo `UserBook`, validación del formulario y `booksService` (crear, escuchar, editar, cambiar estado, eliminar) `useBooks`, `BookCover`, `ReadingProgress` y `BookCard` y la pantalla de Biblioteca (cargando, error, vacío, lista y cuadrícula) hechos (2026-10-13; la parte visual aún sin ver en dispositivo). y el formulario «Añadir libro» (modo manual) hechos (2026-10-13; la parte visual aún sin ver en dispositivo). el detalle del libro (ver, editar, cambiar estado y eliminar) y `BookFilters` (búsqueda de texto y filtros por estado, género, autor y saga) hechos (2026-10-13). **Fase 2 implementada; pendiente de validar en dispositivo** | `UserBook`; CRUD; `BookCard`, `BookCover`, `BookFilters`; búsqueda, filtros, estados de carga/error/vacío | 1.0 |
+| 2. Biblioteca — **en curso**: modelo `UserBook`, validación del formulario y `booksService` (crear, escuchar, editar, cambiar estado, eliminar) `useBooks`, `BookCover`, `ReadingProgress` y `BookCard` y la pantalla de Biblioteca (cargando, error, vacío, lista y cuadrícula) hechos (2026-10-13; la parte visual aún sin ver en dispositivo). y el formulario «Añadir libro» (modo manual) hechos (2026-10-13; la parte visual aún sin ver en dispositivo). el detalle del libro (ver, editar, cambiar estado y eliminar) y `BookFilters` (búsqueda de texto y filtros por estado, género, autor y saga) hechos (2026-10-13). **Fase 2 cerrada (2026-10-13)** | `UserBook`; CRUD; `BookCard`, `BookCover`, `BookFilters`; búsqueda, filtros, estados de carga/error/vacío | 1.0 |
 | 3. ISBN | Servicio de catálogo; formulario manual; escáner; duplicados y errores | 1.0 |
 | 4. Sesiones | Formulario de sesión; progreso; calendario y rachas | 1.0 |
 | 5. Estadísticas | Resúmenes diarios/mensuales; objetivos; pruebas de fechas y casos límite | 1.0 |

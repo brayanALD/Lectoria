@@ -8,11 +8,11 @@ import { BookCard } from '../../../components/BookCard';
 import { BookFilters } from '../../../components/BookFilters';
 import { Button } from '../../../components/Button';
 import { EmptyState } from '../../../components/EmptyState';
-import { LoadingSpinner } from '../../../components/LoadingSpinner';
+import { LibrarySkeleton } from '../../../components/BookSkeletons';
 import { useBooks } from '../../../hooks/useBooks';
 import type { AppStackParamList } from '../../../navigation/types';
 import { colors } from '../../../theme/colors';
-import { minTouchSize, radius, spacing } from '../../../theme/spacing';
+import { iconSize, minTouchSize, opacity, radius, spacing } from '../../../theme/spacing';
 import { fontSize, fontWeight } from '../../../theme/typography';
 import { formatFilteredBookCount } from '../../../utils/book';
 import { EMPTY_FILTERS, filterBooks, getFilterOptions, type BookFilterState } from '../../../utils/bookFilters';
@@ -42,14 +42,14 @@ export function LibraryScreen() {
           hitSlop={spacing.sm}
           style={({ pressed }) => [styles.headerButton, pressed && styles.pressed]}
         >
-          <Ionicons name="add" size={28} color={colors.primary} />
+          <Ionicons name="add" size={iconSize.lg} color={colors.primary} />
         </Pressable>
       ),
     });
     // openAddBook solo depende de `navigation`, que es estable.
   }, [navigation]);
 
-  if (loading) return <LoadingSpinner />;
+  if (loading) return <LibrarySkeleton grid={mode === 'grid'} />;
 
   // Error sin datos que mostrar: pantalla completa. Con datos previos se muestra la lista y un aviso.
   if (error && books.length === 0) {
@@ -68,7 +68,6 @@ export function LibraryScreen() {
       <EmptyState
         icon="library-outline"
         title="Tu biblioteca está vacía"
-        description="Añade tu primer libro para empezar a seguir tus lecturas."
         action={{ label: 'Añadir libro', onPress: openAddBook }}
       />
     );
@@ -97,7 +96,7 @@ export function LibraryScreen() {
           onPress={() => setMode(isGrid ? 'list' : 'grid')}
           style={({ pressed }) => [styles.toggle, pressed && styles.pressed]}
         >
-          <Ionicons name={isGrid ? 'list-outline' : 'grid-outline'} size={24} color={colors.primary} />
+          <Ionicons name={isGrid ? 'list-outline' : 'grid-outline'} size={iconSize.md} color={colors.primary} />
         </Pressable>
       </View>
 
@@ -116,7 +115,6 @@ export function LibraryScreen() {
           <EmptyState
             icon="search-outline"
             title="Ningún libro coincide"
-            description="Prueba con otra búsqueda o quita algún filtro."
             action={{ label: 'Limpiar búsqueda y filtros', onPress: () => setFilters(EMPTY_FILTERS) }}
           />
         }
@@ -159,7 +157,7 @@ const styles = StyleSheet.create({
   },
   count: { fontSize: fontSize.sm, fontWeight: fontWeight.semibold, color: colors.textSecondary },
   toggle: { width: minTouchSize, height: minTouchSize, alignItems: 'center', justifyContent: 'center' },
-  pressed: { opacity: 0.6 },
+  pressed: { opacity: opacity.pressed },
   headerButton: { width: minTouchSize, height: minTouchSize, alignItems: 'center', justifyContent: 'center' },
   listContent: { padding: spacing.lg, paddingTop: spacing.sm, paddingBottom: spacing.xl * 2 },
   growContent: { flexGrow: 1 },
