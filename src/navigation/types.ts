@@ -6,6 +6,7 @@ export type AuthStackParamList = {
 // Las pantallas secundarias (detalle de libro, formularios, ajustes) se añadirán aquí.
 export type AppStackParamList = {
   Tabs: undefined;
+  AddBook: undefined;
 };
 
 export type TabParamList = {

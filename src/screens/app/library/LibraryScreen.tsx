@@ -1,5 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useState } from 'react';
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { useLayoutEffect, useState } from 'react';
 import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { BookCard } from '../../../components/BookCard';
@@ -7,6 +9,7 @@ import { Button } from '../../../components/Button';
 import { EmptyState } from '../../../components/EmptyState';
 import { LoadingSpinner } from '../../../components/LoadingSpinner';
 import { useBooks } from '../../../hooks/useBooks';
+import type { AppStackParamList } from '../../../navigation/types';
 import { colors } from '../../../theme/colors';
 import { minTouchSize, radius, spacing } from '../../../theme/spacing';
 import { fontSize, fontWeight } from '../../../theme/typography';
@@ -19,6 +22,27 @@ const GRID_COLUMNS = 2;
 export function LibraryScreen() {
   const { books, loading, error, retry } = useBooks();
   const [mode, setMode] = useState<ViewMode>('list');
+  // Desde una pestaña, navigate sube hasta el stack que contiene «AddBook».
+  const navigation = useNavigation<NativeStackNavigationProp<AppStackParamList>>();
+  const openAddBook = () => navigation.navigate('AddBook');
+
+  // Botón «Añadir» en el encabezado: visible también mientras carga, en error o con la biblioteca vacía.
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerRight: () => (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Añadir libro"
+          onPress={openAddBook}
+          hitSlop={spacing.sm}
+          style={({ pressed }) => [styles.headerButton, pressed && styles.pressed]}
+        >
+          <Ionicons name="add" size={28} color={colors.primary} />
+        </Pressable>
+      ),
+    });
+    // openAddBook solo depende de `navigation`, que es estable.
+  }, [navigation]);
 
   if (loading) return <LoadingSpinner />;
 
@@ -39,7 +63,8 @@ export function LibraryScreen() {
       <EmptyState
         icon="library-outline"
         title="Tu biblioteca está vacía"
-        description="Cuando añadas libros aparecerán aquí."
+        description="Añade tu primer libro para empezar a seguir tus lecturas."
+        action={{ label: 'Añadir libro', onPress: openAddBook }}
       />
     );
   }
@@ -114,6 +139,7 @@ const styles = StyleSheet.create({
   count: { fontSize: fontSize.sm, fontWeight: fontWeight.semibold, color: colors.textSecondary },
   toggle: { width: minTouchSize, height: minTouchSize, alignItems: 'center', justifyContent: 'center' },
   pressed: { opacity: 0.6 },
+  headerButton: { width: minTouchSize, height: minTouchSize, alignItems: 'center', justifyContent: 'center' },
   listContent: { padding: spacing.lg, paddingTop: spacing.sm, paddingBottom: spacing.xl * 2 },
   separator: { height: spacing.md },
   gridRow: { gap: spacing.md, marginBottom: spacing.md },

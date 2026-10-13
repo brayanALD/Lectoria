@@ -10,6 +10,10 @@ describe('getFirestoreErrorMessage', () => {
     },
   );
 
+  it('explica qué hacer cuando el servidor no responde a tiempo', () => {
+    expect(getFirestoreErrorMessage({ code: 'lectoria/timeout' })).toMatch(/ya aparece en tu biblioteca/);
+  });
+
   it('orienta al usuario cuando no hay conexión', () => {
     expect(getFirestoreErrorMessage({ code: 'unavailable' })).toMatch(/conexión/);
   });

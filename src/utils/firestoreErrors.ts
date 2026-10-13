@@ -6,6 +6,8 @@ const MESSAGES: Record<string, string> = {
   'resource-exhausted': 'Se alcanzó el límite de uso del servicio. Inténtalo de nuevo más tarde.',
   'not-found': 'No se encontró el elemento. Puede que ya se haya eliminado.',
   'already-exists': 'Ese elemento ya existe.',
+  'lectoria/timeout':
+    'No hay respuesta del servidor. Revisa tu conexión. Si lo que intentabas guardar ya aparece en tu biblioteca, se guardó correctamente.',
 };
 
 const FALLBACK = 'No se pudo completar la operación. Inténtalo de nuevo.';
