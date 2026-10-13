@@ -9,7 +9,8 @@ interface ButtonProps {
   title: string;
   onPress: () => void;
   /** `google` sigue las directrices de marca de Google (solo para «Continuar con Google»). */
-  variant?: 'primary' | 'secondary' | 'google';
+  /** `danger` es para acciones destructivas (p. ej. eliminar). */
+  variant?: 'primary' | 'secondary' | 'google' | 'danger';
   /** Elemento decorativo a la izquierda del texto (p. ej. un logo). */
   icon?: ReactNode;
   loading?: boolean;
@@ -27,7 +28,14 @@ export function Button({
   const inactive = disabled || loading;
   const isPrimary = variant === 'primary';
   const isGoogle = variant === 'google';
-  const contentColor = isPrimary ? colors.onPrimary : isGoogle ? googleButton.text : colors.primary;
+  const isDanger = variant === 'danger';
+  const contentColor = isPrimary
+    ? colors.onPrimary
+    : isGoogle
+      ? googleButton.text
+      : isDanger
+        ? colors.error
+        : colors.primary;
 
   return (
     <Pressable
@@ -38,7 +46,7 @@ export function Button({
       onPress={onPress}
       style={({ pressed }) => [
         styles.base,
-        isPrimary ? styles.primary : isGoogle ? styles.google : styles.secondary,
+        isPrimary ? styles.primary : isGoogle ? styles.google : isDanger ? styles.danger : styles.secondary,
         pressed && isPrimary && { backgroundColor: colors.pressed },
         pressed && isGoogle && { backgroundColor: googleButton.backgroundPressed },
         disabled && !loading && styles.disabled,
@@ -66,6 +74,7 @@ const styles = StyleSheet.create({
   },
   primary: { backgroundColor: colors.primary },
   secondary: { backgroundColor: 'transparent', borderWidth: 1, borderColor: colors.primary },
+  danger: { backgroundColor: 'transparent', borderWidth: 1, borderColor: colors.error },
   google: { backgroundColor: googleButton.background, borderWidth: 1, borderColor: googleButton.border },
   disabled: { opacity: 0.5 },
   content: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm + spacing.xs },

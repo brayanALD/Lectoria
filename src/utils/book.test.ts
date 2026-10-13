@@ -4,6 +4,7 @@ import {
   MAX_AUTHORS,
   MAX_PAGE_COUNT,
   MAX_TITLE_LENGTH,
+  bookToFormValues,
   formatBookCount,
   getProgressAfterPageCountChange,
   getProgressPercent,
@@ -244,5 +245,57 @@ describe('formatBookCount', () => {
     expect(formatBookCount(0)).toBe('0 libros');
     expect(formatBookCount(2)).toBe('2 libros');
     expect(formatBookCount(120)).toBe('120 libros');
+  });
+});
+
+describe('bookToFormValues', () => {
+  it('convierte un libro completo en texto de formulario', () => {
+    expect(
+      bookToFormValues({
+        title: 'Dune',
+        authors: ['Frank Herbert', 'Brian Herbert'],
+        pageCount: 412,
+        genres: ['Ciencia ficción', 'Aventura'],
+        seriesName: 'Dune Chronicles',
+        seriesOrder: 1,
+        status: 'reading',
+      }),
+    ).toEqual({
+      title: 'Dune',
+      authors: 'Frank Herbert, Brian Herbert',
+      pageCount: '412',
+      genres: 'Ciencia ficción, Aventura',
+      seriesName: 'Dune Chronicles',
+      seriesOrder: '1',
+      status: 'reading',
+    });
+  });
+
+  it('deja vacíos los campos opcionales ausentes', () => {
+    expect(bookToFormValues({ title: 'Dune', authors: ['Frank Herbert'], status: 'want_to_read' })).toEqual({
+      ...EMPTY_BOOK_FORM,
+      title: 'Dune',
+      authors: 'Frank Herbert',
+    });
+  });
+
+  it('conserva el orden 0 de la saga (no lo confunde con «sin valor»)', () => {
+    expect(bookToFormValues({ title: 'A', authors: ['B'], status: 'paused', seriesName: 'S', seriesOrder: 0 }).seriesOrder).toBe('0');
+  });
+
+  it('es la inversa de parseBookForm: editar sin cambios devuelve los mismos datos', () => {
+    const original = parseBookForm({
+      ...EMPTY_BOOK_FORM,
+      title: 'El nombre del viento',
+      authors: 'Patrick Rothfuss',
+      pageCount: '662',
+      genres: 'Fantasía, Aventura',
+      seriesName: 'Crónica del asesino de reyes',
+      seriesOrder: '1',
+      status: 'reading',
+    });
+    if (!original.ok) throw new Error('formulario inválido');
+    const book = { ...original.data, status: original.data.status };
+    expect(parseBookForm(bookToFormValues(book))).toEqual(original);
   });
 });

@@ -4,6 +4,7 @@ import type {
   BookFormValues,
   NewBookFields,
   ReadingStatus,
+  UserBook,
 } from '../types/book';
 
 // Límites alineados con firestore.rules (validBook). Los de cada elemento de las listas
@@ -200,4 +201,20 @@ export function getProgressPercent(book: Pick<BookProgressState, 'currentPage' |
 /** «1 libro», «5 libros». */
 export function formatBookCount(count: number): string {
   return `${count} ${count === 1 ? 'libro' : 'libros'}`;
+}
+
+/** Convierte un libro guardado en los valores del formulario, para editarlo. */
+export function bookToFormValues(
+  book: Pick<UserBook, 'title' | 'authors' | 'status'> &
+    Partial<Pick<UserBook, 'pageCount' | 'genres' | 'seriesName' | 'seriesOrder'>>,
+): BookFormValues {
+  return {
+    title: book.title,
+    authors: book.authors.join(', '),
+    pageCount: book.pageCount !== undefined ? String(book.pageCount) : '',
+    genres: (book.genres ?? []).join(', '),
+    seriesName: book.seriesName ?? '',
+    seriesOrder: book.seriesOrder !== undefined ? String(book.seriesOrder) : '',
+    status: book.status,
+  };
 }

@@ -105,7 +105,11 @@ export function LibraryScreen() {
         ItemSeparatorComponent={isGrid ? undefined : ListSeparator}
         renderItem={({ item }) => (
           <View style={isGrid ? styles.gridCell : undefined}>
-            <BookCard book={item} variant={isGrid ? 'grid' : 'list'} />
+            <BookCard
+              book={item}
+              variant={isGrid ? 'grid' : 'list'}
+              onPress={(book) => navigation.navigate('BookDetail', { bookId: book.id })}
+            />
           </View>
         )}
       />

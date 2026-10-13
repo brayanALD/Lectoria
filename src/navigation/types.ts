@@ -7,6 +7,8 @@ export type AuthStackParamList = {
 export type AppStackParamList = {
   Tabs: undefined;
   AddBook: undefined;
+  BookDetail: { bookId: string };
+  EditBook: { bookId: string };
 };
 
 export type TabParamList = {
