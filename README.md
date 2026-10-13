@@ -2,7 +2,7 @@
 
 Aplicación móvil para seguir tus lecturas: organiza tu biblioteca, registra cuánto lees y mantén el hábito. El nombre une *lectura* y *trayectoria*.
 
-> **Estado:** en desarrollo. Fases 1 y 2 cerradas; siguiente, la Fase 3 (añadir libros por ISBN). Probada en Android; iOS pendiente.
+> **Estado:** en desarrollo. Fases 1, 2 y 3 cerradas; siguiente, la Fase 4 (sesiones de lectura, calendario y rachas). Probada en Android; iOS pendiente.
 
 ## Fases de desarrollo
 
@@ -10,7 +10,7 @@ Aplicación móvil para seguir tus lecturas: organiza tu biblioteca, registra cu
 |---|---|---|
 | 1. Preparar | Proyecto, autenticación (correo y Google), navegación, tema, reglas de Firestore | Cerrada (Android) |
 | 2. Biblioteca | Libros: añadir, editar, eliminar, estados de lectura, búsqueda y filtros | Cerrada |
-| 3. ISBN | Añadir libros escaneando el código de barras | Pendiente |
+| 3. ISBN | Añadir libros por ISBN: escribiéndolo o escaneando el código de barras | Cerrada |
 | 4. Sesiones | Registro de sesiones de lectura, progreso, calendario y rachas | Pendiente |
 | 5. Estadísticas | Resúmenes y objetivos de lectura | Pendiente |
 | 6. Experiencia lectora | Lista de deseos, notas y reseñas, sagas, autores, colecciones, logros | Pendiente |
@@ -22,12 +22,13 @@ El plan completo (alcance, modelo de datos, decisiones y pendientes) está en [`
 
 - **Cuenta:** registrarse con correo (nombre y apodo opcional) o con Google, iniciar y cerrar sesión, mantener la sesión al reabrir y vincular ambos métodos de acceso desde «Mi espacio».
 - **Biblioteca:** añadir libros a mano, ver la lista en tiempo real (en lista o cuadrícula), cambiar su estado de lectura (Quiero leerlo, Leyendo, En pausa, Terminado, Abandonado), editarlos y eliminarlos.
+- **Añadir por ISBN:** escribir el ISBN (10 o 13 dígitos, con o sin guiones) o escanear el código de barras con la cámara; los datos del libro (título, autores, páginas y portada) se completan desde [Open Library](https://openlibrary.org) y se pueden corregir antes de guardar. Avisa si el libro ya está en tu biblioteca. El campo «Saga» sugiere las sagas que ya tienes registradas mientras escribes.
 - **Búsqueda y filtros:** búsqueda de texto sin distinguir tildes ni mayúsculas, y filtros combinables por estado, género, autor y saga.
 - **Datos privados:** cada persona solo accede a su propia biblioteca (reglas de Firestore con validación de campos).
 
 ## Tecnología
 
-Expo SDK 57 · React Native 0.86 · TypeScript · React Navigation · Firebase (Authentication y Firestore) · Jest.
+Expo SDK 57 · React Native 0.86 · TypeScript · React Navigation · Firebase (Authentication y Firestore) · expo-camera · Open Library (catálogo de libros, sin clave) · Jest.
 
 ## Primeros pasos
 
@@ -44,7 +45,7 @@ npm install
 cp .env.example .env     # y completa los valores de tu proyecto de Firebase
 ```
 
-Las variables (`EXPO_PUBLIC_FIREBASE_*` y `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID`) se describen en `.env.example`. El archivo `.env` no se versiona.
+Las variables (`EXPO_PUBLIC_FIREBASE_*`, `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID` y, opcionalmente, `EXPO_PUBLIC_OPENLIBRARY_CONTACT`) se describen en `.env.example`. El archivo `.env` no se versiona.
 
 ### Ejecutar
 
@@ -52,7 +53,7 @@ Las variables (`EXPO_PUBLIC_FIREBASE_*` y `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID`) se
 npx expo start
 ```
 
-El acceso con **Google** usa código nativo y **no funciona en Expo Go**: requiere una *development build* de EAS. Para generarla, coloca tu `google-services.json` en la raíz (no se versiona) y ejecuta `npx eas-cli build --profile development --platform android`. En EAS Build el archivo se entrega mediante la variable de entorno de tipo archivo `GOOGLE_SERVICES_JSON`. Después, `npx expo start` abre la app en esa build.
+El escáner de código de barras funciona también en Expo Go. El acceso con **Google** usa código nativo y **no funciona en Expo Go**: requiere una *development build* de EAS. Para generarla, coloca tu `google-services.json` en la raíz (no se versiona) y ejecuta `npx eas-cli build --profile development --platform android`. En EAS Build el archivo se entrega mediante la variable de entorno de tipo archivo `GOOGLE_SERVICES_JSON`. Después, `npx expo start` abre la app en esa build.
 
 ### Firebase
 
@@ -80,7 +81,7 @@ src/
 ├── hooks/        Acceso a datos desde las pantallas
 ├── navigation/   Pila de autenticación, pila de la app y pestañas
 ├── screens/      Pantallas (auth y app: home, library, calendar, statistics, profile)
-├── services/     Único acceso a Firebase
+├── services/     Único acceso a Firebase y al catálogo de libros
 ├── theme/        Tokens de diseño (colores, espaciado, tipografía)
 ├── types/        Modelos de TypeScript
 └── utils/        Lógica pura y probada (validación, filtros, estados de lectura)
