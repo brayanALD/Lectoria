@@ -196,3 +196,8 @@ export function getProgressPercent(book: Pick<BookProgressState, 'currentPage' |
   const percent = Math.round((book.currentPage / book.pageCount) * 100);
   return Math.min(100, Math.max(0, percent));
 }
+
+/** «1 libro», «5 libros». */
+export function formatBookCount(count: number): string {
+  return `${count} ${count === 1 ? 'libro' : 'libros'}`;
+}

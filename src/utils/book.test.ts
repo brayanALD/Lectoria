@@ -4,6 +4,7 @@ import {
   MAX_AUTHORS,
   MAX_PAGE_COUNT,
   MAX_TITLE_LENGTH,
+  formatBookCount,
   getProgressAfterPageCountChange,
   getProgressPercent,
   planStatusChange,
@@ -234,5 +235,14 @@ describe('getProgressPercent', () => {
   it('devuelve undefined si no se conoce el total de páginas', () => {
     expect(getProgressPercent({ currentPage: 50 })).toBeUndefined();
     expect(getProgressPercent({ currentPage: 50, pageCount: 0 })).toBeUndefined();
+  });
+});
+
+describe('formatBookCount', () => {
+  it('usa el singular solo para uno', () => {
+    expect(formatBookCount(1)).toBe('1 libro');
+    expect(formatBookCount(0)).toBe('0 libros');
+    expect(formatBookCount(2)).toBe('2 libros');
+    expect(formatBookCount(120)).toBe('120 libros');
   });
 });
