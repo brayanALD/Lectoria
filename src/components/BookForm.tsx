@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { KeyboardAvoidingView, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { useWindowTop } from '../hooks/useWindowTop';
@@ -28,6 +28,10 @@ interface BookFormProps {
   showStatus?: boolean;
   /** Busca los datos de un ISBN en el catálogo. Si se indica, aparece el botón «Buscar por ISBN». */
   onLookup?: (isbn13: string) => Promise<CatalogBook | null>;
+  /** Abre el escáner de código de barras. Si se indica, el campo ISBN muestra el botón de cámara. */
+  onScan?: () => void;
+  /** Un ISBN ya validado (p. ej. escaneado) que se escribe y busca al recibirlo. `id` distingue lecturas repetidas. */
+  lookupRequest?: { isbn13: string; id: number };
   /**
    * Se consulta antes de guardar (p. ej. para avisar de un libro duplicado). Con `false` no se guarda y el
    * formulario sigue abierto. Se ejecuta fuera del tiempo máximo de guardado: la persona puede tardar en decidir.
@@ -45,6 +49,8 @@ export function BookForm({
   submitLabel,
   showStatus = true,
   onLookup,
+  onScan,
+  lookupRequest,
   confirm,
   onSubmit,
   onSaved,
@@ -72,18 +78,12 @@ export function BookForm({
 
   // Rellena título, autores, páginas y portada con los datos del catálogo. Es una acción explícita, así que
   // sustituye lo que hubiera escrito en esos campos.
-  const handleLookup = async () => {
+  const runLookup = async (isbn13: string) => {
     if (!onLookup || looking) return;
-    const parsed = parseIsbn(values.isbn13);
-    if (!parsed.ok) {
-      setErrors((current) => ({ ...current, isbn13: getIsbnErrorMessage(parsed.reason) }));
-      return;
-    }
-
     setErrors((current) => ({ ...current, isbn13: undefined }));
     setLooking(true);
     try {
-      const book = await onLookup(parsed.isbn13);
+      const book = await onLookup(isbn13);
       if (!book) {
         setErrors((current) => ({ ...current, isbn13: ISBN_NOT_FOUND_MESSAGE }));
         return;
@@ -103,6 +103,26 @@ export function BookForm({
       setLooking(false);
     }
   };
+
+  // Botón «Buscar por ISBN»: valida lo escrito y consulta el catálogo.
+  const handleLookup = () => {
+    const parsed = parseIsbn(values.isbn13);
+    if (!parsed.ok) {
+      setErrors((current) => ({ ...current, isbn13: getIsbnErrorMessage(parsed.reason) }));
+      return;
+    }
+    runLookup(parsed.isbn13);
+  };
+
+  // Un ISBN recién escaneado se escribe en el campo y se busca solo, una vez por lectura (por `id`).
+  const handledRequest = useRef<number | undefined>(undefined);
+  useEffect(() => {
+    if (!lookupRequest || handledRequest.current === lookupRequest.id) return;
+    handledRequest.current = lookupRequest.id;
+    setValues((current) => ({ ...current, isbn13: lookupRequest.isbn13 }));
+    runLookup(lookupRequest.isbn13);
+    // Solo debe reaccionar a una petición nueva, no a los cambios de `looking` ni de `onLookup`.
+  }, [lookupRequest?.id]);
 
   const handleSubmit = async () => {
     if (saving) return;
@@ -149,6 +169,7 @@ export function BookForm({
             autoCapitalize="characters"
             autoCorrect={false}
             maxLength={ISBN_INPUT_MAX_LENGTH}
+            action={onScan ? { icon: 'camera-outline', label: 'Escanear código de barras', onPress: onScan } : undefined}
             returnKeyType={onLookup ? 'search' : 'next'}
             submitBehavior="submit"
             onSubmitEditing={onLookup ? handleLookup : () => titleRef.current?.focus()}

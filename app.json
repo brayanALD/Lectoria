@@ -38,6 +38,14 @@
           "imageWidth": 280,
           "backgroundColor": "#F1F5F2"
         }
+      ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Lectoria usa la cámara solo para escanear el código de barras de tus libros.",
+          "microphonePermission": false,
+          "recordAudioAndroid": false
+        }
       ]
     ],
     "extra": {

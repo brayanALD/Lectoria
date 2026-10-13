@@ -54,3 +54,13 @@ const MESSAGES: Record<'empty' | 'format' | 'checksum', string> = {
 export function getIsbnErrorMessage(reason: 'empty' | 'format' | 'checksum'): string {
   return MESSAGES[reason];
 }
+
+/**
+ * Qué decir cuando el escáner lee un código que no es un ISBN utilizable.
+ * `format`: no es de un libro (p. ej. un producto); `checksum`: lectura defectuosa, conviene reintentar.
+ */
+export function getScanFeedback(reason: 'empty' | 'format' | 'checksum'): string | null {
+  if (reason === 'format') return 'Ese código no es de un libro.';
+  if (reason === 'checksum') return 'No se leyó bien. Prueba de nuevo.';
+  return null;
+}

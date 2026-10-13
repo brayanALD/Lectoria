@@ -6,7 +6,9 @@ export type AuthStackParamList = {
 // Las pantallas secundarias (detalle de libro, formularios, ajustes) se añadirán aquí.
 export type AppStackParamList = {
   Tabs: undefined;
-  AddBook: undefined;
+  /** `scannedIsbn`: ISBN-13 devuelto por el escáner; el formulario lo busca al recibirlo. */
+  AddBook: { scannedIsbn?: string } | undefined;
+  ScanBook: undefined;
   BookDetail: { bookId: string };
   EditBook: { bookId: string };
 };

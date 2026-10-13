@@ -1,4 +1,5 @@
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { useEffect, useState } from 'react';
 import { Alert } from 'react-native';
 
 import { BookForm } from '../../../components/BookForm';
@@ -26,14 +27,26 @@ function confirmDuplicate(title: string): Promise<boolean> {
   });
 }
 
-export function AddBookScreen({ navigation }: Props) {
+export function AddBookScreen({ navigation, route }: Props) {
   const { user } = useAuth();
   const { books } = useBooks();
+
+  // El escáner devuelve el ISBN como parámetro. Se convierte en una petición con identificador y se borra el
+  // parámetro, para que escanear el mismo libro otra vez vuelva a disparar la búsqueda.
+  const [scan, setScan] = useState<{ isbn13: string; id: number }>();
+  const scannedIsbn = route.params?.scannedIsbn;
+  useEffect(() => {
+    if (!scannedIsbn) return;
+    setScan({ isbn13: scannedIsbn, id: Date.now() });
+    navigation.setParams({ scannedIsbn: undefined });
+  }, [scannedIsbn, navigation]);
 
   return (
     <BookForm
       submitLabel="Guardar libro"
       onLookup={(isbn13) => findBookByIsbn(isbn13)}
+      onScan={() => navigation.navigate('ScanBook')}
+      lookupRequest={scan}
       confirm={async (fields) => {
         const duplicate = findDuplicateBook(books, fields);
         return duplicate ? confirmDuplicate(duplicate.title) : true;

@@ -9,11 +9,13 @@ import { fontSize, fontWeight } from '../theme/typography';
 interface TextFieldProps extends TextInputProps {
   label: string;
   error?: string;
+  /** Botón de icono dentro del campo, a la derecha (p. ej. la cámara para escanear). No se combina con contraseña. */
+  action?: { icon: keyof typeof Ionicons.glyphMap; label: string; onPress: () => void };
   /** Permite enfocar el campo desde fuera (p. ej. al pulsar «siguiente» en el teclado). */
   ref?: Ref<TextInput>;
 }
 
-export function TextField({ label, error, style, secureTextEntry, ref, ...inputProps }: TextFieldProps) {
+export function TextField({ label, error, action, style, secureTextEntry, ref, ...inputProps }: TextFieldProps) {
   // Los campos de contraseña (secureTextEntry) incluyen un botón para mostrar u ocultar el texto.
   const [passwordVisible, setPasswordVisible] = useState(false);
   const isPassword = Boolean(secureTextEntry);
@@ -43,6 +45,15 @@ export function TextField({ label, error, style, secureTextEntry, ref, ...inputP
               size={iconSize.md}
               color={colors.textSecondary}
             />
+          </Pressable>
+        ) : action ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={action.label}
+            onPress={action.onPress}
+            style={styles.toggle}
+          >
+            <Ionicons name={action.icon} size={iconSize.md} color={colors.primary} />
           </Pressable>
         ) : null}
       </View>

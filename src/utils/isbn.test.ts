@@ -1,4 +1,4 @@
-import { getIsbnErrorMessage, isValidIsbn10, isValidIsbn13, normalizeIsbn, parseIsbn, toIsbn13 } from './isbn';
+import { getIsbnErrorMessage, getScanFeedback, isValidIsbn10, isValidIsbn13, normalizeIsbn, parseIsbn, toIsbn13 } from './isbn';
 
 describe('normalizeIsbn', () => {
   it('quita guiones y espacios y pasa a mayúsculas', () => {
@@ -74,5 +74,25 @@ describe('parseIsbn', () => {
 
   it('cada motivo de error tiene un mensaje', () => {
     for (const reason of ['empty', 'format', 'checksum'] as const) expect(getIsbnErrorMessage(reason)).toBeTruthy();
+  });
+});
+
+describe('getScanFeedback', () => {
+  it('avisa cuando el código no es de un libro', () => {
+    expect(getScanFeedback('format')).toMatch(/no es de un libro/);
+  });
+
+  it('pide reintentar cuando la lectura es defectuosa', () => {
+    expect(getScanFeedback('checksum')).toMatch(/Prueba de nuevo/);
+  });
+
+  it('no dice nada ante una lectura vacía', () => {
+    expect(getScanFeedback('empty')).toBeNull();
+  });
+
+  it('con un EAN-13 de un producto que no es libro, parseIsbn y el aviso coinciden', () => {
+    const result = parseIsbn('4006381333931');
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(getScanFeedback(result.reason)).toMatch(/no es de un libro/);
   });
 });
