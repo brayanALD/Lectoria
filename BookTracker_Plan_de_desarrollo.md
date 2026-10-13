@@ -100,7 +100,7 @@ Patrones de UI (plantilla): lista + card reutilizable + detalle por id; filtros 
 
 ## 5. Sistema visual y paleta
 
-Paleta oficial (archivo original: `C:\Users\ASUS\Desktop\Code\ColorPalette\palette (2).txt`, copiado a `docs/palette-original.txt`). **No se modifican estos valores.**
+Paleta oficial (archivo original copiado a `docs/palette-original.txt`). **No se modifican estos valores.**
 
 | Nombre | Hex | RGB | HSL |
 |---|---|---|---|
@@ -244,6 +244,8 @@ Las reglas viven en `firestore.rules` (fuente de verdad; no se duplican aquí). 
 2. Nunca dejar Firestore en modo de prueba abierto (plantilla).
 3. Desplegar las reglas al proyecto de Firebase real (`firebase deploy --only firestore:rules`; no ejecutado todavía).
 4. Claves de Firebase en variables `EXPO_PUBLIC_*` dentro de `.env` fuera de git; las claves de Firebase para cliente no son secretos por sí mismas, pero la seguridad real depende de las reglas. No incluir claves privadas ni cuentas de servicio en el repositorio.
+
+**Auditoría de exposición (2026-10-12):** el repositorio es público y `google-services.json` (con una clave de API de Firebase) estaba versionado y subido. Resultado del escaneo del historial: no hay claves privadas, cuentas de servicio, tokens ni secretos de cliente OAuth; solo esa clave de API. Se comprobó que ninguna de las dos claves de Firebase (la de `google-services.json` y la web de `.env`) tenía restricción de aplicación. Acciones: archivos de configuración nativa fuera de git y entregados a EAS como variables de tipo archivo; restricción de las claves en Google Cloud Console [pendiente de aplicar por el propietario]; la clave sigue en el historial de git, por lo que la restricción (o rotación) es la defensa real, no el borrado.
 
 **Privacidad** [Recomendado]: reseñas y notas privadas por defecto; exportación de datos (1.5); **eliminación de cuenta**: Firestore no borra subcolecciones al eliminar el documento padre, por lo que el borrado completo requiere eliminar `books` y `sessions` desde la app (o una función en backend) además de `deleteUser`. Las tiendas de aplicaciones suelen exigir poder eliminar la cuenta desde la app [Pendiente: verificar requisitos vigentes antes de publicar].
 

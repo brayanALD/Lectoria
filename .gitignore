@@ -3,6 +3,12 @@
 .env.*
 !.env.example
 
+# Configuración nativa de Firebase: contiene claves de API y se entrega a EAS como variable de tipo archivo
+# (ver app.config.js y CLAUDE.md). Las claves de Firebase de cliente no son secretas, pero se restringen
+# en Google Cloud y no se publican en el repositorio.
+google-services.json
+GoogleService-Info.plist
+
 # Dependencias y salidas
 node_modules/
 .expo/
@@ -25,6 +31,7 @@ expo-env.d.ts
 
 # Metro y logs
 .metro-health-check*
+*-debug.log
 npm-debug.*
 yarn-debug.*
 yarn-error.*
