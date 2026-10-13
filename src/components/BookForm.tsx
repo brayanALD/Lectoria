@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { KeyboardAvoidingView, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { useWindowTop } from '../hooks/useWindowTop';
@@ -10,15 +10,19 @@ import { EMPTY_BOOK_FORM, MAX_PAGE_COUNT, MAX_SERIES_NAME_LENGTH, MAX_TITLE_LENG
 import { ISBN_NOT_FOUND_MESSAGE, getCatalogErrorMessage } from '../utils/catalogErrors';
 import { getFirestoreErrorMessage } from '../utils/firestoreErrors';
 import { getIsbnErrorMessage, parseIsbn } from '../utils/isbn';
+import { getSeriesSuggestions } from '../utils/seriesSuggestions';
 import { withTimeout } from '../utils/withTimeout';
 import { Button } from './Button';
 import { StatusSelector } from './StatusSelector';
+import { SuggestionList } from './SuggestionList';
 import { TextField } from './TextField';
 
 // Sin conexión, una escritura de Firestore no termina hasta recuperar la red: se corta la espera.
 const SAVE_TIMEOUT_MS = 10000;
 // Un ISBN-13 con cuatro guiones y algún espacio de más.
 const ISBN_INPUT_MAX_LENGTH = 20;
+// Referencia estable para el valor por defecto (evita recalcular las sugerencias en cada render).
+const NO_SERIES: readonly string[] = [];
 
 interface BookFormProps {
   /** Valores iniciales: vacíos para añadir, los del libro para editar. */
@@ -26,6 +30,8 @@ interface BookFormProps {
   submitLabel: string;
   /** El estado se elige al añadir; al editar se cambia desde el detalle del libro. */
   showStatus?: boolean;
+  /** Sagas ya registradas en la biblioteca; el campo «Saga» sugiere las que coinciden mientras se escribe. */
+  seriesSuggestions?: readonly string[];
   /** Busca los datos de un ISBN en el catálogo. Si se indica, aparece el botón «Buscar por ISBN». */
   onLookup?: (isbn13: string) => Promise<CatalogBook | null>;
   /** Abre el escáner de código de barras. Si se indica, el campo ISBN muestra el botón de cámara. */
@@ -48,6 +54,7 @@ export function BookForm({
   initialValues = EMPTY_BOOK_FORM,
   submitLabel,
   showStatus = true,
+  seriesSuggestions = NO_SERIES,
   onLookup,
   onScan,
   lookupRequest,
@@ -60,6 +67,11 @@ export function BookForm({
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [looking, setLooking] = useState(false);
+  const [seriesFocused, setSeriesFocused] = useState(false);
+  const seriesMatches = useMemo(
+    () => getSeriesSuggestions(seriesSuggestions, values.seriesName),
+    [seriesSuggestions, values.seriesName],
+  );
 
   const { ref: containerRef, top, onLayout } = useWindowTop();
   const scrollRef = useRef<ScrollView>(null);
@@ -231,18 +243,30 @@ export function BookForm({
             submitBehavior="submit"
             onSubmitEditing={() => seriesRef.current?.focus()}
           />
-          <TextField
-            ref={seriesRef}
-            label="Saga"
-            value={values.seriesName}
-            onChangeText={setField('seriesName')}
-            error={errors.seriesName}
-            maxLength={MAX_SERIES_NAME_LENGTH}
-            autoCapitalize="words"
-            returnKeyType="next"
-            submitBehavior="submit"
-            onSubmitEditing={() => seriesOrderRef.current?.focus()}
-          />
+          <View style={styles.suggestGroup}>
+            <TextField
+              ref={seriesRef}
+              label="Saga"
+              value={values.seriesName}
+              onChangeText={setField('seriesName')}
+              onFocus={() => setSeriesFocused(true)}
+              onBlur={() => setSeriesFocused(false)}
+              error={errors.seriesName}
+              maxLength={MAX_SERIES_NAME_LENGTH}
+              autoCapitalize="words"
+              returnKeyType="next"
+              submitBehavior="submit"
+              onSubmitEditing={() => seriesOrderRef.current?.focus()}
+            />
+            {/* Sagas ya registradas que coinciden con lo escrito. Solo mientras se escribe en el campo. */}
+            {seriesFocused && seriesMatches.length > 0 ? (
+              <SuggestionList
+                suggestions={seriesMatches}
+                accessibilityHint="Usar esta saga"
+                onSelect={(name) => setField('seriesName')(name)}
+              />
+            ) : null}
+          </View>
           <TextField
             ref={seriesOrderRef}
             label="Número en la saga"
@@ -274,5 +298,7 @@ export function BookForm({
 const styles = StyleSheet.create({
   flex: { flex: 1, backgroundColor: colors.background },
   content: { padding: spacing.lg, gap: spacing.md, paddingBottom: spacing.xl * 3 },
+  // El campo y sus sugerencias van juntos (más cerca entre sí que del resto de campos).
+  suggestGroup: { gap: spacing.xs },
   error: { fontSize: fontSize.sm, color: colors.error },
 });

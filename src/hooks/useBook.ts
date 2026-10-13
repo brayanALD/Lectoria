@@ -6,6 +6,8 @@ import { useBooks } from './useBooks';
 interface UseBookResult {
   /** El libro, o undefined si no existe (p. ej. se eliminó). Solo es fiable cuando `loading` es false. */
   book: UserBookWithId | undefined;
+  /** Toda la biblioteca (misma suscripción), p. ej. para sugerir sagas ya registradas al editar. */
+  books: UserBookWithId[];
   loading: boolean;
   error: string | null;
   retry: () => void;
@@ -18,5 +20,5 @@ interface UseBookResult {
 export function useBook(bookId: string): UseBookResult {
   const { books, loading, error, retry } = useBooks();
   const book = useMemo(() => books.find((candidate) => candidate.id === bookId), [books, bookId]);
-  return { book, loading, error, retry };
+  return { book, books, loading, error, retry };
 }
