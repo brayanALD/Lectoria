@@ -189,3 +189,10 @@ export function getProgressAfterPageCountChange(
   if (book.status === 'finished') return book.currentPage !== pageCount ? pageCount : undefined;
   return book.currentPage > pageCount ? pageCount : undefined;
 }
+
+/** Porcentaje leído (0–100, entero) o undefined si no se conoce el total de páginas. */
+export function getProgressPercent(book: Pick<BookProgressState, 'currentPage' | 'pageCount'>): number | undefined {
+  if (!book.pageCount) return undefined;
+  const percent = Math.round((book.currentPage / book.pageCount) * 100);
+  return Math.min(100, Math.max(0, percent));
+}

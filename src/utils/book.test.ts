@@ -5,6 +5,7 @@ import {
   MAX_PAGE_COUNT,
   MAX_TITLE_LENGTH,
   getProgressAfterPageCountChange,
+  getProgressPercent,
   planStatusChange,
   READING_STATUSES,
   READING_STATUS_LABELS,
@@ -216,5 +217,22 @@ describe('getProgressAfterPageCountChange', () => {
 
   it('conserva el progreso si cabe dentro del nuevo total', () => {
     expect(getProgressAfterPageCountChange({ status: 'reading', currentPage: 100 }, 150)).toBeUndefined();
+  });
+});
+
+describe('getProgressPercent', () => {
+  it('calcula el porcentaje redondeado', () => {
+    expect(getProgressPercent({ currentPage: 120, pageCount: 300 })).toBe(40);
+    expect(getProgressPercent({ currentPage: 1, pageCount: 3 })).toBe(33);
+    expect(getProgressPercent({ currentPage: 0, pageCount: 300 })).toBe(0);
+  });
+
+  it('no supera el 100 % aunque la página actual pase del total', () => {
+    expect(getProgressPercent({ currentPage: 350, pageCount: 300 })).toBe(100);
+  });
+
+  it('devuelve undefined si no se conoce el total de páginas', () => {
+    expect(getProgressPercent({ currentPage: 50 })).toBeUndefined();
+    expect(getProgressPercent({ currentPage: 50, pageCount: 0 })).toBeUndefined();
   });
 });
