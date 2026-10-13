@@ -6,6 +6,8 @@ const babelPresetExpo = require.resolve('babel-preset-expo', {
 
 module.exports = {
   testEnvironment: 'node',
+  // Todos los archivos comparten un único emulador y limpian sus datos: no pueden ejecutarse en paralelo.
+  maxWorkers: 1,
   roots: ['<rootDir>/tests/rules'],
   transform: {
     '^.+\\.tsx?$': ['babel-jest', { presets: [babelPresetExpo] }],

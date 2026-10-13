@@ -4,6 +4,8 @@ import {
   MAX_AUTHORS,
   MAX_PAGE_COUNT,
   MAX_TITLE_LENGTH,
+  getProgressAfterPageCountChange,
+  planStatusChange,
   READING_STATUSES,
   READING_STATUS_LABELS,
   parseBookForm,
@@ -142,5 +144,77 @@ describe('parseBookForm', () => {
   it('informa todos los errores a la vez', () => {
     const result = parseBookForm(form({ title: '', pageCount: 'x', seriesOrder: '1' }));
     expect(!result.ok && Object.keys(result.errors).sort()).toEqual(['pageCount', 'seriesOrder', 'title']);
+  });
+});
+
+describe('planStatusChange', () => {
+  const base = { status: 'want_to_read' as const, currentPage: 0, pageCount: 300 };
+
+  it('no cambia nada si el estado es el mismo', () => {
+    expect(planStatusChange({ ...base, status: 'reading' }, 'reading')).toEqual({
+      status: 'reading',
+      setStartedAt: false,
+      setFinishedAt: false,
+      clearFinishedAt: false,
+    });
+  });
+
+  it('al empezar a leer fija la fecha de inicio la primera vez', () => {
+    expect(planStatusChange(base, 'reading').setStartedAt).toBe(true);
+  });
+
+  it('no pisa una fecha de inicio existente', () => {
+    expect(planStatusChange({ ...base, status: 'paused', startedAt: new Date() }, 'reading').setStartedAt).toBe(false);
+  });
+
+  it('al terminar fija la fecha de fin y deja el libro en la última página', () => {
+    const change = planStatusChange({ ...base, status: 'reading', currentPage: 120, startedAt: new Date() }, 'finished');
+    expect(change).toMatchObject({ status: 'finished', currentPage: 300, setFinishedAt: true, setStartedAt: false });
+  });
+
+  it('al terminar sin total de páginas no toca la página actual', () => {
+    const change = planStatusChange({ status: 'reading', currentPage: 50, startedAt: new Date() }, 'finished');
+    expect(change.currentPage).toBeUndefined();
+    expect(change.setFinishedAt).toBe(true);
+  });
+
+  it('terminar un libro que nunca se marcó como leyendo fija también el inicio', () => {
+    expect(planStatusChange(base, 'finished').setStartedAt).toBe(true);
+  });
+
+  it.each(['reading', 'paused', 'abandoned', 'want_to_read'] as const)(
+    'al reabrir un libro terminado (a %s) borra la fecha de fin y conserva el progreso',
+    (next) => {
+      const change = planStatusChange(
+        { status: 'finished', currentPage: 300, pageCount: 300, startedAt: new Date(), finishedAt: new Date() },
+        next,
+      );
+      expect(change.clearFinishedAt).toBe(true);
+      expect(change.currentPage).toBeUndefined();
+    },
+  );
+
+  it('abandonar o dejar pendiente no fija fecha de inicio', () => {
+    expect(planStatusChange({ ...base, status: 'reading' }, 'abandoned').setStartedAt).toBe(false);
+    expect(planStatusChange(base, 'abandoned').setStartedAt).toBe(false);
+  });
+});
+
+describe('getProgressAfterPageCountChange', () => {
+  it('no toca el progreso si no hay total de páginas', () => {
+    expect(getProgressAfterPageCountChange({ status: 'reading', currentPage: 50 }, undefined)).toBeUndefined();
+  });
+
+  it('un libro terminado queda en la nueva última página', () => {
+    expect(getProgressAfterPageCountChange({ status: 'finished', currentPage: 300 }, 350)).toBe(350);
+    expect(getProgressAfterPageCountChange({ status: 'finished', currentPage: 300 }, 300)).toBeUndefined();
+  });
+
+  it('recorta el progreso si queda más allá del final', () => {
+    expect(getProgressAfterPageCountChange({ status: 'reading', currentPage: 200 }, 150)).toBe(150);
+  });
+
+  it('conserva el progreso si cabe dentro del nuevo total', () => {
+    expect(getProgressAfterPageCountChange({ status: 'reading', currentPage: 100 }, 150)).toBeUndefined();
   });
 });

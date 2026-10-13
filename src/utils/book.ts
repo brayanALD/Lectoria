@@ -133,3 +133,59 @@ export function parseBookForm(values: BookFormValues): BookFormResult {
 
   return { ok: true, data };
 }
+
+/** Lo mínimo que hay que saber de un libro para decidir qué cambia al mover su estado (sin depender de Firebase). */
+export interface BookProgressState {
+  status: ReadingStatus;
+  currentPage: number;
+  pageCount?: number;
+  startedAt?: unknown;
+  finishedAt?: unknown;
+}
+
+/** Cambios a aplicar al pasar un libro a otro estado de lectura. */
+export interface StatusChange {
+  status: ReadingStatus;
+  /** Nueva página actual; undefined = no tocar. */
+  currentPage?: number;
+  setStartedAt: boolean;
+  setFinishedAt: boolean;
+  clearFinishedAt: boolean;
+}
+
+/**
+ * Decide qué cambia al pasar `book` al estado `next`:
+ * - «Terminado» = leído al 100 %: con total de páginas conocido, la página actual es la última; fija `finishedAt`.
+ * - Empezar a leer, pausar o terminar fija `startedAt` si aún no existía.
+ * - Salir de «Terminado» borra `finishedAt` (el libro se reabre) pero conserva el progreso y las sesiones.
+ * - Si el estado no cambia, no hay cambios.
+ */
+export function planStatusChange(book: BookProgressState, next: ReadingStatus): StatusChange {
+  const change: StatusChange = { status: next, setStartedAt: false, setFinishedAt: false, clearFinishedAt: false };
+  if (book.status === next) return change;
+
+  if (next === 'reading' || next === 'paused' || next === 'finished') {
+    change.setStartedAt = !book.startedAt;
+  }
+  if (next === 'finished') {
+    change.setFinishedAt = true;
+    if (book.pageCount && book.currentPage !== book.pageCount) change.currentPage = book.pageCount;
+  } else if (book.finishedAt) {
+    change.clearFinishedAt = true;
+  }
+  return change;
+}
+
+/**
+ * Al editar el total de páginas hay que mantener coherente el progreso:
+ * un libro terminado queda en la última página y ningún libro puede estar más allá del final.
+ * Devuelve la nueva página actual, o undefined si no hay que cambiarla.
+ */
+export function getProgressAfterPageCountChange(
+  book: Pick<BookProgressState, 'status' | 'currentPage'>,
+  pageCount: number | undefined,
+): number | undefined {
+  if (pageCount === undefined) return undefined;
+  if (book.status === 'finished') return book.currentPage !== pageCount ? pageCount : undefined;
+  return book.currentPage > pageCount ? pageCount : undefined;
+}

@@ -329,7 +329,7 @@ Convenciones [Recomendado]: código e identificadores en inglés; textos de inte
 | Fase | Contenido | Versión |
 |---|---|---|
 | 1. Preparar — **cerrada** (2026-10-12, Android) | Fijar versiones (Expo, RN, React Navigation) leyendo su documentación; scaffold TypeScript; Firebase y `.env`; tema; `AuthContext`; navegación condicional; reglas iniciales con validación | 1.0 |
-| 2. Biblioteca — **en curso**: modelo `UserBook` y validación del formulario hechos (2026-10-12) | `UserBook`; CRUD; `BookCard`, `BookCover`, `BookFilters`; búsqueda, filtros, estados de carga/error/vacío | 1.0 |
+| 2. Biblioteca — **en curso**: modelo `UserBook`, validación del formulario y `booksService` (crear, escuchar, editar, cambiar estado, eliminar) hechos y probados contra el emulador (2026-10-13). Siguen `useBooks`, componentes y pantallas | `UserBook`; CRUD; `BookCard`, `BookCover`, `BookFilters`; búsqueda, filtros, estados de carga/error/vacío | 1.0 |
 | 3. ISBN | Servicio de catálogo; formulario manual; escáner; duplicados y errores | 1.0 |
 | 4. Sesiones | Formulario de sesión; progreso; calendario y rachas | 1.0 |
 | 5. Estadísticas | Resúmenes diarios/mensuales; objetivos; pruebas de fechas y casos límite | 1.0 |
@@ -396,7 +396,7 @@ Orden de la Fase 1 (plantilla): theme → AuthContext → AppNavigator → Login
 5. Unidades adicionales de objetivos (páginas) y objetivos anuales.
 6. Entidades propias de autores y sagas (1.2); caché compartida de catálogo.
 7. Modelo para audiolibros.
-8. Cómo borrar la cuenta completa (cliente vs. backend) y requisitos de las tiendas.
+8. Cómo borrar la cuenta completa (cliente vs. backend) y requisitos de las tiendas. **Decisión (2026-10-13): se deja sin resolver por ahora.** Al borrar un usuario desde la consola de Authentication, su `users/{uid}` y subcolecciones quedan huérfanos en Firestore: limpiarlos automáticamente exige una función de servidor (plan Blaze, de pago por uso) y el proyecto está en el plan gratuito. Se descartaron la función con Blaze y la alternativa sin costo (botón «Eliminar cuenta» + script de limpieza manual). Hasta publicar en tiendas, los huérfanos se borran a mano desde la consola de Firestore; antes de publicar hay que reabrir este punto, porque las tiendas suelen exigir poder eliminar la cuenta desde la app.
 9. Internacionalización.
 10. Renombrar este archivo a un nombre con «Lectoria».
 
