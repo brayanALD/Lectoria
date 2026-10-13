@@ -329,7 +329,7 @@ Convenciones [Recomendado]: código e identificadores en inglés; textos de inte
 | Fase | Contenido | Versión |
 |---|---|---|
 | 1. Preparar — **cerrada** (2026-10-12, Android) | Fijar versiones (Expo, RN, React Navigation) leyendo su documentación; scaffold TypeScript; Firebase y `.env`; tema; `AuthContext`; navegación condicional; reglas iniciales con validación | 1.0 |
-| 2. Biblioteca — **en curso**: modelo `UserBook`, validación del formulario y `booksService` (crear, escuchar, editar, cambiar estado, eliminar) hechos y probados contra el emulador (2026-10-13). Siguen `useBooks`, componentes y pantallas | `UserBook`; CRUD; `BookCard`, `BookCover`, `BookFilters`; búsqueda, filtros, estados de carga/error/vacío | 1.0 |
+| 2. Biblioteca — **en curso**: modelo `UserBook`, validación del formulario y `booksService` (crear, escuchar, editar, cambiar estado, eliminar) y `useBooks` hechos y probados (2026-10-13). Siguen `BookCard`, `BookCover`, `BookFilters` y las pantallas | `UserBook`; CRUD; `BookCard`, `BookCover`, `BookFilters`; búsqueda, filtros, estados de carga/error/vacío | 1.0 |
 | 3. ISBN | Servicio de catálogo; formulario manual; escáner; duplicados y errores | 1.0 |
 | 4. Sesiones | Formulario de sesión; progreso; calendario y rachas | 1.0 |
 | 5. Estadísticas | Resúmenes diarios/mensuales; objetivos; pruebas de fechas y casos límite | 1.0 |
