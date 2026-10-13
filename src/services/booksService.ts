@@ -70,7 +70,7 @@ export function subscribeToBooks(
 }
 
 /**
- * Guarda los datos editables de un libro (título, autores, géneros, saga y páginas).
+ * Guarda los datos editables de un libro (título, autores, géneros, saga, páginas, ISBN y portada).
  * Los campos opcionales que el usuario vacía se eliminan del documento. No cambia el estado de lectura ni
  * el progreso, salvo para mantenerlo coherente con un nuevo total de páginas.
  */
@@ -88,6 +88,8 @@ export async function updateBookDetails(
     seriesName: fields.seriesName ?? deleteField(),
     seriesOrder: fields.seriesOrder ?? deleteField(),
     pageCount: fields.pageCount ?? deleteField(),
+    isbn13: fields.isbn13 ?? deleteField(),
+    coverUrl: fields.coverUrl ?? deleteField(),
     updatedAt: serverTimestamp(),
   };
   if (progress !== undefined) changes.currentPage = progress;

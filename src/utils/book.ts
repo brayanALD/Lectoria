@@ -6,6 +6,7 @@ import type {
   ReadingStatus,
   UserBook,
 } from '../types/book';
+import { getIsbnErrorMessage, parseIsbn } from './isbn';
 
 // Límites alineados con firestore.rules (validBook). Los de cada elemento de las listas
 // no los comprueban las reglas, pero evitan datos absurdos.
@@ -36,7 +37,11 @@ export const READING_STATUS_LABELS: Record<ReadingStatus, string> = {
 
 export const DEFAULT_READING_STATUS: ReadingStatus = 'want_to_read';
 
+export const MAX_COVER_URL_LENGTH = 2000;
+
 export const EMPTY_BOOK_FORM: BookFormValues = {
+  isbn13: '',
+  coverUrl: '',
   title: '',
   authors: '',
   pageCount: '',
@@ -117,6 +122,18 @@ export function parseBookForm(values: BookFormValues): BookFormResult {
 
   if (!READING_STATUSES.includes(values.status)) errors.status = 'Elige un estado de lectura válido.';
 
+  // El ISBN es opcional; si se escribe, debe ser válido y se guarda normalizado a ISBN-13.
+  let isbn13: string | undefined;
+  if (values.isbn13.trim()) {
+    const parsed = parseIsbn(values.isbn13);
+    if (parsed.ok) isbn13 = parsed.isbn13;
+    else errors.isbn13 = getIsbnErrorMessage(parsed.reason);
+  }
+
+  // La portada solo viene del catálogo: se acepta una URL https razonable y, si no, se descarta sin avisar.
+  const coverUrl = values.coverUrl.trim();
+  const validCover = coverUrl.startsWith('https://') && coverUrl.length <= MAX_COVER_URL_LENGTH;
+
   if (Object.keys(errors).length > 0) return { ok: false, errors };
 
   const data: NewBookFields = {
@@ -131,6 +148,8 @@ export function parseBookForm(values: BookFormValues): BookFormResult {
   if (genres.length > 0) data.genres = genres;
   if (seriesName) data.seriesName = seriesName;
   if (seriesOrder !== undefined) data.seriesOrder = seriesOrder;
+  if (isbn13) data.isbn13 = isbn13;
+  if (validCover) data.coverUrl = coverUrl;
 
   return { ok: true, data };
 }
@@ -206,9 +225,11 @@ export function formatBookCount(count: number): string {
 /** Convierte un libro guardado en los valores del formulario, para editarlo. */
 export function bookToFormValues(
   book: Pick<UserBook, 'title' | 'authors' | 'status'> &
-    Partial<Pick<UserBook, 'pageCount' | 'genres' | 'seriesName' | 'seriesOrder'>>,
+    Partial<Pick<UserBook, 'pageCount' | 'genres' | 'seriesName' | 'seriesOrder' | 'isbn13' | 'coverUrl'>>,
 ): BookFormValues {
   return {
+    isbn13: book.isbn13 ?? '',
+    coverUrl: book.coverUrl ?? '',
     title: book.title,
     authors: book.authors.join(', '),
     pageCount: book.pageCount !== undefined ? String(book.pageCount) : '',

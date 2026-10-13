@@ -35,10 +35,23 @@ export type UserBookWithId = UserBook & { id: string };
 
 /** Campos que se escriben al crear un libro desde el formulario (sin fechas de control). */
 export type NewBookFields = Pick<UserBook, 'title' | 'authors' | 'status' | 'acquisition' | 'currentPage'> &
-  Partial<Pick<UserBook, 'genres' | 'seriesName' | 'seriesOrder' | 'pageCount'>>;
+  Partial<Pick<UserBook, 'genres' | 'seriesName' | 'seriesOrder' | 'pageCount' | 'isbn13' | 'coverUrl'>>;
+
+/** Datos de un libro obtenidos de un catálogo externo (Open Library) a partir de su ISBN. */
+export interface CatalogBook {
+  isbn13: string;
+  title: string;
+  authors: string[];
+  pageCount?: number;
+  coverUrl?: string;
+}
 
 /** Valores del formulario «Añadir libro»: todo texto, tal como lo escribe el usuario. */
 export interface BookFormValues {
+  /** ISBN-10 o ISBN-13, con o sin guiones; se guarda normalizado a ISBN-13. Opcional. */
+  isbn13: string;
+  /** Portada obtenida del catálogo; no se escribe a mano. */
+  coverUrl: string;
   title: string;
   /** Varios autores separados por coma o punto y coma. */
   authors: string;

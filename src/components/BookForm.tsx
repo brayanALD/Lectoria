@@ -2,12 +2,14 @@ import { useRef, useState } from 'react';
 import { KeyboardAvoidingView, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { useWindowTop } from '../hooks/useWindowTop';
-import type { BookFormErrors, BookFormValues, NewBookFields } from '../types/book';
+import type { BookFormErrors, BookFormValues, CatalogBook, NewBookFields } from '../types/book';
 import { colors } from '../theme/colors';
 import { spacing } from '../theme/spacing';
 import { fontSize } from '../theme/typography';
 import { EMPTY_BOOK_FORM, MAX_PAGE_COUNT, MAX_SERIES_NAME_LENGTH, MAX_TITLE_LENGTH, parseBookForm } from '../utils/book';
+import { ISBN_NOT_FOUND_MESSAGE, getCatalogErrorMessage } from '../utils/catalogErrors';
 import { getFirestoreErrorMessage } from '../utils/firestoreErrors';
+import { getIsbnErrorMessage, parseIsbn } from '../utils/isbn';
 import { withTimeout } from '../utils/withTimeout';
 import { Button } from './Button';
 import { StatusSelector } from './StatusSelector';
@@ -15,6 +17,8 @@ import { TextField } from './TextField';
 
 // Sin conexión, una escritura de Firestore no termina hasta recuperar la red: se corta la espera.
 const SAVE_TIMEOUT_MS = 10000;
+// Un ISBN-13 con cuatro guiones y algún espacio de más.
+const ISBN_INPUT_MAX_LENGTH = 20;
 
 interface BookFormProps {
   /** Valores iniciales: vacíos para añadir, los del libro para editar. */
@@ -22,6 +26,13 @@ interface BookFormProps {
   submitLabel: string;
   /** El estado se elige al añadir; al editar se cambia desde el detalle del libro. */
   showStatus?: boolean;
+  /** Busca los datos de un ISBN en el catálogo. Si se indica, aparece el botón «Buscar por ISBN». */
+  onLookup?: (isbn13: string) => Promise<CatalogBook | null>;
+  /**
+   * Se consulta antes de guardar (p. ej. para avisar de un libro duplicado). Con `false` no se guarda y el
+   * formulario sigue abierto. Se ejecuta fuera del tiempo máximo de guardado: la persona puede tardar en decidir.
+   */
+  confirm?: (fields: NewBookFields) => Promise<boolean>;
   /** Guarda los datos validados. Si falla, el formulario muestra el error y sigue abierto. */
   onSubmit: (fields: NewBookFields) => Promise<void>;
   /** Se llama cuando el guardado terminó bien (normalmente, para volver atrás). */
@@ -33,6 +44,8 @@ export function BookForm({
   initialValues = EMPTY_BOOK_FORM,
   submitLabel,
   showStatus = true,
+  onLookup,
+  confirm,
   onSubmit,
   onSaved,
 }: BookFormProps) {
@@ -40,9 +53,11 @@ export function BookForm({
   const [errors, setErrors] = useState<BookFormErrors>({});
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [looking, setLooking] = useState(false);
 
   const { ref: containerRef, top, onLayout } = useWindowTop();
   const scrollRef = useRef<ScrollView>(null);
+  const titleRef = useRef<TextInput>(null);
   const authorsRef = useRef<TextInput>(null);
   const pagesRef = useRef<TextInput>(null);
   const genresRef = useRef<TextInput>(null);
@@ -53,6 +68,40 @@ export function BookForm({
   const setField = <K extends keyof BookFormValues>(field: K) => (value: BookFormValues[K]) => {
     setValues((current) => ({ ...current, [field]: value }));
     setErrors((current) => (current[field] ? { ...current, [field]: undefined } : current));
+  };
+
+  // Rellena título, autores, páginas y portada con los datos del catálogo. Es una acción explícita, así que
+  // sustituye lo que hubiera escrito en esos campos.
+  const handleLookup = async () => {
+    if (!onLookup || looking) return;
+    const parsed = parseIsbn(values.isbn13);
+    if (!parsed.ok) {
+      setErrors((current) => ({ ...current, isbn13: getIsbnErrorMessage(parsed.reason) }));
+      return;
+    }
+
+    setErrors((current) => ({ ...current, isbn13: undefined }));
+    setLooking(true);
+    try {
+      const book = await onLookup(parsed.isbn13);
+      if (!book) {
+        setErrors((current) => ({ ...current, isbn13: ISBN_NOT_FOUND_MESSAGE }));
+        return;
+      }
+      setValues((current) => ({
+        ...current,
+        isbn13: book.isbn13,
+        title: book.title,
+        authors: book.authors.join(', '),
+        pageCount: book.pageCount !== undefined ? String(book.pageCount) : current.pageCount,
+        coverUrl: book.coverUrl ?? '',
+      }));
+      setErrors({});
+    } catch (error) {
+      setErrors((current) => ({ ...current, isbn13: getCatalogErrorMessage(error) }));
+    } finally {
+      setLooking(false);
+    }
   };
 
   const handleSubmit = async () => {
@@ -71,6 +120,10 @@ export function BookForm({
     setSubmitError(null);
     setSaving(true);
     try {
+      if (confirm && !(await confirm(result.data))) {
+        setSaving(false);
+        return;
+      }
       await withTimeout(onSubmit(result.data), SAVE_TIMEOUT_MS);
       onSaved();
     } catch (error) {
@@ -89,6 +142,28 @@ export function BookForm({
           keyboardDismissMode="on-drag"
         >
           <TextField
+            label="ISBN"
+            value={values.isbn13}
+            onChangeText={setField('isbn13')}
+            error={errors.isbn13}
+            autoCapitalize="characters"
+            autoCorrect={false}
+            maxLength={ISBN_INPUT_MAX_LENGTH}
+            returnKeyType={onLookup ? 'search' : 'next'}
+            submitBehavior="submit"
+            onSubmitEditing={onLookup ? handleLookup : () => titleRef.current?.focus()}
+          />
+          {onLookup ? (
+            <Button
+              title="Buscar por ISBN"
+              variant="secondary"
+              onPress={handleLookup}
+              loading={looking}
+              disabled={!values.isbn13.trim()}
+            />
+          ) : null}
+          <TextField
+            ref={titleRef}
             label="Título *"
             value={values.title}
             onChangeText={setField('title')}

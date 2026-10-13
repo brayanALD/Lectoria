@@ -42,7 +42,7 @@ Basado en la plantilla reutilizable para apps móviles.
 | Layout seguro | `react-native-safe-area-context` | [Confirmado] |
 | Cámara / ISBN | `expo-camera` (verificar compatibilidad con la versión de Expo elegida) | [Recomendado] |
 | Notificaciones locales | `expo-notifications` (versión 1.4; verificar limitaciones) | [Recomendado] |
-| Proveedor bibliográfico | Open Library o Google Books, detrás de `bookCatalogService` | [Pendiente] |
+| Proveedor bibliográfico | **Open Library** (API `api/books`, sin clave), detrás de `bookCatalogService` | [Confirmado] (2026-10-13, Fase 3) |
 | Pruebas | Jest (`jest-expo`) para `utils`; emulador de Firestore + `@firebase/rules-unit-testing` para reglas | [Confirmado] (2026-10-12, Fase 1) |
 | Versión de Expo / SDK | **SDK 57** (`expo ~57.0.28`, React Native 0.86.3, React 19.2.3, TypeScript ~6.0). `firebase` 13 (Expo exige ≥ 12). React Navigation 7. Siempre instalar con `npx expo install` | [Confirmado] (2026-10-12, Fase 1) |
 
@@ -268,7 +268,10 @@ Arquitectura:
 
 - `expo-camera` para lectura (verificar compatibilidad con la versión elegida).
 - `src/services/bookCatalogService.ts`: interfaz común «buscar por ISBN»; el escáner no conoce al proveedor.
-- Proveedor [Pendiente]: Open Library no requiere clave; Google Books puede requerir clave (cuya exposición en cliente debe evaluarse).
+- Proveedor [Confirmado, 2026-10-13]: **Open Library**. Se descartó Google Books porque no se pudo confirmar que fuera gratuito: su documentación y sus condiciones de uso no mencionan precio ni cuota, exigen una clave de API (que quedaría dentro de la app) y prohíben cobrar a los usuarios por usar la aplicación. Open Library no necesita clave ni facturación; su política pide identificar la app con un `User-Agent` (opcional `EXPO_PUBLIC_OPENLIBRARY_CONTACT`), no superar 1 petición por segundo (3 si se identifica) y no usarla como servidor de un servicio comercial de mucho tráfico. Se consulta solo al pulsar «Buscar» (una petición por ISBN y teléfono). **Riesgo:** una app comercial con mucho tráfico incumpliría su política; en ese caso habría que cambiar de proveedor (solo cambia `bookCatalogService.ts`).
+- Datos del catálogo: se aprovechan título (con subtítulo), autores, páginas y portada. **No se importan los géneros**: los «temas» de Open Library son ruidosos (comprobado con un libro real devuelto con temas ajenos). La calidad de los datos es irregular, por eso siempre se pueden corregir en el formulario antes de guardar.
+- Un ISBN no encontrado llega como `{}` con HTTP 200 (comprobado); el formulario lo indica y deja rellenar a mano.
+- Duplicados: antes de guardar, si ya existe un libro con el mismo ISBN, o con el mismo título y algún autor en común, se pregunta si añadirlo de todos modos.
 
 Casos a cubrir: ISBN-10/13, códigos inválidos, sin resultados, resultados incompletos, duplicados (mismo `isbn13` en la biblioteca del usuario), permiso de cámara denegado, fallos de red.
 
@@ -399,7 +402,7 @@ Orden de la Fase 1 (plantilla): theme → AuthContext → AppNavigator → Login
 **Pendientes**
 
 1. ~~Versión exacta de Expo/SDK~~ — resuelto: SDK 57 (sección 2).
-2. Proveedor bibliográfico (Open Library vs. Google Books) y manejo de su clave.
+2. ~~Proveedor bibliográfico~~ — resuelto: Open Library (sección 8).
 3. Tema oscuro: ¿en 1.0 o después? (y su `primary`).
 4. Comportamiento sin conexión: la sesión se persiste con AsyncStorage (`getReactNativePersistence`, implementado en la Fase 1 pero **aún no probado en un dispositivo**). La caché sin conexión de Firestore en React Native sigue **por verificar**; 1.0 solo exige recuperar datos al reabrir con conexión.
 5. Unidades adicionales de objetivos (páginas) y objetivos anuales.

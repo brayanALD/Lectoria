@@ -259,9 +259,13 @@ describe('bookToFormValues', () => {
         genres: ['Ciencia ficción', 'Aventura'],
         seriesName: 'Dune Chronicles',
         seriesOrder: 1,
+        isbn13: '9780441013593',
+        coverUrl: 'https://covers.openlibrary.org/b/id/1-M.jpg',
         status: 'reading',
       }),
     ).toEqual({
+      isbn13: '9780441013593',
+      coverUrl: 'https://covers.openlibrary.org/b/id/1-M.jpg',
       title: 'Dune',
       authors: 'Frank Herbert, Brian Herbert',
       pageCount: '412',
@@ -311,5 +315,39 @@ describe('formatFilteredBookCount', () => {
     expect(formatFilteredBookCount(2, 5)).toBe('2 de 5 libros');
     expect(formatFilteredBookCount(0, 5)).toBe('0 de 5 libros');
     expect(formatFilteredBookCount(0, 1)).toBe('0 de 1 libro');
+  });
+});
+
+describe('parseBookForm — ISBN y portada', () => {
+  it('un ISBN-10 con guiones se guarda normalizado a ISBN-13', () => {
+    const result = parseBookForm(form({ isbn13: '0-306-40615-2' }));
+    expect(result.ok && result.data.isbn13).toBe('9780306406157');
+  });
+
+  it('un ISBN-13 con espacios y guiones se guarda sin ellos', () => {
+    const result = parseBookForm(form({ isbn13: ' 978-0-306-40615-7 ' }));
+    expect(result.ok && result.data.isbn13).toBe('9780306406157');
+  });
+
+  it('el ISBN es opcional: vacío no genera clave ni error', () => {
+    const result = parseBookForm(form());
+    expect(result.ok && 'isbn13' in result.data).toBe(false);
+  });
+
+  it.each(['12345', '9780306406158', '4006381333931'])('rechaza un ISBN inválido: %s', (isbn13) => {
+    const result = parseBookForm(form({ isbn13 }));
+    expect(!result.ok && result.errors.isbn13).toBeTruthy();
+  });
+
+  it('guarda la portada si es una URL https', () => {
+    const result = parseBookForm(form({ coverUrl: ' https://covers.openlibrary.org/b/id/1-M.jpg ' }));
+    expect(result.ok && result.data.coverUrl).toBe('https://covers.openlibrary.org/b/id/1-M.jpg');
+  });
+
+  it('descarta sin avisar una portada que no sea https o sea demasiado larga', () => {
+    for (const coverUrl of ['http://inseguro/a.jpg', 'javascript:alert(1)', `https://${'a'.repeat(2000)}`]) {
+      const result = parseBookForm(form({ coverUrl }));
+      expect(result.ok && 'coverUrl' in result.data).toBe(false);
+    }
   });
 });

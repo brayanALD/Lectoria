@@ -166,6 +166,21 @@ describe('updateBookDetails', () => {
     expect(book.createdAt).toBeInstanceOf(Timestamp);
   });
 
+  it('guarda el ISBN y la portada del catálogo, y los elimina si se vacían', async () => {
+    const id = await create({ isbn13: '0-306-40615-2', coverUrl: 'https://covers.openlibrary.org/b/id/1-M.jpg' });
+    const created = await read(id);
+    expect(created.isbn13).toBe('9780306406157');
+    expect(created.coverUrl).toBe('https://covers.openlibrary.org/b/id/1-M.jpg');
+
+    const result = parseBookForm({ ...EMPTY_BOOK_FORM, title: 'Dune', authors: 'Frank Herbert' });
+    if (!result.ok) throw new Error('formulario inválido');
+    await updateBookDetails('alice', created, result.data, alice());
+
+    const edited = await read(id);
+    expect(edited.isbn13).toBeUndefined();
+    expect(edited.coverUrl).toBeUndefined();
+  });
+
   it('no cambia el estado de lectura ni el progreso', async () => {
     const id = await create({ status: 'reading', pageCount: '400' });
     const before = await read(id);
