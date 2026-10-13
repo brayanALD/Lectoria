@@ -6,6 +6,19 @@ import { doc, getDoc, serverTimestamp, setDoc, setLogLevel, Timestamp, updateDoc
 import { readFileSync } from 'fs';
 import { join } from 'path';
 
+import type { BookFormValues } from '../../src/types/book';
+import {
+  EMPTY_BOOK_FORM,
+  MAX_AUTHORS,
+  MAX_GENRES,
+  MAX_PAGE_COUNT,
+  MAX_SERIES_NAME_LENGTH,
+  MAX_SERIES_ORDER,
+  MAX_TITLE_LENGTH,
+  READING_STATUSES,
+  parseBookForm,
+} from '../../src/utils/book';
+
 // Requiere el emulador de Firestore: npm run test:rules
 // Las pruebas de rechazo generan PERMISSION_DENIED esperados; se silencia el log del SDK.
 setLogLevel('silent');
@@ -139,6 +152,54 @@ describe('libros users/{uid}/books', () => {
     await assertSucceeds(setDoc(ref, validBook()));
     await assertFails(updateDoc(ref, { createdAt: Timestamp.now(), updatedAt: serverTimestamp() }));
     await assertFails(setDoc(ref, { title: 'Solo título', updatedAt: serverTimestamp() }));
+  });
+});
+
+describe('libros generados por parseBookForm (el formulario y las reglas deben coincidir)', () => {
+  const create = async (values: Partial<BookFormValues>) => {
+    const result = parseBookForm({ ...EMPTY_BOOK_FORM, title: 'Dune', authors: 'Frank Herbert', ...values });
+    if (!result.ok) throw new Error(`el formulario de prueba no es válido: ${JSON.stringify(result.errors)}`);
+    return setDoc(doc(alice(), 'users/alice/books/b1'), {
+      ...result.data,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    });
+  };
+
+  it('acepta un libro con solo título y autor', async () => {
+    await assertSucceeds(create({}));
+  });
+
+  it('acepta un libro con todos los campos opcionales', async () => {
+    await assertSucceeds(
+      create({
+        pageCount: '662',
+        genres: 'Fantasía; Aventura',
+        seriesName: 'Crónica del asesino de reyes',
+        seriesOrder: '0',
+        status: 'finished',
+      }),
+    );
+  });
+
+  it('acepta los límites máximos que permite el formulario', async () => {
+    await assertSucceeds(
+      create({
+        title: 'a'.repeat(MAX_TITLE_LENGTH),
+        authors: Array.from({ length: MAX_AUTHORS }, (_, i) => `Autor ${i}`).join(','),
+        genres: Array.from({ length: MAX_GENRES }, (_, i) => `Género ${i}`).join(','),
+        seriesName: 'a'.repeat(MAX_SERIES_NAME_LENGTH),
+        seriesOrder: String(MAX_SERIES_ORDER),
+        pageCount: String(MAX_PAGE_COUNT),
+      }),
+    );
+  });
+
+  it('acepta cada estado de lectura', async () => {
+    for (const status of READING_STATUSES) {
+      await env.clearFirestore();
+      await assertSucceeds(create({ status }));
+    }
   });
 });
 
