@@ -32,6 +32,7 @@ export const colors = {
   accent: palette.softFawn,
   onAccent: palette.evergreen,
   border: 'rgba(20, 40, 29, 0.12)',
+  overlay: 'rgba(20, 40, 29, 0.5)', // fondo atenuado tras hojas y diálogos
   pressed: 'rgba(53, 88, 52, 0.85)',
   disabled: 'rgba(20, 40, 29, 0.38)',
   success: palette.hunterGreen,

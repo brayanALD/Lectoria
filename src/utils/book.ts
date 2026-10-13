@@ -218,3 +218,8 @@ export function bookToFormValues(
     status: book.status,
   };
 }
+
+/** «5 libros», o «2 de 5 libros» cuando hay una búsqueda o filtros que ocultan parte de la biblioteca. */
+export function formatFilteredBookCount(shown: number, total: number): string {
+  return shown === total ? formatBookCount(total) : `${shown} de ${formatBookCount(total)}`;
+}

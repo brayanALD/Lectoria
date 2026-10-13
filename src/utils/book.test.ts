@@ -6,6 +6,7 @@ import {
   MAX_TITLE_LENGTH,
   bookToFormValues,
   formatBookCount,
+  formatFilteredBookCount,
   getProgressAfterPageCountChange,
   getProgressPercent,
   planStatusChange,
@@ -297,5 +298,18 @@ describe('bookToFormValues', () => {
     if (!original.ok) throw new Error('formulario inválido');
     const book = { ...original.data, status: original.data.status };
     expect(parseBookForm(bookToFormValues(book))).toEqual(original);
+  });
+});
+
+describe('formatFilteredBookCount', () => {
+  it('sin filtros muestra solo el total', () => {
+    expect(formatFilteredBookCount(5, 5)).toBe('5 libros');
+    expect(formatFilteredBookCount(1, 1)).toBe('1 libro');
+  });
+
+  it('con filtros muestra cuántos se ven del total', () => {
+    expect(formatFilteredBookCount(2, 5)).toBe('2 de 5 libros');
+    expect(formatFilteredBookCount(0, 5)).toBe('0 de 5 libros');
+    expect(formatFilteredBookCount(0, 1)).toBe('0 de 1 libro');
   });
 });

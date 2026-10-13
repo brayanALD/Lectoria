@@ -1,10 +1,11 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { useLayoutEffect, useState } from 'react';
+import { useLayoutEffect, useMemo, useState } from 'react';
 import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { BookCard } from '../../../components/BookCard';
+import { BookFilters } from '../../../components/BookFilters';
 import { Button } from '../../../components/Button';
 import { EmptyState } from '../../../components/EmptyState';
 import { LoadingSpinner } from '../../../components/LoadingSpinner';
@@ -13,7 +14,8 @@ import type { AppStackParamList } from '../../../navigation/types';
 import { colors } from '../../../theme/colors';
 import { minTouchSize, radius, spacing } from '../../../theme/spacing';
 import { fontSize, fontWeight } from '../../../theme/typography';
-import { formatBookCount } from '../../../utils/book';
+import { formatFilteredBookCount } from '../../../utils/book';
+import { EMPTY_FILTERS, filterBooks, getFilterOptions, type BookFilterState } from '../../../utils/bookFilters';
 
 type ViewMode = 'list' | 'grid';
 
@@ -22,6 +24,9 @@ const GRID_COLUMNS = 2;
 export function LibraryScreen() {
   const { books, loading, error, retry } = useBooks();
   const [mode, setMode] = useState<ViewMode>('list');
+  const [filters, setFilters] = useState<BookFilterState>(EMPTY_FILTERS);
+  const visibleBooks = useMemo(() => filterBooks(books, filters), [books, filters]);
+  const filterOptions = useMemo(() => getFilterOptions(books), [books]);
   // Desde una pestaña, navigate sube hasta el stack que contiene «AddBook».
   const navigation = useNavigation<NativeStackNavigationProp<AppStackParamList>>();
   const openAddBook = () => navigation.navigate('AddBook');
@@ -80,9 +85,11 @@ export function LibraryScreen() {
         </View>
       ) : null}
 
+      <BookFilters filters={filters} onChange={setFilters} options={filterOptions} />
+
       <View style={styles.toolbar}>
         <Text style={styles.count} accessibilityLiveRegion="polite">
-          {formatBookCount(books.length)}
+          {formatFilteredBookCount(visibleBooks.length, books.length)}
         </Text>
         <Pressable
           accessibilityRole="button"
@@ -97,12 +104,22 @@ export function LibraryScreen() {
       {/* Cambiar numColumns en caliente no está soportado por FlatList: se remonta al cambiar de vista. */}
       <FlatList
         key={mode}
-        data={books}
+        data={visibleBooks}
         keyExtractor={(book) => book.id}
         numColumns={isGrid ? GRID_COLUMNS : 1}
         columnWrapperStyle={isGrid ? styles.gridRow : undefined}
-        contentContainerStyle={styles.listContent}
+        contentContainerStyle={[styles.listContent, visibleBooks.length === 0 && styles.growContent]}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
         ItemSeparatorComponent={isGrid ? undefined : ListSeparator}
+        ListEmptyComponent={
+          <EmptyState
+            icon="search-outline"
+            title="Ningún libro coincide"
+            description="Prueba con otra búsqueda o quita algún filtro."
+            action={{ label: 'Limpiar búsqueda y filtros', onPress: () => setFilters(EMPTY_FILTERS) }}
+          />
+        }
         renderItem={({ item }) => (
           <View style={isGrid ? styles.gridCell : undefined}>
             <BookCard
@@ -145,6 +162,7 @@ const styles = StyleSheet.create({
   pressed: { opacity: 0.6 },
   headerButton: { width: minTouchSize, height: minTouchSize, alignItems: 'center', justifyContent: 'center' },
   listContent: { padding: spacing.lg, paddingTop: spacing.sm, paddingBottom: spacing.xl * 2 },
+  growContent: { flexGrow: 1 },
   separator: { height: spacing.md },
   gridRow: { gap: spacing.md, marginBottom: spacing.md },
   // maxWidth evita que una última fila con un solo libro lo estire a todo el ancho.
