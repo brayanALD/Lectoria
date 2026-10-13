@@ -1,0 +1,106 @@
+# Lectoria
+
+Aplicación móvil para seguir tus lecturas: organiza tu biblioteca, registra cuánto lees y mantén el hábito. El nombre une *lectura* y *trayectoria*.
+
+> **Estado:** en desarrollo. Fases 1 y 2 cerradas; siguiente, la Fase 3 (añadir libros por ISBN). Probada en Android; iOS pendiente.
+
+## Fases de desarrollo
+
+| Fase | Contenido | Estado |
+|---|---|---|
+| 1. Preparar | Proyecto, autenticación (correo y Google), navegación, tema, reglas de Firestore | Cerrada (Android) |
+| 2. Biblioteca | Libros: añadir, editar, eliminar, estados de lectura, búsqueda y filtros | Cerrada |
+| 3. ISBN | Añadir libros escaneando el código de barras | Pendiente |
+| 4. Sesiones | Registro de sesiones de lectura, progreso, calendario y rachas | Pendiente |
+| 5. Estadísticas | Resúmenes y objetivos de lectura | Pendiente |
+| 6. Experiencia lectora | Lista de deseos, notas y reseñas, sagas, autores, colecciones, logros | Pendiente |
+| 7. Pulir | Estantería visual, recordatorios, accesibilidad, rendimiento | Pendiente |
+
+El plan completo (alcance, modelo de datos, decisiones y pendientes) está en [`BookTracker_Plan_de_desarrollo.md`](BookTracker_Plan_de_desarrollo.md).
+
+## Qué se puede hacer hoy
+
+- **Cuenta:** registrarse con correo (nombre y apodo opcional) o con Google, iniciar y cerrar sesión, mantener la sesión al reabrir y vincular ambos métodos de acceso desde «Mi espacio».
+- **Biblioteca:** añadir libros a mano, ver la lista en tiempo real (en lista o cuadrícula), cambiar su estado de lectura (Quiero leerlo, Leyendo, En pausa, Terminado, Abandonado), editarlos y eliminarlos.
+- **Búsqueda y filtros:** búsqueda de texto sin distinguir tildes ni mayúsculas, y filtros combinables por estado, género, autor y saga.
+- **Datos privados:** cada persona solo accede a su propia biblioteca (reglas de Firestore con validación de campos).
+
+## Tecnología
+
+Expo SDK 57 · React Native 0.86 · TypeScript · React Navigation · Firebase (Authentication y Firestore) · Jest.
+
+## Primeros pasos
+
+### Requisitos
+
+- Node.js y npm.
+- Un proyecto de Firebase con Authentication (correo/contraseña y, opcionalmente, Google) y Firestore.
+- Java, solo para ejecutar las pruebas de reglas de Firestore con el emulador.
+
+### Instalación
+
+```bash
+npm install
+cp .env.example .env     # y completa los valores de tu proyecto de Firebase
+```
+
+Las variables (`EXPO_PUBLIC_FIREBASE_*` y `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID`) se describen en `.env.example`. El archivo `.env` no se versiona.
+
+### Ejecutar
+
+```bash
+npx expo start
+```
+
+El acceso con **Google** usa código nativo y **no funciona en Expo Go**: requiere una *development build* de EAS. Para generarla, coloca tu `google-services.json` en la raíz (no se versiona) y ejecuta `npx eas-cli build --profile development --platform android`. En EAS Build el archivo se entrega mediante la variable de entorno de tipo archivo `GOOGLE_SERVICES_JSON`. Después, `npx expo start` abre la app en esa build.
+
+### Firebase
+
+Reglas e índices de Firestore:
+
+```bash
+npx firebase-tools deploy --only firestore
+```
+
+## Comandos
+
+| Comando | Qué hace |
+|---|---|
+| `npm run typecheck` | Comprueba los tipos de TypeScript |
+| `npm test` | Pruebas unitarias (Jest) |
+| `npm run test:rules` | Pruebas de las reglas y del servicio de libros contra el emulador de Firestore |
+| `npx expo-doctor` | Diagnóstico de dependencias |
+
+## Estructura
+
+```text
+src/
+├── components/   Interfaz reutilizable (tarjetas, formularios, skeletons, filtros)
+├── context/      Estado global (sesión)
+├── hooks/        Acceso a datos desde las pantallas
+├── navigation/   Pila de autenticación, pila de la app y pestañas
+├── screens/      Pantallas (auth y app: home, library, calendar, statistics, profile)
+├── services/     Único acceso a Firebase
+├── theme/        Tokens de diseño (colores, espaciado, tipografía)
+├── types/        Modelos de TypeScript
+└── utils/        Lógica pura y probada (validación, filtros, estados de lectura)
+tests/rules/      Pruebas contra el emulador de Firestore
+firestore.rules   Reglas de seguridad
+```
+
+## Principios de diseño
+
+La interfaz sigue cuatro principios que se verifican automáticamente donde es posible:
+
+1. **Skeletons de carga:** siluetas del contenido en lugar de pantallas en blanco.
+2. **Minimalismo (ley de Hick):** una acción principal por pantalla, sin texto superfluo.
+3. **Design tokens estrictos:** colores y medidas solo desde `src/theme/`; una prueba falla si aparece un valor suelto.
+4. **Accesibilidad:** contraste WCAG verificado por pruebas, zonas táctiles de 48 pt, roles y etiquetas accesibles, respeto a «reducir movimiento».
+
+La paleta oficial es Evergreen `#14281D`, Hunter Green `#355834`, Olive Bark `#6E633D`, Soft Fawn `#C2A878` y Porcelain `#F1F5F2`.
+
+## Seguridad
+
+- Las reglas de Firestore aíslan los datos por usuario y validan tipos, límites y campos permitidos.
+- Los archivos de configuración nativa de Firebase y las variables de entorno no están en el repositorio.
+- Las claves de API de Firebase son identificadores de cliente; se restringen en Google Cloud a las aplicaciones y APIs necesarias.
