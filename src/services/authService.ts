@@ -1,6 +1,8 @@
 import {
   createUserWithEmailAndPassword,
+  EmailAuthProvider,
   GoogleAuthProvider,
+  linkWithCredential,
   onAuthStateChanged,
   signInWithCredential,
   signInWithEmailAndPassword,
@@ -35,11 +37,14 @@ function coded(code: string): Error & { code: string } {
   return Object.assign(new Error(code), { code });
 }
 
+const GOOGLE_PROVIDER = 'google.com';
+const PASSWORD_PROVIDER = 'password';
+
 /**
- * Inicia sesión con Google. Devuelve false si el usuario cancela el selector de cuentas.
+ * Abre el selector de cuentas de Google y devuelve el idToken, o null si el usuario cancela.
  * La librería nativa se importa al usarla: en Expo Go no existe y no debe romper el arranque de la app.
  */
-export async function signInWithGoogle(): Promise<boolean> {
+async function getGoogleIdToken(): Promise<string | null> {
   const webClientId = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID;
   if (!webClientId) throw coded('lectoria/google-not-configured');
 
@@ -54,15 +59,14 @@ export async function signInWithGoogle(): Promise<boolean> {
   try {
     await google.GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
     const response = await google.GoogleSignin.signIn();
-    if (!google.isSuccessResponse(response)) return false;
+    if (!google.isSuccessResponse(response)) return null;
 
     const idToken = response.data.idToken;
     if (!idToken) throw coded('lectoria/google-no-token');
-    await signInWithCredential(auth, GoogleAuthProvider.credential(idToken));
-    return true;
+    return idToken;
   } catch (error) {
     if (google.isErrorWithCode(error)) {
-      if (error.code === google.statusCodes.IN_PROGRESS) return false;
+      if (error.code === google.statusCodes.IN_PROGRESS) return null;
       if (error.code === google.statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
         throw coded('lectoria/google-play-services');
       }
@@ -79,6 +83,39 @@ export async function signInWithGoogle(): Promise<boolean> {
     });
   }
 }
+
+/** Inicia sesión con Google. Devuelve false si el usuario cancela el selector de cuentas. */
+export async function signInWithGoogle(): Promise<boolean> {
+  const idToken = await getGoogleIdToken();
+  if (!idToken) return false;
+  await signInWithCredential(auth, GoogleAuthProvider.credential(idToken));
+  return true;
+}
+
+/** Identificadores de los métodos de acceso vinculados al usuario actual ('google.com', 'password'). */
+export function getLinkedProviders(): string[] {
+  return auth.currentUser?.providerData.map((provider) => provider.providerId) ?? [];
+}
+
+/** Vincula Google a la sesión actual para poder entrar también con él. false si el usuario cancela. */
+export async function linkGoogleToCurrentUser(): Promise<boolean> {
+  const user = auth.currentUser;
+  if (!user) throw coded('auth/user-not-found');
+  const idToken = await getGoogleIdToken();
+  if (!idToken) return false;
+  await linkWithCredential(user, GoogleAuthProvider.credential(idToken));
+  return true;
+}
+
+/** Añade una contraseña a la cuenta actual (p. ej. creada con Google), usando su mismo correo. */
+export async function linkPasswordToCurrentUser(password: string): Promise<void> {
+  const user = auth.currentUser;
+  if (!user) throw coded('auth/user-not-found');
+  if (!user.email) throw coded('lectoria/no-email');
+  await linkWithCredential(user, EmailAuthProvider.credential(user.email, password));
+}
+
+export { GOOGLE_PROVIDER, PASSWORD_PROVIDER };
 
 export async function signOutUser(): Promise<void> {
   const usedGoogle = auth.currentUser?.providerData.some((p) => p.providerId === 'google.com');

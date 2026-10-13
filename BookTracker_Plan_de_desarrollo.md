@@ -1,6 +1,6 @@
 # Lectoria — Plan de desarrollo de la aplicación móvil
 
-> Estado: **Fase 1 implementada en código** (proyecto Expo SDK 57 + TypeScript, autenticación, navegación condicional, tema y reglas de Firestore). Pendiente de tu parte para ejecutarla de extremo a extremo: crear el proyecto de Firebase y completar `.env` (ver sección 12).
+> Estado: **Fase 1 cerrada para Android (2026-10-12)**: Expo SDK 57 + TypeScript, autenticación con correo y Google (con nombre, apodo y vinculación de métodos), navegación condicional, tema, logo e iconos, Firestore en `us-east1` con reglas desplegadas. Verificado en dispositivo: registro, login, sesión persistente, cierre de sesión, perfil `users/{uid}` y vinculación. Siguiente: Fase 2 (biblioteca). Fuera del cierre: iOS (requiere cuenta de Apple Developer), ESLint y tema oscuro.
 > Nota de nombre: este archivo conserva el nombre `BookTracker_Plan_de_desarrollo.md` por compatibilidad con referencias existentes. «BookTracker» es el tipo de app; el nombre del producto es **Lectoria**.
 
 Leyenda de estado usada en todo el documento:
@@ -326,7 +326,7 @@ Convenciones [Recomendado]: código e identificadores en inglés; textos de inte
 
 | Fase | Contenido | Versión |
 |---|---|---|
-| 1. Preparar — **implementada** (2026-10-12; falta crear el proyecto de Firebase y completar `.env`) | Fijar versiones (Expo, RN, React Navigation) leyendo su documentación; scaffold TypeScript; Firebase y `.env`; tema; `AuthContext`; navegación condicional; reglas iniciales con validación | 1.0 |
+| 1. Preparar — **cerrada** (2026-10-12, Android) | Fijar versiones (Expo, RN, React Navigation) leyendo su documentación; scaffold TypeScript; Firebase y `.env`; tema; `AuthContext`; navegación condicional; reglas iniciales con validación | 1.0 |
 | 2. Biblioteca | `UserBook`; CRUD; `BookCard`, `BookCover`, `BookFilters`; búsqueda, filtros, estados de carga/error/vacío | 1.0 |
 | 3. ISBN | Servicio de catálogo; formulario manual; escáner; duplicados y errores | 1.0 |
 | 4. Sesiones | Formulario de sesión; progreso; calendario y rachas | 1.0 |
@@ -352,7 +352,7 @@ Orden de la Fase 1 (plantilla): theme → AuthContext → AppNavigator → Login
 5. iOS: requiere cuenta de Apple Developer (de pago) y registrar el dispositivo; sin ella, solo se puede probar Android.
 6. Instalar el build en el teléfono y ejecutar `npx expo start` (usa la app de desarrollo en lugar de Expo Go).
 
-Limitación conocida: si un correo ya tiene cuenta con contraseña y entra después con Google, Firebase aplica su política de «una cuenta por correo»; el vínculo explícito de proveedores no está implementado [Pendiente].
+**Vinculación de métodos de acceso** (implementada el 2026-10-12): en Mi espacio → «Métodos de acceso» se puede vincular Google a una cuenta de correo y añadir una contraseña a una cuenta de Google (`linkWithCredential`). Es explícita: no se depende de la fusión automática de Firebase cuando el mismo correo llega por dos métodos, cuyo comportamiento (cuenta de correo sin verificar frente a Google) no está verificado [Pendiente: probarlo]. Si el correo ya existe con otro método, los mensajes de error indican cómo vincularlos.
 
 ## 13. Estrategia de pruebas y criterios de aceptación
 

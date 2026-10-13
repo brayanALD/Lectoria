@@ -1,6 +1,11 @@
 import { createContext, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 
 import {
+  getLinkedProviders,
+  GOOGLE_PROVIDER,
+  linkGoogleToCurrentUser,
+  linkPasswordToCurrentUser,
+  PASSWORD_PROVIDER,
   signInWithEmail,
   signInWithGoogle,
   signOutUser,
@@ -19,6 +24,13 @@ interface AuthContextValue {
   signUp: (email: string, password: string, profile: ProfileInput) => Promise<void>;
   /** Devuelve false si el usuario cancela. Crea la cuenta si es la primera vez. */
   signInWithGoogle: () => Promise<boolean>;
+  /** Métodos de acceso vinculados a la cuenta actual. */
+  hasGoogle: boolean;
+  hasPassword: boolean;
+  /** Vincula Google a la cuenta actual. Devuelve false si el usuario cancela. */
+  linkGoogle: () => Promise<boolean>;
+  /** Añade una contraseña a la cuenta actual, usando su mismo correo. */
+  linkPassword: (password: string) => Promise<void>;
   signOut: () => Promise<void>;
 }
 
@@ -27,6 +39,7 @@ const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [initializing, setInitializing] = useState(true);
+  const [providers, setProviders] = useState<string[]>([]);
   // Datos del formulario de registro, para que la única escritura del perfil los incluya.
   const pendingProfile = useRef<ProfileInput | null>(null);
 
@@ -34,6 +47,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     () =>
       subscribeToAuthState((nextUser) => {
         setUser(nextUser);
+        setProviders(getLinkedProviders());
         setInitializing(false);
       }),
     [],
@@ -64,9 +78,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       },
       signInWithGoogle,
+      hasGoogle: providers.includes(GOOGLE_PROVIDER),
+      hasPassword: providers.includes(PASSWORD_PROVIDER),
+      // Vincular no cambia el usuario, así que no dispara onAuthStateChanged: se refresca a mano.
+      linkGoogle: async () => {
+        const linked = await linkGoogleToCurrentUser();
+        setProviders(getLinkedProviders());
+        return linked;
+      },
+      linkPassword: async (password) => {
+        await linkPasswordToCurrentUser(password);
+        setProviders(getLinkedProviders());
+      },
       signOut: signOutUser,
     }),
-    [user, initializing],
+    [user, initializing, providers],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

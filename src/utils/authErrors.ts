@@ -1,15 +1,24 @@
+// Mismo texto para los tres errores de credenciales, para no revelar si el correo existe.
+const INVALID_CREDENTIALS =
+  'Correo o contraseña incorrectos. Si creaste la cuenta con Google, usa «Continuar con Google».';
+
 const MESSAGES: Record<string, string> = {
-  'auth/invalid-credential': 'Correo o contraseña incorrectos.',
-  'auth/wrong-password': 'Correo o contraseña incorrectos.',
-  'auth/user-not-found': 'Correo o contraseña incorrectos.',
+  'auth/invalid-credential': INVALID_CREDENTIALS,
+  'auth/wrong-password': INVALID_CREDENTIALS,
+  'auth/user-not-found': INVALID_CREDENTIALS,
   'auth/invalid-email': 'El correo no es válido.',
-  'auth/email-already-in-use': 'Ya existe una cuenta con ese correo.',
+  'auth/email-already-in-use':
+    'Ya existe una cuenta con ese correo. Si la creaste con Google, entra con «Continuar con Google» y añade una contraseña desde Mi espacio.',
+  'auth/provider-already-linked': 'Ese método de acceso ya está vinculado a tu cuenta.',
+  'auth/credential-already-in-use': 'Esa cuenta de Google ya está asociada a otra cuenta de Lectoria.',
+  'auth/requires-recent-login': 'Por seguridad, cierra sesión, vuelve a entrar e inténtalo de nuevo.',
+  'lectoria/no-email': 'Tu cuenta no tiene un correo asociado, así que no se puede añadir una contraseña.',
   'auth/weak-password': 'La contraseña debe tener al menos 6 caracteres.',
   'auth/user-disabled': 'Esta cuenta está deshabilitada.',
   'auth/too-many-requests': 'Demasiados intentos. Inténtalo de nuevo más tarde.',
   'auth/network-request-failed': 'Sin conexión. Revisa tu red e inténtalo de nuevo.',
   'auth/account-exists-with-different-credential':
-    'Ya existe una cuenta con ese correo que usa otro método de acceso.',
+    'Ese correo ya tiene una cuenta con otro método de acceso. Entra con ese método y vincula este desde Mi espacio.',
   'lectoria/google-not-configured': 'El acceso con Google no está configurado en esta versión de la app.',
   'lectoria/google-unavailable':
     'El acceso con Google no está disponible aquí. Requiere la app de desarrollo, no funciona en Expo Go.',
