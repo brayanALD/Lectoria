@@ -76,11 +76,16 @@ export function formatDuration(minutes: number): string {
   return rest === 0 ? `${hours} h` : `${hours} h ${String(rest).padStart(2, '0')} min`;
 }
 
+/** «1 pág», «40 págs». */
+export function formatPages(pages: number): string {
+  return `${pages} ${pages === 1 ? 'pág' : 'págs'}`;
+}
+
 /** «2 h 05 min · 40 págs», omitiendo la parte que sea cero; «Sin lectura» si no hay nada. */
 export function formatTotals(totals: Pick<PeriodTotals, 'minutes' | 'pages'>): string {
   const parts = [
     totals.minutes > 0 ? formatDuration(totals.minutes) : null,
-    totals.pages > 0 ? `${totals.pages} ${totals.pages === 1 ? 'pág' : 'págs'}` : null,
+    totals.pages > 0 ? formatPages(totals.pages) : null,
   ].filter((part): part is string => part !== null);
   return parts.length > 0 ? parts.join(' · ') : 'Sin lectura';
 }

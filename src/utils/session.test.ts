@@ -92,6 +92,49 @@ describe('parseSessionForm', () => {
     expect(result.ok && result.data).toMatchObject({ startPage: 50, endPage: 80, pagesRead: 30 });
   });
 
+  describe('con la página inicial obligatoria (lectura pasada o edición)', () => {
+    // El libro va por la página 100: ya no dice dónde empezó una lectura de otro día.
+    const strict = (overrides: Partial<SessionFormValues> = {}) =>
+      parseSessionForm(form(overrides), 'book1', book, NOW, 'UTC', true);
+
+    it('pide la inicial cuando hay página final, en lugar de suponer la página actual', () => {
+      const result = strict({ endPage: '60' });
+      expect(result).toEqual({ ok: false, errors: { startPage: 'Indica la página inicial.' } });
+    });
+
+    it('pide la inicial aunque haya minutos', () => {
+      const result = strict({ minutes: '30', endPage: '60' });
+      expect(result.ok).toBe(false);
+      expect(!result.ok && result.errors.startPage).toBeTruthy();
+    });
+
+    it('con la inicial, una lectura anterior a la página actual es válida: las páginas salen de la diferencia', () => {
+      const result = strict({ startPage: '20', endPage: '60' });
+      expect(result.ok && result.data).toMatchObject({ startPage: 20, endPage: 60, pagesRead: 40 });
+    });
+
+    it('no pide la inicial si no hay página final (solo minutos)', () => {
+      const result = strict({ minutes: '25' });
+      expect(result.ok && result.data).toMatchObject({ durationMinutes: 25, pagesRead: 0 });
+      expect(result.ok && result.data.startPage).toBeUndefined();
+    });
+
+    it('una inicial inválida muestra su propio error, no «Indica la página inicial»', () => {
+      const result = strict({ startPage: '999', endPage: '60' });
+      expect(!result.ok && result.errors.startPage).toContain('entre 0 y 300');
+    });
+
+    it('la inicial no puede ser posterior a la final', () => {
+      const result = strict({ startPage: '80', endPage: '60' });
+      expect(!result.ok && result.errors.endPage).toBe('La página final no puede ser anterior a la inicial.');
+    });
+
+    it('por defecto (sin exigirla) sigue partiendo de la página actual', () => {
+      const result = parse({ endPage: '130' });
+      expect(result.ok && result.data).toMatchObject({ startPage: 100, pagesRead: 30 });
+    });
+  });
+
   it('el dateKey sale de la zona horaria indicada', () => {
     const lateNight = new Date('2026-10-13T03:00:00Z');
     const bogota = parseSessionForm(form({ date: lateNight, minutes: '10' }), 'b', book, NOW, 'America/Bogota');

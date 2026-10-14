@@ -123,6 +123,7 @@ function SessionForm({ navigation, books, sessions, fixedBookId, editing, draft,
   const [dayKey, setDayKey] = useState(editing?.dateKey ?? draft?.dayKey ?? resolveDayKey(day, todayKey));
 
   const [minutes, setMinutes] = useState(editing?.durationMinutes ? String(editing.durationMinutes) : (draft?.minutes ?? ''));
+  const [startPage, setStartPage] = useState(editing?.startPage !== undefined ? String(editing.startPage) : '');
   const [endPage, setEndPage] = useState(editing?.endPage !== undefined ? String(editing.endPage) : '');
   const [notes, setNotes] = useState(editing?.notes ?? '');
   const [errors, setErrors] = useState<SessionFormErrors>({});
@@ -133,8 +134,14 @@ function SessionForm({ navigation, books, sessions, fixedBookId, editing, draft,
 
   const { ref: containerRef, top, onLayout } = useWindowTop();
   const scrollRef = useRef<ScrollView>(null);
+  const startRef = useRef<TextInput>(null);
   const pageRef = useRef<TextInput>(null);
   const notesRef = useRef<TextInput>(null);
+
+  // La página actual del libro solo sirve de «página inicial» para lo que se lee ahora. Al registrar una lectura de otro
+  // día o al editar una sesión con página inicial, ya no dice dónde se empezó: entonces se pide, y es obligatoria si hay
+  // página final. Para lo de hoy el campo no aparece y se parte de la página actual, como siempre.
+  const showStartPage = dayKey < todayKey || editing?.startPage !== undefined;
 
   if (!book) {
     // Con libro fijo (detalle, edición o cronómetro) es que se eliminó; sin él, que no hay ninguno.
@@ -172,9 +179,16 @@ function SessionForm({ navigation, books, sessions, fixedBookId, editing, draft,
     const now = new Date();
     // Al editar sin cambiar el día se conserva la hora original; con otro día se aplica la misma regla que al crear.
     const date = editing && dayKey === editing.dateKey ? editing.date.toDate() : dateForDay(dayKey, now, toDateKey(now));
-    // Al editar, las páginas leídas se calculan desde la página inicial original (si aún se indica página final).
-    const startPage = editing?.startPage !== undefined && endPage.trim() ? String(editing.startPage) : '';
-    const result = parseSessionForm({ date, minutes, startPage, endPage, notes }, book.id, book, now);
+    // Sin página final no hay páginas que contar: una inicial suelta no se tiene en cuenta.
+    const startText = showStartPage && endPage.trim() ? startPage : '';
+    const result = parseSessionForm(
+      { date, minutes, startPage: startText, endPage, notes },
+      book.id,
+      book,
+      now,
+      undefined,
+      showStartPage,
+    );
     if (!result.ok) {
       // Con el cronómetro los minutos no se pueden editar: si no llegó a medio minuto, solo queda indicar la página.
       const generalError =
@@ -236,12 +250,26 @@ function SessionForm({ navigation, books, sessions, fixedBookId, editing, draft,
             maxLength={MAX_DIGITS}
             returnKeyType="next"
             submitBehavior="submit"
-            onSubmitEditing={() => pageRef.current?.focus()}
+            onSubmitEditing={() => (showStartPage ? startRef : pageRef).current?.focus()}
           />
+          {showStartPage ? (
+            <TextField
+              ref={startRef}
+              label="Página inicial"
+              value={startPage}
+              onChangeText={edit('startPage', setStartPage)}
+              error={errors.startPage}
+              keyboardType="number-pad"
+              maxLength={MAX_DIGITS}
+              returnKeyType="next"
+              submitBehavior="submit"
+              onSubmitEditing={() => pageRef.current?.focus()}
+            />
+          ) : null}
           <TextField
             ref={pageRef}
-            label="Página en la que vas"
-            placeholder={`Ahora: ${book.currentPage}`}
+            label={showStartPage ? 'Página final' : 'Página en la que vas'}
+            placeholder={showStartPage ? undefined : `Ahora: ${book.currentPage}`}
             value={endPage}
             onChangeText={edit('endPage', setEndPage)}
             error={errors.endPage}

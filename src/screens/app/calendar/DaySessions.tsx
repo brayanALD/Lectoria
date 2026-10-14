@@ -4,6 +4,7 @@ import { Button } from '../../../components/Button';
 import { GoalProgress } from '../../../components/GoalProgress';
 import { SessionRow } from '../../../components/SessionRow';
 import type { ReadingSessionWithId } from '../../../types/session';
+import type { DailyGoal } from '../../../types/goal';
 import { colors } from '../../../theme/colors';
 import { spacing } from '../../../theme/spacing';
 import { fontSize, fontWeight } from '../../../theme/typography';
@@ -19,8 +20,8 @@ interface DaySessionsProps {
   /** Título de cada libro por id (para mostrar de qué libro es cada sesión). */
   bookTitles: ReadonlyMap<string, string>;
   totals: Pick<PeriodTotals, 'minutes' | 'pages'>;
-  /** La meta diaria en minutos; sin ella no se muestra el cumplimiento. */
-  goalMinutes?: number;
+  /** La meta diaria (minutos o páginas); sin ella no se muestra el cumplimiento. */
+  goal?: DailyGoal;
   /** Registrar una lectura en este día. Ausente en días futuros, donde no se puede registrar. */
   onRegister?: () => void;
   onEdit: (session: ReadingSessionWithId) => void;
@@ -34,7 +35,7 @@ export function DaySessions({
   sessions,
   bookTitles,
   totals,
-  goalMinutes,
+  goal,
   onRegister,
   onEdit,
   onDelete,
@@ -48,9 +49,7 @@ export function DaySessions({
         <Text style={styles.totals}>{formatTotals(totals)}</Text>
       </View>
 
-      {goalMinutes !== undefined ? (
-        <GoalProgress progress={getGoalProgress(totals.minutes, goalMinutes)} past={dateKey < todayKey} />
-      ) : null}
+      {goal ? <GoalProgress progress={getGoalProgress(totals, goal)} past={dateKey < todayKey} /> : null}
 
       {sessions.map((session) => {
         const title = bookTitles.get(session.bookId) ?? 'Libro eliminado';

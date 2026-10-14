@@ -2,7 +2,7 @@
 
 Aplicación móvil para seguir tus lecturas: organiza tu biblioteca, registra cuánto lees y mantén el hábito. El nombre une *lectura* y *trayectoria*.
 
-> **Estado:** en desarrollo. Fases 1, 2 y 3 cerradas; siguiente, la Fase 4 (sesiones de lectura, calendario y rachas). Probada en Android; iOS pendiente.
+> **Estado:** en desarrollo. Fases 1 a 4 cerradas; siguiente, la Fase 5 (estadísticas). Probada en Android; iOS pendiente.
 
 ## Fases de desarrollo
 
@@ -11,7 +11,7 @@ Aplicación móvil para seguir tus lecturas: organiza tu biblioteca, registra cu
 | 1. Preparar | Proyecto, autenticación (correo y Google), navegación, tema, reglas de Firestore | Cerrada (Android) |
 | 2. Biblioteca | Libros: añadir, editar, eliminar, estados de lectura, búsqueda y filtros | Cerrada |
 | 3. ISBN | Añadir libros por ISBN: escribiéndolo o escaneando el código de barras | Cerrada |
-| 4. Sesiones | Registro de sesiones de lectura, progreso, calendario y rachas | Pendiente |
+| 4. Sesiones | Registro de lecturas (manual y con cronómetro), progreso, calendario, rachas y meta diaria | Cerrada |
 | 5. Estadísticas | Resúmenes y objetivos de lectura | Pendiente |
 | 6. Experiencia lectora | Lista de deseos, notas y reseñas, sagas, autores, colecciones, logros | Pendiente |
 | 7. Pulir | Estantería visual, recordatorios, accesibilidad, rendimiento | Pendiente |
@@ -24,11 +24,16 @@ El plan completo (alcance, modelo de datos, decisiones y pendientes) está en [`
 - **Biblioteca:** añadir libros a mano, ver la lista en tiempo real (en lista o cuadrícula), cambiar su estado de lectura (Quiero leerlo, Leyendo, En pausa, Terminado, Abandonado), editarlos y eliminarlos.
 - **Añadir por ISBN:** escribir el ISBN (10 o 13 dígitos, con o sin guiones) o escanear el código de barras con la cámara; los datos del libro (título, autores, páginas y portada) se completan desde [Open Library](https://openlibrary.org) y se pueden corregir antes de guardar. Avisa si el libro ya está en tu biblioteca. El campo «Saga» sugiere las sagas que ya tienes registradas mientras escribes.
 - **Búsqueda y filtros:** búsqueda de texto sin distinguir tildes ni mayúsculas, y filtros combinables por estado, género, autor y saga.
+- **Registrar lecturas:** desde Inicio, desde el detalle de un libro o desde un día del Calendario, con la fecha de hoy o de cualquier día pasado, minutos, página y notas. En una lectura de otro día se indica también la página inicial. El progreso del libro se mantiene solo al crear, editar o eliminar una sesión.
+- **Cronómetro:** iniciar, pausar, reanudar y finalizar una lectura. Mide con marcas de tiempo (sigue contando con la app en segundo plano), se recupera si la app se cierra y no duplica sesiones.
+- **Calendario y rachas:** vistas semanal, mensual y anual con totales y detalle de cada día, y racha actual y récord en Inicio.
+- **Meta diaria:** una meta de minutos o de páginas al día, a elegir, con barra de progreso en Inicio y cumplimiento de cada día en el Calendario. El progreso se calcula solo con las lecturas registradas, a mano o con el cronómetro.
+- **Actividad reciente:** las últimas lecturas en Inicio y la lista de lecturas de cada libro, que se pueden editar y eliminar.
 - **Datos privados:** cada persona solo accede a su propia biblioteca (reglas de Firestore con validación de campos).
 
 ## Tecnología
 
-Expo SDK 57 · React Native 0.86 · TypeScript · React Navigation · Firebase (Authentication y Firestore) · expo-camera · Open Library (catálogo de libros, sin clave) · Jest.
+Expo SDK 57 · React Native 0.86 · TypeScript · React Navigation · Firebase (Authentication y Firestore) · AsyncStorage · expo-camera · Open Library (catálogo de libros, sin clave) · Jest.
 
 ## Primeros pasos
 
@@ -69,7 +74,7 @@ npx firebase-tools deploy --only firestore
 |---|---|
 | `npm run typecheck` | Comprueba los tipos de TypeScript |
 | `npm test` | Pruebas unitarias (Jest) |
-| `npm run test:rules` | Pruebas de las reglas y del servicio de libros contra el emulador de Firestore |
+| `npm run test:rules` | Pruebas de las reglas y de los servicios (libros, sesiones, meta y sincronización) contra el emulador de Firestore |
 | `npx expo-doctor` | Diagnóstico de dependencias |
 
 ## Estructura
@@ -77,14 +82,14 @@ npx firebase-tools deploy --only firestore
 ```text
 src/
 ├── components/   Interfaz reutilizable (tarjetas, formularios, skeletons, filtros)
-├── context/      Estado global (sesión)
+├── context/      Estado global (sesión, datos de lectura y cronómetro)
 ├── hooks/        Acceso a datos desde las pantallas
 ├── navigation/   Pila de autenticación, pila de la app y pestañas
 ├── screens/      Pantallas (auth y app: home, library, calendar, statistics, profile)
 ├── services/     Único acceso a Firebase y al catálogo de libros
 ├── theme/        Tokens de diseño (colores, espaciado, tipografía)
 ├── types/        Modelos de TypeScript
-└── utils/        Lógica pura y probada (validación, filtros, estados de lectura)
+└── utils/        Lógica pura y probada (validación, filtros, fechas, rachas, cronómetro, meta diaria)
 tests/rules/      Pruebas contra el emulador de Firestore
 firestore.rules   Reglas de seguridad
 ```

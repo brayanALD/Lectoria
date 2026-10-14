@@ -52,6 +52,8 @@ export function toDateKey(date: Date, timeZone?: string): string {
  * Valida el formulario «Registrar lectura» y lo convierte en los campos que se guardan.
  * - Minutos: opcionales, enteros de 0 a 1440.
  * - Página final: opcional; las páginas leídas son final − inicial, y la inicial por defecto es la página actual.
+ * - `requireStartPage`: con página final, exige también la inicial en lugar de suponer la página actual. Se usa al
+ *   registrar una lectura pasada o al editar una sesión: la página actual del libro ya no dice dónde empezó entonces.
  * - Hay que indicar al menos minutos o página final (las reglas de Firestore exigen páginas o minutos > 0).
  */
 export function parseSessionForm(
@@ -60,6 +62,7 @@ export function parseSessionForm(
   book: SessionBookContext,
   now: Date = new Date(),
   timeZone?: string,
+  requireStartPage = false,
 ): SessionFormResult {
   const errors: SessionFormErrors = {};
 
@@ -98,7 +101,10 @@ export function parseSessionForm(
   if (explicitStart !== undefined && endPage === undefined && !errors.endPage) {
     errors.endPage = 'Indica también la página final.';
   }
-  if (endPage !== undefined) {
+  if (endPage !== undefined && explicitStart === undefined && requireStartPage) {
+    // Sin la inicial no se puede saber cuántas páginas se leyeron: se pide en lugar de suponer la página actual.
+    if (!errors.startPage) errors.startPage = 'Indica la página inicial.';
+  } else if (endPage !== undefined) {
     startPage = explicitStart ?? book.currentPage;
     if (startPage > endPage) {
       errors.endPage =

@@ -135,10 +135,10 @@ export function HomeScreen() {
       <DailyGoalSheet
         visible={editingGoal}
         onClose={() => setEditingGoal(false)}
-        goalMinutes={goal.goalMinutes}
-        onSave={async (minutes) => {
+        goal={goal.goal}
+        onSave={async (nextGoal) => {
           if (!user) throw new Error('No hay sesión iniciada');
-          await withTimeout(setDailyGoal(user.uid, minutes), WRITE_TIMEOUT_MS);
+          await withTimeout(setDailyGoal(user.uid, nextGoal), WRITE_TIMEOUT_MS);
         }}
       />
     </>

@@ -4,8 +4,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { colors } from '../theme/colors';
 import { iconSize, opacity, spacing } from '../theme/spacing';
 import { fontSize, fontWeight } from '../theme/typography';
-import { describeGoalProgress, type GoalProgressInfo } from '../utils/dailyGoal';
-import { formatDuration } from '../utils/readingStats';
+import { describeGoalProgress, describeGoalSummary, type GoalProgressInfo } from '../utils/dailyGoal';
 import { ReadingProgress } from './ReadingProgress';
 
 interface GoalProgressProps {
@@ -17,11 +16,11 @@ interface GoalProgressProps {
 }
 
 /**
- * Cuánto de la meta diaria se ha leído: «12 min de 30 min», una barra y lo que falta (o «Meta cumplida»).
+ * Cuánto de la meta diaria se ha leído («12 min de 30 min» o «8 págs de 20 págs»), una barra y lo que falta (o «Meta cumplida»).
  * El estado se comunica con texto e icono, no solo con la barra. Lo usan Inicio (hoy) y el Calendario (cualquier día).
  */
 export function GoalProgress({ progress, past = false, onPress }: GoalProgressProps) {
-  const summary = `${formatDuration(progress.minutes)} de ${formatDuration(progress.goalMinutes)}`;
+  const summary = describeGoalSummary(progress);
   const status = describeGoalProgress(progress, past);
 
   const body = (

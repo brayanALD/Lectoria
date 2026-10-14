@@ -7,6 +7,7 @@ import { iconSize, minTouchSize, opacity, radius, spacing } from '../../../theme
 import { fontSize, fontWeight, maxFontScale } from '../../../theme/typography';
 import { addDays } from '../../../utils/readingDays';
 import { formatDateKeyLong, formatWeekLabel, formatWeekdayAndDay, getWeekDays, startOfWeek } from '../../../utils/calendar';
+import type { DailyGoal } from '../../../types/goal';
 import type { DaySummary } from '../../../utils/readingDays';
 import { getGoalProgress } from '../../../utils/dailyGoal';
 import { formatTotals, totalsForDays } from '../../../utils/readingStats';
@@ -18,15 +19,15 @@ interface WeekViewProps {
   todayKey: string;
   selectedKey?: string;
   days: ReadonlyMap<string, DaySummary>;
-  /** La meta diaria en minutos; con ella, los días en que se cumplió llevan una marca. */
-  goalMinutes?: number;
+  /** La meta diaria (minutos o páginas); con ella, los días en que se cumplió llevan una marca. */
+  goal?: DailyGoal;
   onSelect: (dateKey: string) => void;
 }
 
 const BAR_HEIGHT = spacing.sm;
 
 /** Semana de lunes a domingo: una fila por día con una barra proporcional a lo leído esa semana. */
-export function WeekView({ cursor, onCursorChange, todayKey, selectedKey, days, goalMinutes, onSelect }: WeekViewProps) {
+export function WeekView({ cursor, onCursorChange, todayKey, selectedKey, days, goal, onSelect }: WeekViewProps) {
   const weekDays = getWeekDays(cursor);
   const totals = totalsForDays(days, weekDays);
   const canGoNext = startOfWeek(cursor) < startOfWeek(todayKey);
@@ -53,8 +54,9 @@ export function WeekView({ cursor, onCursorChange, todayKey, selectedKey, days, 
         const selected = key === selectedKey;
         const future = key > todayKey;
         const summary = day ? formatTotals(day) : 'Sin lectura';
-        // La meta se compara con los minutos de ese día; el estado también va en la etiqueta, no solo en el icono.
-        const goalMet = goalMinutes !== undefined && day !== undefined && getGoalProgress(day.minutes, goalMinutes).met;
+        // La meta se compara con lo leído ese día (en minutos o páginas, según la meta); el estado también va en la
+        // etiqueta, no solo en el icono.
+        const goalMet = goal !== undefined && day !== undefined && getGoalProgress(day, goal).met;
         return (
           <Pressable
             key={key}

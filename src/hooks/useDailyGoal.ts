@@ -1,11 +1,12 @@
 import { useMemo } from 'react';
 
 import { useReadingData } from '../context/ReadingDataContext';
+import type { DailyGoal } from '../types/goal';
 import { getGoalProgress, type GoalProgressInfo } from '../utils/dailyGoal';
 
 interface UseDailyGoalResult {
-  /** La meta diaria en minutos, o `undefined` si no hay. */
-  goalMinutes: number | undefined;
+  /** La meta diaria (minutos o páginas), o `undefined` si no hay. */
+  goal: DailyGoal | undefined;
   /** Cuánto de la meta se ha cumplido HOY; `undefined` si no hay meta. */
   progress: GoalProgressInfo | undefined;
   loading: boolean;
@@ -14,20 +15,19 @@ interface UseDailyGoalResult {
 }
 
 /**
- * La meta diaria y el progreso de hoy. El progreso sale de los minutos de las sesiones de hoy (los mismos `days` que
- * usan el calendario y las rachas), así que se actualiza solo al registrar, editar o eliminar una sesión. Para
- * consultar otro día se usa `getGoalProgress` con los minutos de ese día.
+ * La meta diaria y el progreso de hoy. El progreso sale de lo leído hoy (los mismos `days` que usan el calendario y
+ * las rachas) y se mide en lo que pida la meta, minutos o páginas, así que se actualiza solo al registrar, editar o
+ * eliminar una sesión, a mano o con el cronómetro. Para consultar otro día se usa `getGoalProgress` con lo leído ese día.
  */
 export function useDailyGoal(): UseDailyGoalResult {
-  const { goal, days, todayKey } = useReadingData();
-  const goalMinutes = goal.items[0];
-  const todayMinutes = days.get(todayKey)?.minutes ?? 0;
-  const progress = useMemo(
-    () => (goalMinutes === undefined ? undefined : getGoalProgress(todayMinutes, goalMinutes)),
-    [goalMinutes, todayMinutes],
-  );
+  const { goal: liveGoal, days, todayKey } = useReadingData();
+  const goal = liveGoal.items[0];
+  const today = days.get(todayKey);
+  const minutes = today?.minutes ?? 0;
+  const pages = today?.pages ?? 0;
+  const progress = useMemo(() => (goal ? getGoalProgress({ minutes, pages }, goal) : undefined), [goal, minutes, pages]);
   return useMemo(
-    () => ({ goalMinutes, progress, loading: goal.loading, error: goal.error, retry: goal.retry }),
-    [goalMinutes, progress, goal.loading, goal.error, goal.retry],
+    () => ({ goal, progress, loading: liveGoal.loading, error: liveGoal.error, retry: liveGoal.retry }),
+    [goal, progress, liveGoal.loading, liveGoal.error, liveGoal.retry],
   );
 }

@@ -5,6 +5,7 @@ import { subscribeToBooks } from '../services/booksService';
 import { subscribeToSessions } from '../services/sessionsService';
 import { subscribeToDailyGoal } from '../services/userService';
 import type { UserBookWithId } from '../types/book';
+import type { DailyGoal } from '../types/goal';
 import type { ReadingSessionWithId } from '../types/session';
 import { msUntilNextDay } from '../utils/calendar';
 import { getFirestoreErrorMessage } from '../utils/firestoreErrors';
@@ -29,8 +30,8 @@ interface ReadingDataValue {
   books: LiveList<UserBookWithId>;
   /** De la más reciente a la más antigua (ver `sortSessions`). */
   sessions: LiveList<ReadingSessionWithId>;
-  /** La meta diaria en minutos: una lista de 0 o 1 elementos (sin meta = vacía). */
-  goal: LiveList<number>;
+  /** La meta diaria (minutos o páginas): una lista de 0 o 1 elementos (sin meta = vacía). */
+  goal: LiveList<DailyGoal>;
   /** Minutos y páginas por día (`dateKey`), derivados de las sesiones. */
   days: Map<string, DaySummary>;
   /** Días que cuentan como «día de lectura», derivados de las sesiones. */
@@ -81,7 +82,7 @@ export function ReadingDataProvider({ children }: { children: ReactNode }) {
     listReducer<ReadingSessionWithId>,
     initialListState<ReadingSessionWithId>(),
   );
-  const [goalState, dispatchGoal] = useReducer(listReducer<number>, initialListState<number>());
+  const [goalState, dispatchGoal] = useReducer(listReducer<DailyGoal>, initialListState<DailyGoal>());
   const [booksAttempt, setBooksAttempt] = useState(0);
   const [sessionsAttempt, setSessionsAttempt] = useState(0);
   const [goalAttempt, setGoalAttempt] = useState(0);
@@ -121,7 +122,7 @@ export function ReadingDataProvider({ children }: { children: ReactNode }) {
     dispatchGoal({ type: 'subscribe' });
     return subscribeToDailyGoal(
       uid,
-      (minutes) => dispatchGoal({ type: 'success', items: minutes === undefined ? [] : [minutes] }),
+      (goal) => dispatchGoal({ type: 'success', items: goal ? [goal] : [] }),
       (error) => dispatchGoal({ type: 'failure', message: getFirestoreErrorMessage(error) }),
     );
   }, [uid, goalAttempt]);

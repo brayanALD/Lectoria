@@ -16,6 +16,7 @@ import {
 } from '../../src/services/sessionsService';
 import { setDailyGoal, subscribeToDailyGoal } from '../../src/services/userService';
 import type { UserBookWithId } from '../../src/types/book';
+import type { DailyGoal } from '../../src/types/goal';
 import type { ReadingSessionWithId, SessionFormValues } from '../../src/types/session';
 import { EMPTY_BOOK_FORM, parseBookForm } from '../../src/utils/book';
 import { dateForDay } from '../../src/utils/calendar';
@@ -65,8 +66,8 @@ interface LiveView {
   days: ReturnType<typeof summarizeByDay>;
   readingDays: Set<string>;
   streaks: ReturnType<typeof computeStreaks>;
-  /** La meta diaria en minutos (`undefined` si no hay). */
-  goalMinutes: number | undefined;
+  /** La meta diaria, de minutos o de páginas (`undefined` si no hay). */
+  goal: DailyGoal | undefined;
 }
 
 const TODAY = toDateKey(new Date());
@@ -75,7 +76,7 @@ const TODAY = toDateKey(new Date());
 function openLiveView() {
   let booksState: ListState<UserBookWithId> = initialListState<UserBookWithId>();
   let sessionsState: ListState<ReadingSessionWithId> = initialListState<ReadingSessionWithId>();
-  let goalState: ListState<number> = initialListState<number>();
+  let goalState: ListState<DailyGoal> = initialListState<DailyGoal>();
   const waiting = new Set<() => void>();
   const notify = () => waiting.forEach((check) => check());
 
@@ -104,8 +105,8 @@ function openLiveView() {
 
   const stopGoal = subscribeToDailyGoal(
     'alice',
-    (minutes) => {
-      goalState = listReducer(goalState, { type: 'success', items: minutes === undefined ? [] : [minutes] });
+    (goal) => {
+      goalState = listReducer(goalState, { type: 'success', items: goal ? [goal] : [] });
       notify();
     },
     (error) => {
@@ -124,7 +125,7 @@ function openLiveView() {
       days: summarizeByDay(sessions),
       readingDays,
       streaks: computeStreaks(readingDays, TODAY),
-      goalMinutes: goalState.items[0],
+      goal: goalState.items[0],
     };
   };
 
@@ -378,54 +379,159 @@ describe('detalle del libro', () => {
 });
 
 describe('meta diaria', () => {
-  it('guardar, cambiar y quitar la meta llega a las vistas sin tocar las sesiones', async () => {
-    const initial = await live.until((current) => current.goalMinutes === undefined);
-    expect(initial.goalMinutes).toBeUndefined();
+  const minutes = (target: number): DailyGoal => ({ type: 'minutes', target });
+  const pages = (target: number): DailyGoal => ({ type: 'pages', target });
+  /** El progreso de un día, calculado como lo hace la app: con lo leído ese día y la meta de ese momento. */
+  const progressOn = (view: LiveView, key: string) =>
+    getGoalProgress(view.days.get(key) ?? { minutes: 0, pages: 0 }, view.goal as DailyGoal);
 
-    await setDailyGoal('alice', 30, database);
-    await live.until((current) => current.goalMinutes === 30);
-    await setDailyGoal('alice', 45, database);
-    await live.until((current) => current.goalMinutes === 45);
+  it('guardar, cambiar y quitar la meta llega a las vistas sin tocar las sesiones', async () => {
+    const initial = await live.until((current) => current.goal === undefined);
+    expect(initial.goal).toBeUndefined();
+
+    await setDailyGoal('alice', minutes(30), database);
+    await live.until((current) => current.goal?.target === 30);
+    await setDailyGoal('alice', minutes(45), database);
+    await live.until((current) => current.goal?.target === 45);
     await setDailyGoal('alice', undefined, database);
-    const removed = await live.until((current) => current.goalMinutes === undefined);
+    const removed = await live.until((current) => current.goal === undefined);
     expect(removed.sessions).toEqual([]);
   });
 
-  it('el progreso de hoy se recalcula solo al registrar, editar y eliminar sesiones', async () => {
-    await setDailyGoal('alice', 60, database);
+  it('cambiar de minutos a páginas (y volver) llega a las vistas con su tipo', async () => {
+    await setDailyGoal('alice', minutes(30), database);
+    await live.until((current) => current.goal?.type === 'minutes');
+    await setDailyGoal('alice', pages(15), database);
+    const toPages = await live.until((current) => current.goal?.type === 'pages');
+    expect(toPages.goal).toEqual(pages(15));
+    await setDailyGoal('alice', minutes(40), database);
+    const back = await live.until((current) => current.goal?.type === 'minutes');
+    expect(back.goal).toEqual(minutes(40));
+  });
+
+  it('meta de minutos: el progreso de hoy se recalcula solo al registrar, editar y eliminar sesiones', async () => {
+    await setDailyGoal('alice', minutes(60), database);
     const book = await addBook();
-    const progressOf = (view: LiveView) => getGoalProgress(view.days.get(TODAY)?.minutes ?? 0, view.goalMinutes as number);
 
     await createSession('alice', book, sessionFields(book, { minutes: '30' }), database);
-    const half = await live.until((current) => current.goalMinutes === 60 && current.sessions.length === 1);
-    expect(progressOf(half)).toMatchObject({ percent: 50, remaining: 30, met: false });
+    const half = await live.until((current) => current.goal?.target === 60 && current.sessions.length === 1);
+    expect(progressOn(half, TODAY)).toMatchObject({ value: 30, percent: 50, remaining: 30, met: false });
 
     await createSession('alice', half.books[0], sessionFields(half.books[0], { minutes: '40' }), database);
     const met = await live.until((current) => current.sessions.length === 2);
-    expect(progressOf(met)).toMatchObject({ percent: 100, remaining: 0, met: true });
+    expect(progressOn(met, TODAY)).toMatchObject({ percent: 100, remaining: 0, met: true });
 
     // Editar una de las sesiones para que ya no se llegue a la meta.
     const forty = met.sessions.find((session) => session.durationMinutes === 40) as ReadingSessionWithId;
     await updateSession('alice', forty, sessionFields(met.books[0], { minutes: '10' }), met.books[0], met.sessions, database);
     const edited = await live.until((current) => current.days.get(TODAY)?.minutes === 40);
-    expect(progressOf(edited)).toMatchObject({ percent: 66, remaining: 20, met: false });
+    expect(progressOn(edited, TODAY)).toMatchObject({ percent: 66, remaining: 20, met: false });
 
     const thirty = edited.sessions.find((session) => session.durationMinutes === 30) as ReadingSessionWithId;
     await deleteSession('alice', thirty, edited.books[0], edited.sessions, database);
     const deleted = await live.until((current) => current.sessions.length === 1);
-    expect(progressOf(deleted)).toMatchObject({ minutes: 10, percent: 16, met: false });
+    expect(progressOn(deleted, TODAY)).toMatchObject({ value: 10, percent: 16, met: false });
+  });
+
+  it('meta de páginas: cuenta las páginas leídas, no los minutos, y se recalcula al registrar, editar y eliminar', async () => {
+    await setDailyGoal('alice', pages(20), database);
+    const book = await addBook();
+
+    // Muchos minutos y pocas páginas: para una meta de páginas solo cuentan las 8 páginas.
+    await createSession('alice', book, sessionFields(book, { minutes: '90', endPage: '8' }), database);
+    const first = await live.until((current) => current.goal?.type === 'pages' && current.sessions.length === 1);
+    expect(progressOn(first, TODAY)).toMatchObject({ type: 'pages', value: 8, percent: 40, remaining: 12, met: false });
+
+    // La segunda sesión parte de la página en la que iba el libro (8) y llega a la 25: 17 páginas más.
+    await createSession('alice', first.books[0], sessionFields(first.books[0], { endPage: '25' }), database);
+    const met = await live.until((current) => current.sessions.length === 2);
+    expect(progressOn(met, TODAY)).toMatchObject({ value: 25, percent: 100, remaining: 0, met: true });
+
+    // Editarla a la página 15 (7 páginas) la deja por debajo de la meta.
+    const second = met.sessions.find((session) => session.endPage === 25) as ReadingSessionWithId;
+    await updateSession(
+      'alice',
+      second,
+      sessionFields(met.books[0], { startPage: '8', endPage: '15' }),
+      met.books[0],
+      met.sessions,
+      database,
+    );
+    const edited = await live.until((current) => current.days.get(TODAY)?.pages === 15);
+    expect(progressOn(edited, TODAY)).toMatchObject({ value: 15, percent: 75, remaining: 5, met: false });
+
+    // Eliminar la primera quita sus 8 páginas.
+    const firstSession = edited.sessions.find((session) => session.endPage === 8) as ReadingSessionWithId;
+    await deleteSession('alice', firstSession, edited.books[0], edited.sessions, database);
+    const deleted = await live.until((current) => current.sessions.length === 1);
+    expect(progressOn(deleted, TODAY)).toMatchObject({ value: 7, percent: 35, met: false });
+  });
+
+  it('con la misma lectura, cambiar el tipo de meta recalcula el progreso sin tocar las sesiones', async () => {
+    const book = await addBook();
+    await createSession('alice', book, sessionFields(book, { minutes: '30', endPage: '10' }), database);
+    await setDailyGoal('alice', minutes(30), database);
+    const byMinutes = await live.until((current) => current.goal?.type === 'minutes' && current.sessions.length === 1);
+    expect(progressOn(byMinutes, TODAY).met).toBe(true);
+
+    await setDailyGoal('alice', pages(30), database);
+    const byPages = await live.until((current) => current.goal?.type === 'pages');
+    expect(progressOn(byPages, TODAY)).toMatchObject({ value: 10, percent: 33, met: false });
+    expect(byPages.sessions).toHaveLength(1);
+  });
+
+  it('el ajuste manual de la página cuenta para la meta de páginas pero no para la de minutos', async () => {
+    const book = await addBook();
+    await adjustBookProgress('alice', book, 12, new Date(), database);
+
+    await setDailyGoal('alice', pages(12), database);
+    const pagesView = await live.until((current) => current.goal?.type === 'pages' && current.sessions.length === 1);
+    expect(progressOn(pagesView, TODAY)).toMatchObject({ value: 12, met: true });
+
+    await setDailyGoal('alice', minutes(10), database);
+    const minutesView = await live.until((current) => current.goal?.type === 'minutes');
+    expect(progressOn(minutesView, TODAY)).toMatchObject({ value: 0, met: false });
+  });
+
+  it('la lectura del cronómetro cuenta para la meta, sea de minutos o de páginas', async () => {
+    const book = await addBook();
+    const draft = buildTimerDraft(pauseTimer(startTimer(book.id, Date.now() - 25 * 60_000), Date.now()), Date.now());
+    await createSession('alice', book, sessionFields(book, { minutes: draft.minutes, endPage: '30' }), database, draft.sessionId);
+
+    await setDailyGoal('alice', minutes(25), database);
+    const byMinutes = await live.until((current) => current.goal?.type === 'minutes' && current.sessions.length === 1);
+    expect(progressOn(byMinutes, TODAY)).toMatchObject({ value: 25, met: true });
+
+    await setDailyGoal('alice', pages(40), database);
+    const byPages = await live.until((current) => current.goal?.type === 'pages');
+    expect(progressOn(byPages, TODAY)).toMatchObject({ value: 30, percent: 75, remaining: 10, met: false });
   });
 
   it('cada día se compara con su propia lectura, sin mezclar días', async () => {
-    await setDailyGoal('alice', 30, database);
+    await setDailyGoal('alice', minutes(30), database);
     const book = await addBook();
     const yesterday = addDays(TODAY, -1);
     await createSession('alice', book, sessionFields(book, { minutes: '45', date: dateForDay(yesterday, new Date(), TODAY) }), database);
 
-    const view = await live.until((current) => current.sessions.length === 1 && current.goalMinutes === 30);
-    const progressOn = (key: string) => getGoalProgress(view.days.get(key)?.minutes ?? 0, 30);
-    expect(progressOn(yesterday).met).toBe(true);
-    expect(progressOn(TODAY)).toMatchObject({ minutes: 0, met: false, remaining: 30 });
+    const view = await live.until((current) => current.sessions.length === 1 && current.goal?.target === 30);
+    expect(progressOn(view, yesterday).met).toBe(true);
+    expect(progressOn(view, TODAY)).toMatchObject({ value: 0, met: false, remaining: 30 });
+  });
+
+  it('en una meta de páginas, un día pasado se compara con las páginas de ese día', async () => {
+    await setDailyGoal('alice', pages(30), database);
+    const book = await addBook();
+    const yesterday = addDays(TODAY, -1);
+    await createSession(
+      'alice',
+      book,
+      sessionFields(book, { startPage: '0', endPage: '35', date: dateForDay(yesterday, new Date(), TODAY) }),
+      database,
+    );
+
+    const view = await live.until((current) => current.sessions.length === 1 && current.goal?.type === 'pages');
+    expect(progressOn(view, yesterday)).toMatchObject({ value: 35, met: true });
+    expect(progressOn(view, TODAY)).toMatchObject({ value: 0, met: false, remaining: 30 });
   });
 });
 
@@ -445,6 +551,26 @@ describe('registrar desde un día elegido (calendario)', () => {
     expect(view.days.get(pastDay)).toMatchObject({ minutes: 25, pages: 40, isReadingDay: true });
     expect(view.days.has(TODAY)).toBe(false);
     expect(view.streaks).toEqual({ current: 0, longest: 1 });
+    expectBooksMatchSessions(view);
+  });
+
+  it('una lectura pasada con su página inicial cuenta sus páginas y no mueve el libro', async () => {
+    const book = await addBook();
+    await createSession('alice', book, sessionFields(book, { minutes: '20', endPage: '100' }), database);
+    const advanced = await live.until((current) => current.sessions.length === 1 && current.books[0].currentPage === 100);
+
+    // Hace tres días se leyó de la 20 a la 60, aunque hoy el libro va por la 100.
+    const pastDay = addDays(TODAY, -3);
+    await createSession(
+      'alice',
+      advanced.books[0],
+      sessionFields(advanced.books[0], { minutes: '30', startPage: '20', endPage: '60', date: dateForDay(pastDay, new Date(), TODAY) }),
+      database,
+    );
+
+    const view = await live.until((current) => current.sessions.length === 2);
+    expect(view.days.get(pastDay)).toMatchObject({ minutes: 30, pages: 40 });
+    expect(view.books[0].currentPage).toBe(100);
     expectBooksMatchSessions(view);
   });
 

@@ -2,7 +2,7 @@
  * @jest-environment node
  */
 import { assertFails, assertSucceeds, initializeTestEnvironment, type RulesTestEnvironment } from '@firebase/rules-unit-testing';
-import { doc, getDoc, serverTimestamp, setDoc, setLogLevel, Timestamp, updateDoc } from 'firebase/firestore';
+import { deleteField, doc, getDoc, serverTimestamp, setDoc, setLogLevel, Timestamp, updateDoc } from 'firebase/firestore';
 import { readFileSync } from 'fs';
 import { join } from 'path';
 
@@ -121,6 +121,42 @@ describe('perfil users/{uid}', () => {
     await assertSucceeds(updateDoc(doc(alice(), 'users/alice'), { dailyGoalMinutes: 30 }));
     await assertFails(updateDoc(doc(alice(), 'users/alice'), { dailyGoalMinutes: 0 }));
     await assertFails(updateDoc(doc(alice(), 'users/alice'), { createdAt: Timestamp.now() }));
+  });
+});
+
+describe('meta diaria en el perfil (minutos o páginas)', () => {
+  const profile = () => doc(alice(), 'users/alice');
+  beforeEach(async () => {
+    await assertSucceeds(setDoc(profile(), validProfile()));
+  });
+
+  it('acepta una meta de páginas dentro del rango y rechaza las que se salen', async () => {
+    await assertSucceeds(updateDoc(profile(), { dailyGoalPages: 1 }));
+    await assertSucceeds(updateDoc(profile(), { dailyGoalPages: 10000 }));
+    await assertFails(updateDoc(profile(), { dailyGoalPages: 0 }));
+    await assertFails(updateDoc(profile(), { dailyGoalPages: 10001 }));
+    await assertFails(updateDoc(profile(), { dailyGoalPages: 12.5 }));
+    await assertFails(updateDoc(profile(), { dailyGoalPages: '20' }));
+  });
+
+  it('los límites de cada tipo son independientes: 2000 vale en páginas pero no en minutos', async () => {
+    await assertSucceeds(updateDoc(profile(), { dailyGoalPages: 2000 }));
+    await assertFails(updateDoc(profile(), { dailyGoalMinutes: 2000 }));
+  });
+
+  it('la meta es de un solo tipo: no admite minutos y páginas a la vez', async () => {
+    await assertFails(updateDoc(profile(), { dailyGoalMinutes: 30, dailyGoalPages: 20 }));
+    await assertSucceeds(updateDoc(profile(), { dailyGoalMinutes: 30 }));
+    // Para pasar a páginas hay que quitar los minutos en la misma escritura.
+    await assertFails(updateDoc(profile(), { dailyGoalPages: 20 }));
+    await assertSucceeds(updateDoc(profile(), { dailyGoalPages: 20, dailyGoalMinutes: deleteField() }));
+  });
+
+  it('un perfil con la meta antigua en minutos sigue siendo válido', async () => {
+    await env.withSecurityRulesDisabled(async (context) => {
+      await setDoc(doc(context.firestore(), 'users/alice'), { createdAt: Timestamp.now(), timeZone: 'UTC', dailyGoalMinutes: 25 });
+    });
+    await assertSucceeds(updateDoc(profile(), { nickname: 'Ali' }));
   });
 });
 

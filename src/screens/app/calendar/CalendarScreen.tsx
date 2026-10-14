@@ -40,7 +40,7 @@ export function CalendarScreen() {
   const { sessions, loading, error, retry } = useSessions();
   const { books, loading: booksLoading } = useBooks();
   const { days, readingDays, todayKey } = useReadingStats();
-  const { goalMinutes } = useDailyGoal();
+  const { goal } = useDailyGoal();
   const { confirmDelete, error: actionError } = useDeleteSession();
 
   const today = monthOf(todayKey);
@@ -132,7 +132,7 @@ export function CalendarScreen() {
           todayKey={todayKey}
           selectedKey={selectedKey}
           days={days}
-          goalMinutes={goalMinutes}
+          goal={goal}
           onSelect={setSelectedKey}
         />
       ) : null}
@@ -161,7 +161,7 @@ export function CalendarScreen() {
           sessions={daySessions}
           bookTitles={bookTitles}
           totals={days.get(detailKey) ?? { minutes: 0, pages: 0 }}
-          goalMinutes={goalMinutes}
+          goal={goal}
           onRegister={detailKey <= todayKey ? () => navigation.navigate('AddSession', { day: detailKey }) : undefined}
           onEdit={(session) => navigation.navigate('AddSession', { sessionId: session.id })}
           onDelete={confirmDelete}
