@@ -5,7 +5,10 @@ import { fontSize } from '../theme/typography';
 import { SessionRowsSkeleton } from './BookSkeletons';
 import { Skeleton, SkeletonPulse } from './Skeleton';
 
-/** Silueta de Inicio: la racha, la meta diaria, los dos botones y la actividad reciente. */
+// Alto de las cards «Registrar lectura» y «Cronómetro»: igual que `ReadingActions` (`minTouchSize * 2.5`).
+const ACTION_CARD_HEIGHT = minTouchSize * 2.5;
+
+/** Silueta de Inicio: la racha, la meta diaria, las dos cards de lectura y la actividad reciente. */
 export function HomeSkeleton() {
   return (
     <SkeletonPulse label="Cargando inicio">
@@ -19,9 +22,13 @@ export function HomeSkeleton() {
           <Skeleton height={spacing.sm} />
           <Skeleton width="30%" height={fontSize.sm} />
         </View>
-        <View style={styles.actions}>
-          <Skeleton height={minTouchSize} style={styles.rounded} />
-          <Skeleton height={minTouchSize} style={styles.rounded} />
+        <View style={styles.cards}>
+          <View style={styles.card}>
+            <Skeleton height={ACTION_CARD_HEIGHT} style={styles.rounded} />
+          </View>
+          <View style={styles.card}>
+            <Skeleton height={ACTION_CARD_HEIGHT} style={styles.rounded} />
+          </View>
         </View>
         <View style={styles.activity}>
           <Skeleton width="40%" height={fontSize.lg} />
@@ -36,7 +43,8 @@ const styles = StyleSheet.create({
   container: { flex: 1, padding: spacing.lg, gap: spacing.xl },
   streak: { alignItems: 'center', gap: spacing.sm },
   goal: { gap: spacing.sm },
-  actions: { gap: spacing.md },
+  cards: { flexDirection: 'row', gap: spacing.md },
+  card: { flex: 1 },
   activity: { gap: spacing.sm },
   rounded: { borderRadius: radius.md },
 });

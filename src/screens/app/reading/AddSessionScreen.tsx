@@ -176,7 +176,12 @@ function SessionForm({ navigation, books, sessions, fixedBookId, editing, draft,
     const startPage = editing?.startPage !== undefined && endPage.trim() ? String(editing.startPage) : '';
     const result = parseSessionForm({ date, minutes, startPage, endPage, notes }, book.id, book, now);
     if (!result.ok) {
-      setErrors(result.errors);
+      // Con el cronómetro los minutos no se pueden editar: si no llegó a medio minuto, solo queda indicar la página.
+      const generalError =
+        draft && !minutes && result.errors.general
+          ? 'Con menos de medio minuto no hay minutos que registrar. Indica la página en la que vas.'
+          : result.errors.general;
+      setErrors({ ...result.errors, general: generalError });
       setSubmitError(null);
       scrollRef.current?.scrollTo({ y: 0, animated: true });
       return;
@@ -224,6 +229,8 @@ function SessionForm({ navigation, books, sessions, fixedBookId, editing, draft,
             label="Minutos leídos"
             value={minutes}
             onChangeText={edit('minutes', setMinutes)}
+            // Con el cronómetro, los minutos son los que se midieron: no se pueden cambiar.
+            editable={!draft}
             error={errors.minutes}
             keyboardType="number-pad"
             maxLength={MAX_DIGITS}

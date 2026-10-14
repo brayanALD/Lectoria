@@ -3,7 +3,7 @@ import { useState, type Ref } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View, type TextInputProps } from 'react-native';
 
 import { colors } from '../theme/colors';
-import { iconSize, minTouchSize, radius, spacing } from '../theme/spacing';
+import { iconSize, minTouchSize, opacity, radius, spacing } from '../theme/spacing';
 import { fontSize, fontWeight } from '../theme/typography';
 
 interface TextFieldProps extends TextInputProps {
@@ -19,14 +19,17 @@ export function TextField({ label, error, action, style, secureTextEntry, ref, .
   // Los campos de contraseña (secureTextEntry) incluyen un botón para mostrar u ocultar el texto.
   const [passwordVisible, setPasswordVisible] = useState(false);
   const isPassword = Boolean(secureTextEntry);
+  // Con `editable={false}` el campo solo muestra su valor: se ve atenuado y se anuncia como deshabilitado.
+  const disabled = inputProps.editable === false;
 
   return (
     <View style={styles.container}>
       <Text style={styles.label}>{label}</Text>
-      <View style={[styles.field, error ? styles.fieldError : null]}>
+      <View style={[styles.field, error ? styles.fieldError : null, disabled && styles.fieldDisabled]}>
         <TextInput
           ref={ref}
           accessibilityLabel={label}
+          accessibilityState={disabled ? { disabled: true } : undefined}
           placeholderTextColor={colors.textSecondary}
           secureTextEntry={isPassword && !passwordVisible}
           style={[styles.input, style]}
@@ -79,6 +82,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
   },
   fieldError: { borderColor: colors.error },
+  fieldDisabled: { opacity: opacity.disabled },
   input: {
     flex: 1,
     alignSelf: 'stretch',

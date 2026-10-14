@@ -4,7 +4,6 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
-import { Button } from '../../../components/Button';
 import { EmptyState } from '../../../components/EmptyState';
 import { GoalProgress } from '../../../components/GoalProgress';
 import { HomeSkeleton } from '../../../components/HomeSkeleton';
@@ -23,7 +22,7 @@ import { formatDayLabel } from '../../../utils/calendar';
 import { formatTotals } from '../../../utils/readingStats';
 import { withTimeout } from '../../../utils/withTimeout';
 import { DailyGoalSheet } from './DailyGoalSheet';
-import { TimerButton } from './TimerButton';
+import { ReadingActions } from './ReadingActions';
 
 // Tamaño de la cifra de la racha: lo más grande de la app, es lo primero que debe leerse en Inicio.
 const STREAK_NUMBER_SCALE = 2;
@@ -99,10 +98,7 @@ export function HomeScreen() {
           </Pressable>
         )}
 
-        <View style={styles.actions}>
-          <Button title="Registrar lectura" onPress={() => navigation.navigate('AddSession')} />
-          <TimerButton />
-        </View>
+        <ReadingActions onRegister={() => navigation.navigate('AddSession')} onOpenTimer={() => navigation.navigate('Timer')} />
 
         <View style={styles.activity}>
           <Text style={styles.heading} accessibilityRole="header">
@@ -171,7 +167,6 @@ const styles = StyleSheet.create({
   },
   setGoalLabel: { fontSize: fontSize.md, fontWeight: fontWeight.semibold, color: colors.primary },
   pressed: { opacity: opacity.pressed },
-  actions: { gap: spacing.md },
   activity: { gap: spacing.sm },
   heading: { fontSize: fontSize.lg, fontWeight: fontWeight.bold, color: colors.textPrimary },
   empty: { alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.lg },
