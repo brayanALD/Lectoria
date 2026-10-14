@@ -1,6 +1,7 @@
+import { Ionicons } from '@expo/vector-icons';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useState } from 'react';
-import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { BookCover } from '../../../components/BookCover';
 import { Button } from '../../../components/Button';
@@ -12,14 +13,16 @@ import { useAuth } from '../../../context/AuthContext';
 import { useBook } from '../../../hooks/useBook';
 import type { AppStackParamList } from '../../../navigation/types';
 import { changeBookStatus, deleteBook } from '../../../services/booksService';
+import { adjustBookProgress } from '../../../services/sessionsService';
 import type { ReadingStatus } from '../../../types/book';
 import { colors } from '../../../theme/colors';
-import { spacing } from '../../../theme/spacing';
+import { iconSize, opacity, spacing } from '../../../theme/spacing';
 import { fontSize, fontWeight } from '../../../theme/typography';
 import { getProgressPercent } from '../../../utils/book';
 import { formatLongDate } from '../../../utils/dateUtils';
 import { getFirestoreErrorMessage } from '../../../utils/firestoreErrors';
 import { withTimeout } from '../../../utils/withTimeout';
+import { ProgressAdjustSheet } from './ProgressAdjustSheet';
 
 type Props = NativeStackScreenProps<AppStackParamList, 'BookDetail'>;
 
@@ -35,6 +38,7 @@ export function BookDetailScreen({ navigation, route }: Props) {
   const [changingStatus, setChangingStatus] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [adjusting, setAdjusting] = useState(false);
 
   // Mientras se elimina, el libro desaparece de la lista antes de que termine la operación:
   // se mantiene la silueta de carga para no mostrar «el libro no existe» un instante.
@@ -109,6 +113,7 @@ export function BookDetailScreen({ navigation, route }: Props) {
   ].filter((row): row is { label: string; value: string } => row !== undefined);
 
   return (
+    <>
     <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
       <View style={styles.header}>
         <BookCover title={book.title} coverUrl={book.coverUrl} width={COVER_WIDTH} />
@@ -123,13 +128,23 @@ export function BookDetailScreen({ navigation, route }: Props) {
       {/* Las etiquetas de estado se explican solas; el nombre del grupo se conserva para el lector de pantalla. */}
       <StatusSelector showLabel={false} value={book.status} onChange={handleStatusChange} />
 
-      <View style={styles.section}>
-        <Text style={styles.progressText}>
-          Página {book.currentPage}
-          {book.pageCount ? ` de ${book.pageCount}` : ''}
-        </Text>
+      {/* Tocar el progreso permite ajustar la página a mano. */}
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={`Página ${book.currentPage}${book.pageCount ? ` de ${book.pageCount}` : ''}`}
+        accessibilityHint="Toca para cambiar la página actual"
+        onPress={() => setAdjusting(true)}
+        style={({ pressed }) => [styles.section, pressed && styles.pressed]}
+      >
+        <View style={styles.progressRow}>
+          <Text style={styles.progressText}>
+            Página {book.currentPage}
+            {book.pageCount ? ` de ${book.pageCount}` : ''}
+          </Text>
+          <Ionicons name="create-outline" size={iconSize.md} color={colors.primary} />
+        </View>
         {percent !== undefined ? <ReadingProgress percent={percent} /> : null}
-      </View>
+      </Pressable>
 
       {details.length > 0 ? (
         <View style={styles.section}>
@@ -154,6 +169,17 @@ export function BookDetailScreen({ navigation, route }: Props) {
         <Button title="Eliminar" variant="danger" onPress={confirmDelete} />
       </View>
     </ScrollView>
+
+    <ProgressAdjustSheet
+      visible={adjusting}
+      onClose={() => setAdjusting(false)}
+      book={book}
+      onSave={async (page) => {
+        if (!user) throw new Error('No hay sesión iniciada');
+        await withTimeout(adjustBookProgress(user.uid, book, page), WRITE_TIMEOUT_MS);
+      }}
+    />
+    </>
   );
 }
 
@@ -165,7 +191,9 @@ const styles = StyleSheet.create({
   title: { fontSize: fontSize.xl, fontWeight: fontWeight.bold, color: colors.textPrimary },
   authors: { fontSize: fontSize.md, color: colors.textSecondary },
   section: { gap: spacing.sm },
+  progressRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   progressText: { fontSize: fontSize.md, color: colors.textPrimary },
+  pressed: { opacity: opacity.pressed },
   row: { flexDirection: 'row', justifyContent: 'space-between', gap: spacing.md },
   rowLabel: { fontSize: fontSize.md, color: colors.textSecondary },
   rowValue: { flex: 1, fontSize: fontSize.md, color: colors.textPrimary, textAlign: 'right' },

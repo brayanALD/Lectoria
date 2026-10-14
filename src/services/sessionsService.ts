@@ -7,6 +7,7 @@ import {
   query,
   serverTimestamp,
   Timestamp,
+  updateDoc,
   writeBatch,
   type Firestore,
 } from 'firebase/firestore';
@@ -14,7 +15,7 @@ import {
 import { db } from '../../firebaseConfig';
 import type { UserBookWithId } from '../types/book';
 import type { NewSessionFields, ReadingSession, ReadingSessionWithId } from '../types/session';
-import { planSessionBookUpdate } from '../utils/session';
+import { planProgressCorrection, planSessionBookUpdate, toDateKey } from '../utils/session';
 import { statusChangeToUpdate } from './booksService';
 
 // El parámetro `database` permite probar el servicio contra el emulador; en la app siempre se usa `db`.
@@ -52,6 +53,43 @@ export async function createSession(
 
   await batch.commit();
   return sessionRef.id;
+}
+
+/**
+ * Ajusta a mano la página actual de un libro.
+ * - Hacia delante: es lectura, así que se registra como una sesión de páginas (sin minutos) de hoy; cuenta para las
+ *   estadísticas y, si supera 1 página, para la racha. Si llega a la última página, el libro pasa a «Terminado».
+ * - Hacia atrás: es una corrección, no genera sesión. Un libro terminado vuelve a «Leyendo».
+ * - Sin cambio: no hace nada.
+ */
+export async function adjustBookProgress(
+  uid: string,
+  book: UserBookWithId,
+  page: number,
+  now: Date = new Date(),
+  database: Firestore = db,
+): Promise<void> {
+  if (page === book.currentPage) return;
+
+  if (page > book.currentPage) {
+    await createSession(
+      uid,
+      book,
+      {
+        bookId: book.id,
+        date: now,
+        dateKey: toDateKey(now),
+        startPage: book.currentPage,
+        endPage: page,
+        pagesRead: page - book.currentPage,
+        durationMinutes: 0,
+      },
+      database,
+    );
+    return;
+  }
+
+  await updateDoc(doc(database, 'users', uid, 'books', book.id), statusChangeToUpdate(planProgressCorrection(book, page)));
 }
 
 /**

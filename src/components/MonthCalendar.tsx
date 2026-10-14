@@ -1,8 +1,7 @@
-import { Ionicons } from '@expo/vector-icons';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { colors } from '../theme/colors';
-import { iconSize, minTouchSize, opacity, spacing } from '../theme/spacing';
+import { minTouchSize, opacity, spacing } from '../theme/spacing';
 import { fontSize, fontWeight, maxFontScale } from '../theme/typography';
 import {
   WEEKDAY_LABELS,
@@ -14,6 +13,7 @@ import {
   monthOf,
   type YearMonth,
 } from '../utils/calendar';
+import { PeriodHeader } from './PeriodHeader';
 
 interface MonthCalendarProps {
   /** Mes que se muestra. */
@@ -51,29 +51,14 @@ export function MonthCalendar({
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Mes anterior"
-          onPress={() => onMonthChange(addMonths(month, -1))}
-          style={({ pressed }) => [styles.nav, pressed && styles.pressed]}
-        >
-          <Ionicons name="chevron-back" size={iconSize.md} color={colors.primary} />
-        </Pressable>
-        <Text style={styles.title} accessibilityRole="header" accessibilityLiveRegion="polite">
-          {formatMonthLabel(month)}
-        </Text>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Mes siguiente"
-          accessibilityState={{ disabled: !canGoForward }}
-          disabled={!canGoForward}
-          onPress={() => onMonthChange(addMonths(month, 1))}
-          style={({ pressed }) => [styles.nav, !canGoForward && styles.disabled, pressed && styles.pressed]}
-        >
-          <Ionicons name="chevron-forward" size={iconSize.md} color={colors.primary} />
-        </Pressable>
-      </View>
+      <PeriodHeader
+        label={formatMonthLabel(month)}
+        onPrevious={() => onMonthChange(addMonths(month, -1))}
+        onNext={() => onMonthChange(addMonths(month, 1))}
+        canGoNext={canGoForward}
+        previousLabel="Mes anterior"
+        nextLabel="Mes siguiente"
+      />
 
       {/* Las iniciales son decorativas: cada día se anuncia con su fecha completa. */}
       <View style={styles.row} importantForAccessibility="no-hide-descendants" accessibilityElementsHidden>
@@ -125,9 +110,6 @@ export function MonthCalendar({
 
 const styles = StyleSheet.create({
   container: { gap: spacing.xs },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  nav: { width: minTouchSize, height: minTouchSize, alignItems: 'center', justifyContent: 'center' },
-  title: { fontSize: fontSize.md, fontWeight: fontWeight.semibold, color: colors.textPrimary, textTransform: 'capitalize' },
   row: { flexDirection: 'row' },
   weekday: {
     flex: 1,
@@ -143,6 +125,5 @@ const styles = StyleSheet.create({
   dayText: { fontSize: fontSize.md },
   // El punto siempre ocupa su sitio (transparente si no hay lectura) para que las filas no cambien de altura.
   dot: { width: DOT_SIZE, height: DOT_SIZE, borderRadius: DOT_SIZE / 2 },
-  pressed: { opacity: opacity.pressed },
   disabled: { opacity: opacity.disabled },
 });

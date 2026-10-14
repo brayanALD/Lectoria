@@ -3,6 +3,12 @@ import {
   addMonths,
   compareMonths,
   dateForDay,
+  firstDayOfMonth,
+  formatMonthShort,
+  formatWeekLabel,
+  formatWeekdayAndDay,
+  getWeekDays,
+  startOfWeek,
   formatDayLabel,
   formatMonthLabel,
   getMonthGrid,
@@ -127,5 +133,65 @@ describe('formatDayLabel', () => {
   it('ayer cruza el cambio de mes y de año', () => {
     expect(formatDayLabel('2026-09-30', '2026-10-01')).toBe('Ayer');
     expect(formatDayLabel('2025-12-31', '2026-01-01')).toBe('Ayer');
+  });
+});
+
+describe('startOfWeek / getWeekDays', () => {
+  it('el lunes de cualquier día de la semana es el mismo lunes', () => {
+    // 12 de octubre de 2026 es lunes.
+    for (const day of ['2026-10-12', '2026-10-13', '2026-10-15', '2026-10-18']) expect(startOfWeek(day)).toBe('2026-10-12');
+  });
+
+  it('el domingo pertenece a la semana que termina en él, no a la siguiente', () => {
+    expect(startOfWeek('2026-10-18')).toBe('2026-10-12');
+    expect(startOfWeek('2026-10-19')).toBe('2026-10-19');
+  });
+
+  it('cruza el cambio de mes y de año', () => {
+    expect(startOfWeek('2026-10-01')).toBe('2026-09-28');
+    expect(startOfWeek('2026-01-01')).toBe('2025-12-29');
+  });
+
+  it('la semana tiene siete días consecutivos de lunes a domingo', () => {
+    expect(getWeekDays('2026-10-15')).toEqual([
+      '2026-10-12', '2026-10-13', '2026-10-14', '2026-10-15', '2026-10-16', '2026-10-17', '2026-10-18',
+    ]);
+    expect(getWeekDays('2025-12-31')[0]).toBe('2025-12-29');
+    expect(getWeekDays('2025-12-31')[6]).toBe('2026-01-04');
+  });
+});
+
+describe('formatWeekLabel', () => {
+  it('una semana dentro de un mes', () => {
+    expect(formatWeekLabel('2026-10-14')).toBe('12 – 18 de octubre de 2026');
+  });
+
+  it('una semana que cruza de mes', () => {
+    expect(formatWeekLabel('2026-10-01')).toBe('28 de septiembre – 4 de octubre de 2026');
+  });
+
+  it('una semana que cruza de año indica los dos años', () => {
+    expect(formatWeekLabel('2026-01-01')).toBe('29 de diciembre de 2025 – 4 de enero de 2026');
+  });
+});
+
+describe('firstDayOfMonth', () => {
+  it('devuelve el día 1 del mes', () => {
+    expect(firstDayOfMonth('2026-10-27')).toBe('2026-10-01');
+    expect(firstDayOfMonth('2026-02-01')).toBe('2026-02-01');
+  });
+});
+
+describe('formatWeekdayAndDay / formatMonthShort', () => {
+  it('abrevia el día de la semana en español', () => {
+    expect(formatWeekdayAndDay('2026-10-12')).toBe('lun 12');
+    expect(formatWeekdayAndDay('2026-10-18')).toBe('dom 18');
+    expect(formatWeekdayAndDay('2026-10-01')).toBe('jue 1');
+  });
+
+  it('abrevia los doce meses sin punto', () => {
+    expect([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map(formatMonthShort)).toEqual([
+      'ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic',
+    ]);
   });
 });

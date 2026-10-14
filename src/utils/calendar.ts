@@ -1,7 +1,7 @@
 import dayjs from 'dayjs';
 import 'dayjs/locale/es';
 
-import { addDays } from './readingDays';
+import { addDays, dayNumber } from './readingDays';
 import { formatLongDate } from './dateUtils';
 
 /** Iniciales de los días, de lunes a domingo (la «X» distingue miércoles de martes, como es habitual en español). */
@@ -70,6 +70,44 @@ export function dateForDay(dateKey: string, now: Date, todayKey: string): Date {
   return new Date(year, month - 1, day, 12, 0, 0);
 }
 
+/** El lunes de la semana (lunes a domingo) que contiene `dateKey`. */
+export function startOfWeek(dateKey: string): string {
+  const weekday = (new Date(dayNumber(dateKey) * 86_400_000).getUTCDay() + 6) % 7; // 0 = lunes
+  return addDays(dateKey, -weekday);
+}
+
+/** Las siete claves de la semana (lunes a domingo) que contiene `dateKey`. */
+export function getWeekDays(dateKey: string): string[] {
+  const monday = startOfWeek(dateKey);
+  return Array.from({ length: 7 }, (_, index) => addDays(monday, index));
+}
+
+/**
+ * Rango de una semana en palabras: «12 – 18 de octubre de 2026», «28 de septiembre – 4 de octubre de 2026» o,
+ * si cruza de año, «29 de diciembre de 2025 – 4 de enero de 2026».
+ */
+export function formatWeekLabel(dateKey: string): string {
+  const days = getWeekDays(dateKey);
+  const first = monthOf(days[0]);
+  const last = monthOf(days[6]);
+  const day = (key: string) => Number(key.slice(8));
+  const monthName = ({ year, month }: YearMonth) => dayjs(new Date(year, month - 1, 1)).locale('es').format('MMMM');
+
+  if (first.year !== last.year) {
+    return `${day(days[0])} de ${monthName(first)} de ${first.year} – ${day(days[6])} de ${monthName(last)} de ${last.year}`;
+  }
+  if (first.month !== last.month) {
+    return `${day(days[0])} de ${monthName(first)} – ${day(days[6])} de ${monthName(last)} de ${last.year}`;
+  }
+  return `${day(days[0])} – ${day(days[6])} de ${monthName(last)} de ${last.year}`;
+}
+
+/** El primer día del mes de `dateKey`. */
+export function firstDayOfMonth(dateKey: string): string {
+  const { year, month } = monthOf(dateKey);
+  return toDayKey(year, month, 1);
+}
+
 /** La fecha completa de una clave («13 de octubre de 2026»). */
 export function formatDateKeyLong(dateKey: string): string {
   const [year, month, day] = dateKey.split('-').map(Number);
@@ -81,4 +119,15 @@ export function formatDayLabel(dateKey: string, todayKey: string): string {
   if (dateKey === todayKey) return 'Hoy';
   if (dateKey === addDays(todayKey, -1)) return 'Ayer';
   return formatDateKeyLong(dateKey);
+}
+
+/** «lun 12»: día de la semana abreviado y número del día. */
+export function formatWeekdayAndDay(dateKey: string): string {
+  const [year, month, day] = dateKey.split('-').map(Number);
+  return dayjs(new Date(year, month - 1, day)).locale('es').format('ddd D').replace('.', '');
+}
+
+/** «oct»: nombre abreviado del mes (1 a 12). */
+export function formatMonthShort(month: number): string {
+  return dayjs(new Date(2026, month - 1, 1)).locale('es').format('MMM').replace('.', '');
 }

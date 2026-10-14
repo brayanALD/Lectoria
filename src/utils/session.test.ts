@@ -3,7 +3,9 @@ import {
   MAX_SESSION_MINUTES,
   MAX_SESSION_NOTES,
   isReadingSession,
+  parseProgressInput,
   parseSessionForm,
+  planProgressCorrection,
   planSessionBookUpdate,
   toDateKey,
 } from './session';
@@ -223,5 +225,41 @@ describe('planSessionBookUpdate', () => {
   it('un libro pendiente que se lee hasta el final pasa directamente a «Terminado»', () => {
     const plan = planSessionBookUpdate({ status: 'want_to_read', currentPage: 0, pageCount: 50 }, 50);
     expect(plan).toMatchObject({ status: 'finished', currentPage: 50, setStartedAt: true, setFinishedAt: true });
+  });
+});
+
+describe('parseProgressInput', () => {
+  it('acepta una página dentro del libro, incluidas la primera y la última', () => {
+    expect(parseProgressInput('150', book)).toEqual({ ok: true, page: 150 });
+    expect(parseProgressInput(' 0 ', book)).toEqual({ ok: true, page: 0 });
+    expect(parseProgressInput('300', book)).toEqual({ ok: true, page: 300 });
+  });
+
+  it('rechaza vacío, texto, decimales, negativos y páginas por encima del total', () => {
+    expect(parseProgressInput('', book)).toMatchObject({ ok: false, error: 'Introduce una página.' });
+    for (const text of ['abc', '1.5', '-3', '301']) {
+      expect(parseProgressInput(text, book)).toMatchObject({ ok: false, error: expect.stringMatching(/entre 0 y 300/) });
+    }
+  });
+
+  it('sin total conocido acepta hasta el máximo', () => {
+    expect(parseProgressInput('5000', { currentPage: 0 }).ok).toBe(true);
+    expect(parseProgressInput('100001', { currentPage: 0 })).toMatchObject({ ok: false });
+  });
+});
+
+describe('planProgressCorrection', () => {
+  it('fija la página corregida sin tocar el estado de un libro que se está leyendo', () => {
+    const plan = planProgressCorrection({ status: 'reading', currentPage: 100, pageCount: 300, startedAt: {} }, 40);
+    expect(plan).toMatchObject({ status: 'reading', currentPage: 40, setFinishedAt: false, clearFinishedAt: false });
+  });
+
+  it('un libro terminado vuelve a «Leyendo» y pierde su fecha de fin', () => {
+    const finished = { status: 'finished' as const, currentPage: 300, pageCount: 300, startedAt: {}, finishedAt: {} };
+    expect(planProgressCorrection(finished, 250)).toMatchObject({ status: 'reading', currentPage: 250, clearFinishedAt: true });
+  });
+
+  it.each(['paused', 'abandoned', 'want_to_read'] as const)('un libro «%s» conserva su estado', (status) => {
+    expect(planProgressCorrection({ status, currentPage: 80 }, 10)).toMatchObject({ status, currentPage: 10 });
   });
 });

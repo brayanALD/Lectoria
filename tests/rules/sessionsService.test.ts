@@ -7,11 +7,11 @@ import { readFileSync } from 'fs';
 import { join } from 'path';
 
 import { createBook } from '../../src/services/booksService';
-import { createSession, deleteSession, subscribeToSessions } from '../../src/services/sessionsService';
+import { adjustBookProgress, createSession, deleteSession, subscribeToSessions } from '../../src/services/sessionsService';
 import type { BookFormValues, UserBook, UserBookWithId } from '../../src/types/book';
 import type { ReadingSession, ReadingSessionWithId, SessionFormValues } from '../../src/types/session';
 import { EMPTY_BOOK_FORM, parseBookForm } from '../../src/utils/book';
-import { parseSessionForm } from '../../src/utils/session';
+import { isReadingSession, parseSessionForm } from '../../src/utils/session';
 
 // El servicio importa db de firebaseConfig (React Native); en las pruebas se le pasa el Firestore del emulador.
 jest.mock('../../firebaseConfig', () => ({ db: {}, auth: {} }));
@@ -191,5 +191,78 @@ describe('subscribeToSessions', () => {
 
   it('un usuario no puede leer las sesiones de otro', async () => {
     await expect(next(bob())).rejects.toBeDefined();
+  });
+});
+
+describe('adjustBookProgress', () => {
+  const sessionCount = async () => (await getDocs(collection(alice(), 'users/alice/sessions'))).size;
+
+  it('hacia delante registra una sesión de páginas sin minutos y avanza el libro', async () => {
+    const book = await createTestBook({ status: 'reading' });
+    await adjustBookProgress('alice', book, 50, new Date(), alice());
+
+    const sessions = await getDocs(collection(alice(), 'users/alice/sessions'));
+    expect(sessions.size).toBe(1);
+    expect(sessions.docs[0].data()).toMatchObject({ bookId: book.id, pagesRead: 50, durationMinutes: 0, startPage: 0, endPage: 50 });
+    expect((await readBook(book.id)).currentPage).toBe(50);
+  });
+
+  it('un avance de más de 1 página cuenta como día de lectura', async () => {
+    const book = await createTestBook({ status: 'reading' });
+    await adjustBookProgress('alice', book, 5, new Date(), alice());
+    const data = (await getDocs(collection(alice(), 'users/alice/sessions'))).docs[0].data() as ReadingSession;
+    expect(isReadingSession(data)).toBe(true);
+  });
+
+  it('un avance de exactamente 1 página se registra pero no cuenta como día de lectura', async () => {
+    const book = await createTestBook({ status: 'reading' });
+    await adjustBookProgress('alice', book, 1, new Date(), alice());
+    const data = (await getDocs(collection(alice(), 'users/alice/sessions'))).docs[0].data() as ReadingSession;
+    expect(data.pagesRead).toBe(1);
+    expect(isReadingSession(data)).toBe(false);
+  });
+
+  it('hasta la última página termina el libro', async () => {
+    const book = await createTestBook({ status: 'reading' });
+    await adjustBookProgress('alice', book, 300, new Date(), alice());
+    expect(await readBook(book.id)).toMatchObject({ status: 'finished', currentPage: 300 });
+  });
+
+  it('hacia atrás corrige la página sin crear sesión', async () => {
+    const book = await createTestBook({ status: 'reading' });
+    await adjustBookProgress('alice', book, 120, new Date(), alice());
+    const advanced = await readBook(book.id);
+
+    await adjustBookProgress('alice', advanced, 80, new Date(), alice());
+
+    expect((await readBook(book.id)).currentPage).toBe(80);
+    expect(await sessionCount()).toBe(1); // solo la del avance
+  });
+
+  it('corregir hacia atrás un libro terminado lo devuelve a «Leyendo» sin fecha de fin', async () => {
+    const book = await createTestBook({ status: 'reading' });
+    await adjustBookProgress('alice', book, 300, new Date(), alice());
+    const finished = await readBook(book.id);
+    expect(finished.status).toBe('finished');
+
+    await adjustBookProgress('alice', finished, 250, new Date(), alice());
+
+    const after = await readBook(book.id);
+    expect(after).toMatchObject({ status: 'reading', currentPage: 250 });
+    expect(after.finishedAt).toBeUndefined();
+  });
+
+  it('la misma página no escribe nada', async () => {
+    const book = await createTestBook({ status: 'reading' });
+    await adjustBookProgress('alice', book, 0, new Date(), alice());
+    expect(await sessionCount()).toBe(0);
+    expect((await readBook(book.id)).updatedAt).toEqual(book.updatedAt);
+  });
+
+  it('un usuario no puede ajustar el progreso de la cuenta de otro', async () => {
+    const book = await createTestBook({ status: 'reading' });
+    await assertFails(adjustBookProgress('alice', book, 50, new Date(), bob()));
+    await assertFails(adjustBookProgress('alice', { ...book, currentPage: 90 }, 10, new Date(), bob()));
+    expect((await readBook(book.id)).currentPage).toBe(0);
   });
 });

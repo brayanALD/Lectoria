@@ -172,3 +172,29 @@ export function planSessionBookUpdate(book: BookProgressState, endPage: number |
     result.clearFinishedAt;
   return result;
 }
+
+export type ProgressInputResult = { ok: true; page: number } | { ok: false; error: string };
+
+/** Valida la página escrita al ajustar el progreso a mano: un entero entre 0 y el total del libro (si se conoce). */
+export function parseProgressInput(text: string, book: SessionBookContext): ProgressInputResult {
+  const trimmed = text.trim();
+  if (!trimmed) return { ok: false, error: 'Introduce una página.' };
+  const max = book.pageCount ?? MAX_SESSION_PAGE;
+  if (!INTEGER.test(trimmed) || Number(trimmed) > max) {
+    return {
+      ok: false,
+      error: book.pageCount ? `Introduce una página entre 0 y ${book.pageCount}.` : 'Introduce un número de página válido.',
+    };
+  }
+  return { ok: true, page: Number(trimmed) };
+}
+
+/**
+ * Qué cambia al corregir el progreso HACIA ATRÁS (a una página anterior a la actual). No es lectura: no genera sesión.
+ * Un libro terminado vuelve a «Leyendo» (y pierde su fecha de fin); el resto conserva su estado.
+ * El avance hacia delante se registra como una sesión de páginas (ver `createSession`).
+ */
+export function planProgressCorrection(book: BookProgressState, page: number): StatusChange {
+  const next = book.status === 'finished' ? 'reading' : book.status;
+  return { ...planStatusChange(book, next), currentPage: page };
+}
