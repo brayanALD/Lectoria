@@ -149,6 +149,7 @@ export function BookDetailScreen({ navigation, route }: Props) {
       ) : null}
 
       <View style={styles.actions}>
+        <Button title="Registrar lectura" onPress={() => navigation.navigate('AddSession', { bookId: book.id })} />
         <Button title="Editar" variant="secondary" onPress={() => navigation.navigate('EditBook', { bookId: book.id })} />
         <Button title="Eliminar" variant="danger" onPress={confirmDelete} />
       </View>

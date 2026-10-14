@@ -9,6 +9,8 @@ export type AppStackParamList = {
   /** `scannedIsbn`: ISBN-13 devuelto por el escáner; el formulario lo busca al recibirlo. */
   AddBook: { scannedIsbn?: string } | undefined;
   ScanBook: undefined;
+  /** `bookId`: libro fijo (desde su detalle). Sin él (desde Inicio) se preselecciona uno y se puede cambiar. */
+  AddSession: { bookId?: string } | undefined;
   BookDetail: { bookId: string };
   EditBook: { bookId: string };
 };

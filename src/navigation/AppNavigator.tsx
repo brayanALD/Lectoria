@@ -6,6 +6,7 @@ import { AddBookScreen } from '../screens/app/library/AddBookScreen';
 import { BookDetailScreen } from '../screens/app/library/BookDetailScreen';
 import { EditBookScreen } from '../screens/app/library/EditBookScreen';
 import { ScanBookScreen } from '../screens/app/library/ScanBookScreen';
+import { AddSessionScreen } from '../screens/app/reading/AddSessionScreen';
 import { AuthNavigator } from './AuthNavigator';
 import { TabNavigator } from './TabNavigator';
 import type { AppStackParamList } from './types';
@@ -25,6 +26,11 @@ export function AppNavigator() {
       {/* Pantallas secundarias: se abren encima de las pestañas, con encabezado y botón de volver. */}
       <Stack.Screen name="AddBook" component={AddBookScreen} options={{ headerShown: true, title: 'Añadir libro' }} />
       <Stack.Screen name="ScanBook" component={ScanBookScreen} options={{ headerShown: true, title: 'Escanear' }} />
+      <Stack.Screen
+        name="AddSession"
+        component={AddSessionScreen}
+        options={{ headerShown: true, title: 'Registrar lectura' }}
+      />
       {/* Sin título: la propia pantalla ya muestra el nombre del libro. */}
       <Stack.Screen name="BookDetail" component={BookDetailScreen} options={{ headerShown: true, title: '' }} />
       <Stack.Screen name="EditBook" component={EditBookScreen} options={{ headerShown: true, title: 'Editar libro' }} />
