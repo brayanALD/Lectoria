@@ -7,6 +7,7 @@ import { BookDetailScreen } from '../screens/app/library/BookDetailScreen';
 import { EditBookScreen } from '../screens/app/library/EditBookScreen';
 import { ScanBookScreen } from '../screens/app/library/ScanBookScreen';
 import { AddSessionScreen } from '../screens/app/reading/AddSessionScreen';
+import { TimerScreen } from '../screens/app/reading/TimerScreen';
 import { AuthNavigator } from './AuthNavigator';
 import { TabNavigator } from './TabNavigator';
 import type { AppStackParamList } from './types';
@@ -34,6 +35,7 @@ export function AppNavigator() {
           title: route.params?.sessionId ? 'Editar lectura' : 'Registrar lectura',
         })}
       />
+      <Stack.Screen name="Timer" component={TimerScreen} options={{ headerShown: true, title: 'Cronómetro' }} />
       {/* Sin título: la propia pantalla ya muestra el nombre del libro. */}
       <Stack.Screen name="BookDetail" component={BookDetailScreen} options={{ headerShown: true, title: '' }} />
       <Stack.Screen name="EditBook" component={EditBookScreen} options={{ headerShown: true, title: 'Editar libro' }} />

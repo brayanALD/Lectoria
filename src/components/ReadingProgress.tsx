@@ -9,11 +9,15 @@ interface ReadingProgressProps {
   percent: number;
   /** Muestra el porcentaje escrito junto a la barra. */
   showLabel?: boolean;
+  /** Lo que anuncia el lector de pantalla (por defecto, «Progreso de lectura»). */
+  accessibilityLabel?: string;
+  /** Valor anunciado en lugar de «N %» (p. ej. «12 de 30 minutos»). */
+  valueText?: string;
 }
 
 const TRACK_HEIGHT = 6;
 
-export function ReadingProgress({ percent, showLabel = true }: ReadingProgressProps) {
+export function ReadingProgress({ percent, showLabel = true, accessibilityLabel = 'Progreso de lectura', valueText }: ReadingProgressProps) {
   const value = Math.min(100, Math.max(0, percent));
 
   return (
@@ -21,8 +25,8 @@ export function ReadingProgress({ percent, showLabel = true }: ReadingProgressPr
       style={styles.row}
       accessible
       accessibilityRole="progressbar"
-      accessibilityLabel="Progreso de lectura"
-      accessibilityValue={{ min: 0, max: 100, now: value, text: `${value} %` }}
+      accessibilityLabel={accessibilityLabel}
+      accessibilityValue={{ min: 0, max: 100, now: value, text: valueText ?? `${value} %` }}
     >
       <View style={styles.track}>
         <View style={[styles.fill, { width: `${value}%` }]} />

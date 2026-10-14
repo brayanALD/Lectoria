@@ -70,6 +70,20 @@ export function dateForDay(dateKey: string, now: Date, todayKey: string): Date {
   return new Date(year, month - 1, day, 12, 0, 0);
 }
 
+/**
+ * Día que se preselecciona al registrar una lectura desde un día elegido: ese día si es una fecha real y no es
+ * futura; si no (falta, mal formada, inexistente o futura), hoy. Una lectura nunca se registra en el futuro.
+ */
+export function resolveDayKey(day: string | undefined, todayKey: string): string {
+  if (!day || !/^\d{4}-\d{2}-\d{2}$/.test(day) || addDays(day, 0) !== day || day > todayKey) return todayKey;
+  return day;
+}
+
+/** Milisegundos que faltan para el próximo cambio de día (medianoche) en la zona horaria del dispositivo. */
+export function msUntilNextDay(now: Date): number {
+  return new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1).getTime() - now.getTime();
+}
+
 /** El lunes de la semana (lunes a domingo) que contiene `dateKey`. */
 export function startOfWeek(dateKey: string): string {
   const weekday = (new Date(dayNumber(dateKey) * 86_400_000).getUTCDay() + 6) % 7; // 0 = lunes

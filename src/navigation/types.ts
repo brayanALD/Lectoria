@@ -12,8 +12,11 @@ export type AppStackParamList = {
   /**
    * `bookId`: libro fijo (desde su detalle). Sin él (desde Inicio) se preselecciona uno y se puede cambiar.
    * `sessionId`: edita esa sesión en lugar de registrar una nueva (el libro es el suyo y no se puede cambiar).
+   * `day`: día preseleccionado («YYYY-MM-DD», p. ej. el elegido en el Calendario); un día futuro se ignora.
+   * `fromTimer`: registra la lectura medida por el cronómetro (su libro, sus minutos y su día de inicio).
    */
-  AddSession: { bookId?: string; sessionId?: string } | undefined;
+  AddSession: { bookId?: string; sessionId?: string; day?: string; fromTimer?: boolean } | undefined;
+  Timer: undefined;
   BookDetail: { bookId: string };
   EditBook: { bookId: string };
 };

@@ -1,15 +1,16 @@
-import { Ionicons } from '@expo/vector-icons';
 import type { NativeStackNavigationProp, NativeStackScreenProps } from '@react-navigation/native-stack';
-import { useMemo, useRef, useState } from 'react';
-import { KeyboardAvoidingView, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { KeyboardAvoidingView, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { BookFormSkeleton } from '../../../components/BookSkeletons';
 import { BookPickerSheet } from '../../../components/BookPickerSheet';
 import { Button } from '../../../components/Button';
 import { DatePickerSheet } from '../../../components/DatePickerSheet';
 import { EmptyState } from '../../../components/EmptyState';
+import { PickerRow } from '../../../components/PickerRow';
 import { TextField } from '../../../components/TextField';
 import { useAuth } from '../../../context/AuthContext';
+import { useReadingTimer } from '../../../context/ReadingTimerContext';
 import { useBooks } from '../../../hooks/useBooks';
 import { useReadingStats } from '../../../hooks/useReadingStats';
 import { useSessions } from '../../../hooks/useSessions';
@@ -19,10 +20,11 @@ import { createSession, updateSession } from '../../../services/sessionsService'
 import type { UserBookWithId } from '../../../types/book';
 import type { ReadingSessionWithId, SessionFormErrors } from '../../../types/session';
 import { colors } from '../../../theme/colors';
-import { iconSize, minTouchSize, opacity, radius, spacing } from '../../../theme/spacing';
-import { fontSize, fontWeight } from '../../../theme/typography';
-import { dateForDay, formatDayLabel } from '../../../utils/calendar';
+import { minTouchSize, spacing } from '../../../theme/spacing';
+import { fontSize } from '../../../theme/typography';
+import { dateForDay, formatDayLabel, resolveDayKey } from '../../../utils/calendar';
 import { getFirestoreErrorMessage } from '../../../utils/firestoreErrors';
+import { buildTimerDraft, type TimerDraft } from '../../../utils/readingTimer';
 import { MAX_SESSION_NOTES, parseSessionForm, toDateKey } from '../../../utils/session';
 import { pickDefaultBook } from '../../../utils/sessionBooks';
 import { withTimeout } from '../../../utils/withTimeout';
@@ -34,17 +36,28 @@ const SAVE_TIMEOUT_MS = 10000;
 const MAX_DIGITS = 6;
 
 /**
- * Registrar una lectura o, con `sessionId`, editar una ya registrada. Esta pantalla solo resuelve los datos
- * (libros y sesiones vienen de la fuente única de `ReadingDataProvider`); el formulario es `SessionForm`.
+ * Registrar una lectura, editar una ya registrada (`sessionId`), registrarla desde un día elegido en el Calendario
+ * (`day`) o registrar la que midió el cronómetro (`fromTimer`). Esta pantalla solo resuelve los datos (libros,
+ * sesiones y cronómetro vienen de sus fuentes únicas); el formulario es `SessionForm`.
  */
 export function AddSessionScreen({ navigation, route }: Props) {
   const { books, loading: booksLoading } = useBooks();
   const { sessions, loading: sessionsLoading } = useSessions();
+  const { timer, loading: timerLoading } = useReadingTimer();
 
-  const sessionId = route.params?.sessionId;
+  const { sessionId, fromTimer, day, bookId } = route.params ?? {};
   const editing = sessionId ? sessions.find((candidate) => candidate.id === sessionId) : undefined;
 
-  if (booksLoading || (sessionId && sessionsLoading)) return <BookFormSkeleton />;
+  // El borrador del cronómetro se toma UNA vez, al abrir el formulario: al guardar se descarta el cronómetro y el
+  // formulario no debe cambiar ni desaparecer mientras la pantalla se cierra.
+  const [draft, setDraft] = useState<TimerDraft | undefined>();
+  useEffect(() => {
+    if (fromTimer && !draft && !timerLoading && timer) setDraft(buildTimerDraft(timer, Date.now()));
+  }, [fromTimer, draft, timerLoading, timer]);
+
+  if (booksLoading || (sessionId && sessionsLoading) || (fromTimer && (timerLoading || (timer && !draft)))) {
+    return <BookFormSkeleton />;
+  }
 
   if (sessionId && !editing) {
     return (
@@ -56,15 +69,27 @@ export function AddSessionScreen({ navigation, route }: Props) {
     );
   }
 
+  if (fromTimer && !draft) {
+    return (
+      <EmptyState
+        icon="timer-outline"
+        title="El cronómetro ya no está activo"
+        action={{ label: 'Volver', onPress: () => navigation.goBack() }}
+      />
+    );
+  }
+
   // `key`: cada sesión editada parte de sus propios valores.
   return (
     <SessionForm
-      key={editing?.id ?? 'new'}
+      key={editing?.id ?? draft?.sessionId ?? 'new'}
       navigation={navigation}
       books={books}
       sessions={sessions}
-      fixedBookId={editing?.bookId ?? route.params?.bookId}
+      fixedBookId={editing?.bookId ?? draft?.bookId ?? bookId}
       editing={editing}
+      draft={draft}
+      day={day}
     />
   );
 }
@@ -77,11 +102,16 @@ interface SessionFormProps {
   fixedBookId?: string;
   /** Sesión que se edita; sin ella se registra una nueva. */
   editing?: ReadingSessionWithId;
+  /** Lo que midió el cronómetro: libro, minutos y día de inicio. Al guardar, el cronómetro se descarta. */
+  draft?: TimerDraft;
+  /** Día preseleccionado (p. ej. el elegido en el Calendario); un día futuro se ignora. */
+  day?: string;
 }
 
-function SessionForm({ navigation, books, sessions, fixedBookId, editing }: SessionFormProps) {
+function SessionForm({ navigation, books, sessions, fixedBookId, editing, draft, day }: SessionFormProps) {
   const { user } = useAuth();
-  const { readingDays } = useReadingStats();
+  const { discard } = useReadingTimer();
+  const { readingDays, todayKey } = useReadingStats();
 
   const [chosenId, setChosenId] = useState<string | undefined>();
   const book = useMemo(() => {
@@ -89,10 +119,10 @@ function SessionForm({ navigation, books, sessions, fixedBookId, editing }: Sess
     return (id ? books.find((candidate) => candidate.id === id) : undefined) ?? (fixedBookId ? undefined : pickDefaultBook(books));
   }, [books, fixedBookId, chosenId]);
 
-  const todayKey = toDateKey(new Date());
-  const [dayKey, setDayKey] = useState(editing?.dateKey ?? todayKey);
+  // Un día elegido se respeta tal cual (una lectura pasada es una sesión histórica); solo se corrige un día futuro.
+  const [dayKey, setDayKey] = useState(editing?.dateKey ?? draft?.dayKey ?? resolveDayKey(day, todayKey));
 
-  const [minutes, setMinutes] = useState(editing?.durationMinutes ? String(editing.durationMinutes) : '');
+  const [minutes, setMinutes] = useState(editing?.durationMinutes ? String(editing.durationMinutes) : (draft?.minutes ?? ''));
   const [endPage, setEndPage] = useState(editing?.endPage !== undefined ? String(editing.endPage) : '');
   const [notes, setNotes] = useState(editing?.notes ?? '');
   const [errors, setErrors] = useState<SessionFormErrors>({});
@@ -107,7 +137,8 @@ function SessionForm({ navigation, books, sessions, fixedBookId, editing }: Sess
   const notesRef = useRef<TextInput>(null);
 
   if (!book) {
-    return editing ? (
+    // Con libro fijo (detalle, edición o cronómetro) es que se eliminó; sin él, que no hay ninguno.
+    return fixedBookId ? (
       <EmptyState
         icon="book-outline"
         title="Este libro ya no existe"
@@ -131,6 +162,13 @@ function SessionForm({ navigation, books, sessions, fixedBookId, editing }: Sess
   const handleSubmit = async () => {
     if (saving || !user) return;
 
+    // Esa lectura del cronómetro ya está guardada (p. ej. un guardado anterior tardó en confirmarse): no se repite.
+    if (draft && sessions.some((candidate) => candidate.id === draft.sessionId)) {
+      discard();
+      navigation.goBack();
+      return;
+    }
+
     const now = new Date();
     // Al editar sin cambiar el día se conserva la hora original; con otro día se aplica la misma regla que al crear.
     const date = editing && dayKey === editing.dateKey ? editing.date.toDate() : dateForDay(dayKey, now, toDateKey(now));
@@ -150,8 +188,9 @@ function SessionForm({ navigation, books, sessions, fixedBookId, editing }: Sess
     try {
       const save = editing
         ? updateSession(user.uid, editing, { ...result.data, dateKey: dayKey }, book, sessions)
-        : createSession(user.uid, book, result.data).then(() => undefined);
+        : createSession(user.uid, book, result.data, undefined, draft?.sessionId).then(() => undefined);
       await withTimeout(save, SAVE_TIMEOUT_MS);
+      if (draft) discard();
       navigation.goBack();
     } catch (error) {
       setSubmitError(getFirestoreErrorMessage(error));
@@ -256,73 +295,9 @@ function SessionForm({ navigation, books, sessions, fixedBookId, editing }: Sess
   );
 }
 
-interface PickerRowProps {
-  label: string;
-  value: string;
-  icon: keyof typeof Ionicons.glyphMap;
-  /** Sin `onPress` la fila solo informa (p. ej. el libro fijo al venir desde su detalle). */
-  onPress?: () => void;
-  error?: string;
-}
-
-// Campo que se elige en una hoja en lugar de escribirse; se ve igual que un `TextField`.
-function PickerRow({ label, value, icon, onPress, error }: PickerRowProps) {
-  const body = (
-    <View style={[styles.field, error ? styles.fieldError : null]}>
-      <Text style={styles.fieldValue} numberOfLines={1}>
-        {value}
-      </Text>
-      {onPress ? <Ionicons name={icon} size={iconSize.md} color={colors.primary} /> : null}
-    </View>
-  );
-
-  return (
-    <View style={styles.group}>
-      <Text style={styles.label}>{label}</Text>
-      {onPress ? (
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={`${label}: ${value}`}
-          accessibilityHint="Toca para cambiar"
-          onPress={onPress}
-          style={({ pressed }) => pressed && styles.pressed}
-        >
-          {body}
-        </Pressable>
-      ) : (
-        <View accessible accessibilityLabel={`${label}: ${value}`}>
-          {body}
-        </View>
-      )}
-      {error ? (
-        <Text style={styles.error} accessibilityRole="alert">
-          {error}
-        </Text>
-      ) : null}
-    </View>
-  );
-}
-
 const styles = StyleSheet.create({
   flex: { flex: 1, backgroundColor: colors.background },
   content: { padding: spacing.lg, gap: spacing.md, paddingBottom: spacing.xl * 3 },
-  group: { gap: spacing.xs },
-  label: { fontSize: fontSize.sm, fontWeight: fontWeight.semibold, color: colors.textPrimary },
-  field: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: spacing.sm,
-    minHeight: minTouchSize,
-    paddingHorizontal: spacing.md,
-    borderWidth: 1,
-    borderColor: colors.outline,
-    borderRadius: radius.md,
-    backgroundColor: colors.surface,
-  },
-  fieldError: { borderColor: colors.error },
-  fieldValue: { flex: 1, fontSize: fontSize.md, color: colors.textPrimary },
-  pressed: { opacity: opacity.pressed },
   notes: { minHeight: minTouchSize * 2, textAlignVertical: 'top', paddingTop: spacing.sm },
   error: { fontSize: fontSize.sm, color: colors.error },
 });

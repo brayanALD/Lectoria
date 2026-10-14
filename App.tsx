@@ -4,6 +4,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { AuthProvider } from './src/context/AuthContext';
 import { ReadingDataProvider } from './src/context/ReadingDataContext';
+import { ReadingTimerProvider } from './src/context/ReadingTimerContext';
 import { AppNavigator } from './src/navigation/AppNavigator';
 import { colors } from './src/theme/colors';
 
@@ -20,15 +21,17 @@ const navigationTheme: Theme = {
   },
 };
 
-// Providers en la raíz: AuthProvider > ReadingDataProvider > NavigationContainer > navigator.
+// Providers en la raíz: AuthProvider > ReadingDataProvider > ReadingTimerProvider > NavigationContainer > navigator.
 export default function App() {
   return (
     <SafeAreaProvider>
       <AuthProvider>
         <ReadingDataProvider>
-          <NavigationContainer theme={navigationTheme}>
-            <AppNavigator />
-          </NavigationContainer>
+          <ReadingTimerProvider>
+            <NavigationContainer theme={navigationTheme}>
+              <AppNavigator />
+            </NavigationContainer>
+          </ReadingTimerProvider>
         </ReadingDataProvider>
       </AuthProvider>
       <StatusBar style="dark" />

@@ -33,6 +33,20 @@ export function totalsForDays(days: ReadonlyMap<string, DaySummary>, keys: reado
   }, EMPTY_TOTALS);
 }
 
+/** Minutos, páginas y número de sesiones de una lista de sesiones (p. ej. las de un libro). */
+export function totalsForSessions(
+  sessions: readonly { durationMinutes: number; pagesRead: number }[],
+): Pick<PeriodTotals, 'minutes' | 'pages' | 'sessions'> {
+  return sessions.reduce(
+    (totals, session) => ({
+      minutes: totals.minutes + session.durationMinutes,
+      pages: totals.pages + session.pagesRead,
+      sessions: totals.sessions + 1,
+    }),
+    { minutes: 0, pages: 0, sessions: 0 },
+  );
+}
+
 /** Totales de un año completo, mes a mes (siempre devuelve los doce meses, aunque estén vacíos). */
 export function summarizeYear(
   days: ReadonlyMap<string, DaySummary>,

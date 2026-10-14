@@ -2,7 +2,7 @@
  * @jest-environment node
  */
 import { initializeTestEnvironment, type RulesTestEnvironment } from '@firebase/rules-unit-testing';
-import { setLogLevel, type Firestore } from 'firebase/firestore';
+import { doc, serverTimestamp, setDoc, setLogLevel, type Firestore } from 'firebase/firestore';
 import { readFileSync } from 'fs';
 import { join } from 'path';
 
@@ -14,12 +14,18 @@ import {
   subscribeToSessions,
   updateSession,
 } from '../../src/services/sessionsService';
+import { setDailyGoal, subscribeToDailyGoal } from '../../src/services/userService';
 import type { UserBookWithId } from '../../src/types/book';
 import type { ReadingSessionWithId, SessionFormValues } from '../../src/types/session';
 import { EMPTY_BOOK_FORM, parseBookForm } from '../../src/utils/book';
+import { dateForDay } from '../../src/utils/calendar';
+import { getGoalProgress } from '../../src/utils/dailyGoal';
 import { initialListState, listReducer, type ListState } from '../../src/utils/listState';
 import { addDays, computeStreaks, getReadingDays, summarizeByDay } from '../../src/utils/readingDays';
+import { totalsForSessions } from '../../src/utils/readingStats';
+import { buildTimerDraft, pauseTimer, startTimer } from '../../src/utils/readingTimer';
 import { parseSessionForm, toDateKey } from '../../src/utils/session';
+import { sessionsOfBook, sortSessions } from '../../src/utils/sessionList';
 
 // El servicio importa db de firebaseConfig (React Native); en las pruebas se le pasa el Firestore del emulador.
 jest.mock('../../firebaseConfig', () => ({ db: {}, auth: {} }));
@@ -49,6 +55,8 @@ beforeEach(async () => {
   await env.clearFirestore();
   // Una sola instancia para escribir y escuchar, como en la app.
   database = env.authenticatedContext('alice').firestore() as unknown as Firestore;
+  // El perfil lo crea la app al iniciar sesión; la meta diaria se guarda en él.
+  await setDoc(doc(database, 'users', 'alice'), { createdAt: serverTimestamp(), timeZone: 'UTC', displayName: 'Alice' });
 });
 
 interface LiveView {
@@ -57,6 +65,8 @@ interface LiveView {
   days: ReturnType<typeof summarizeByDay>;
   readingDays: Set<string>;
   streaks: ReturnType<typeof computeStreaks>;
+  /** La meta diaria en minutos (`undefined` si no hay). */
+  goalMinutes: number | undefined;
 }
 
 const TODAY = toDateKey(new Date());
@@ -65,6 +75,7 @@ const TODAY = toDateKey(new Date());
 function openLiveView() {
   let booksState: ListState<UserBookWithId> = initialListState<UserBookWithId>();
   let sessionsState: ListState<ReadingSessionWithId> = initialListState<ReadingSessionWithId>();
+  let goalState: ListState<number> = initialListState<number>();
   const waiting = new Set<() => void>();
   const notify = () => waiting.forEach((check) => check());
 
@@ -91,14 +102,29 @@ function openLiveView() {
     database,
   );
 
+  const stopGoal = subscribeToDailyGoal(
+    'alice',
+    (minutes) => {
+      goalState = listReducer(goalState, { type: 'success', items: minutes === undefined ? [] : [minutes] });
+      notify();
+    },
+    (error) => {
+      throw error;
+    },
+    database,
+  );
+
+  // Igual que el proveedor de la app: las sesiones se ordenan con `sortSessions` y de ellas salen los resúmenes.
   const snapshot = (): LiveView => {
-    const readingDays = getReadingDays(sessionsState.items);
+    const sessions = sortSessions(sessionsState.items);
+    const readingDays = getReadingDays(sessions);
     return {
       books: booksState.items,
-      sessions: sessionsState.items,
-      days: summarizeByDay(sessionsState.items),
+      sessions,
+      days: summarizeByDay(sessions),
       readingDays,
       streaks: computeStreaks(readingDays, TODAY),
+      goalMinutes: goalState.items[0],
     };
   };
 
@@ -111,7 +137,7 @@ function openLiveView() {
           reject(new Error(`La vista no se puso al día: ${JSON.stringify(summary(snapshot()))}`));
         }, 8000);
         const check = () => {
-          if (booksState.loading || sessionsState.loading) return;
+          if (booksState.loading || sessionsState.loading || goalState.loading) return;
           const view = snapshot();
           if (!predicate(view)) return;
           clearTimeout(timer);
@@ -125,6 +151,7 @@ function openLiveView() {
     close() {
       stopBooks();
       stopSessions();
+      stopGoal();
     },
   };
 }
@@ -310,5 +337,168 @@ describe('sincronización entre secciones', () => {
     const view = await live.until((current) => current.books[0].status === 'paused');
     expect(view.sessions).toHaveLength(1);
     expect(view.readingDays.has(TODAY)).toBe(true);
+  });
+});
+
+describe('detalle del libro', () => {
+  it('los totales del libro siguen a sus sesiones al crear, editar y eliminar', async () => {
+    const dune = await addBook('Dune');
+    const emma = await addBook('Emma');
+    await createSession('alice', dune, sessionFields(dune, { minutes: '30', endPage: '50' }), database);
+    await createSession('alice', emma, sessionFields(emma, { minutes: '99', endPage: '10' }), database);
+    const first = await live.until((current) => current.sessions.length === 2 && current.books.every((book) => book.currentPage > 0));
+    const duneTotals = (view: LiveView) => totalsForSessions(sessionsOfBook(view.sessions, dune.id));
+    expect(duneTotals(first)).toEqual({ minutes: 30, pages: 50, sessions: 1 });
+
+    const duneNow = first.books.find((book) => book.id === dune.id) as UserBookWithId;
+    await createSession('alice', duneNow, sessionFields(duneNow, { minutes: '20', endPage: '90' }), database);
+    const second = await live.until((current) => duneTotals(current).sessions === 2);
+    expect(duneTotals(second)).toEqual({ minutes: 50, pages: 90, sessions: 2 });
+
+    const latest = second.sessions.find((session) => session.bookId === dune.id && session.endPage === 90) as ReadingSessionWithId;
+    const duneLatest = second.books.find((book) => book.id === dune.id) as UserBookWithId;
+    await updateSession(
+      'alice',
+      latest,
+      sessionFields(duneLatest, { minutes: '45', startPage: '50', endPage: '90' }),
+      duneLatest,
+      second.sessions,
+      database,
+    );
+    const edited = await live.until((current) => duneTotals(current).minutes === 75);
+    expect(duneTotals(edited)).toEqual({ minutes: 75, pages: 90, sessions: 2 });
+
+    await deleteSession('alice', latest, edited.books.find((book) => book.id === dune.id) as UserBookWithId, edited.sessions, database);
+    const deleted = await live.until((current) => duneTotals(current).sessions === 1);
+    expect(duneTotals(deleted)).toEqual({ minutes: 30, pages: 50, sessions: 1 });
+    // El otro libro no se ve afectado.
+    expect(totalsForSessions(sessionsOfBook(deleted.sessions, emma.id))).toEqual({ minutes: 99, pages: 10, sessions: 1 });
+    expectBooksMatchSessions(deleted);
+  });
+});
+
+describe('meta diaria', () => {
+  it('guardar, cambiar y quitar la meta llega a las vistas sin tocar las sesiones', async () => {
+    const initial = await live.until((current) => current.goalMinutes === undefined);
+    expect(initial.goalMinutes).toBeUndefined();
+
+    await setDailyGoal('alice', 30, database);
+    await live.until((current) => current.goalMinutes === 30);
+    await setDailyGoal('alice', 45, database);
+    await live.until((current) => current.goalMinutes === 45);
+    await setDailyGoal('alice', undefined, database);
+    const removed = await live.until((current) => current.goalMinutes === undefined);
+    expect(removed.sessions).toEqual([]);
+  });
+
+  it('el progreso de hoy se recalcula solo al registrar, editar y eliminar sesiones', async () => {
+    await setDailyGoal('alice', 60, database);
+    const book = await addBook();
+    const progressOf = (view: LiveView) => getGoalProgress(view.days.get(TODAY)?.minutes ?? 0, view.goalMinutes as number);
+
+    await createSession('alice', book, sessionFields(book, { minutes: '30' }), database);
+    const half = await live.until((current) => current.goalMinutes === 60 && current.sessions.length === 1);
+    expect(progressOf(half)).toMatchObject({ percent: 50, remaining: 30, met: false });
+
+    await createSession('alice', half.books[0], sessionFields(half.books[0], { minutes: '40' }), database);
+    const met = await live.until((current) => current.sessions.length === 2);
+    expect(progressOf(met)).toMatchObject({ percent: 100, remaining: 0, met: true });
+
+    // Editar una de las sesiones para que ya no se llegue a la meta.
+    const forty = met.sessions.find((session) => session.durationMinutes === 40) as ReadingSessionWithId;
+    await updateSession('alice', forty, sessionFields(met.books[0], { minutes: '10' }), met.books[0], met.sessions, database);
+    const edited = await live.until((current) => current.days.get(TODAY)?.minutes === 40);
+    expect(progressOf(edited)).toMatchObject({ percent: 66, remaining: 20, met: false });
+
+    const thirty = edited.sessions.find((session) => session.durationMinutes === 30) as ReadingSessionWithId;
+    await deleteSession('alice', thirty, edited.books[0], edited.sessions, database);
+    const deleted = await live.until((current) => current.sessions.length === 1);
+    expect(progressOf(deleted)).toMatchObject({ minutes: 10, percent: 16, met: false });
+  });
+
+  it('cada día se compara con su propia lectura, sin mezclar días', async () => {
+    await setDailyGoal('alice', 30, database);
+    const book = await addBook();
+    const yesterday = addDays(TODAY, -1);
+    await createSession('alice', book, sessionFields(book, { minutes: '45', date: dateForDay(yesterday, new Date(), TODAY) }), database);
+
+    const view = await live.until((current) => current.sessions.length === 1 && current.goalMinutes === 30);
+    const progressOn = (key: string) => getGoalProgress(view.days.get(key)?.minutes ?? 0, 30);
+    expect(progressOn(yesterday).met).toBe(true);
+    expect(progressOn(TODAY)).toMatchObject({ minutes: 0, met: false, remaining: 30 });
+  });
+});
+
+describe('registrar desde un día elegido (calendario)', () => {
+  it('una lectura de un día pasado conserva esa fecha y no cuenta como hoy', async () => {
+    const book = await addBook();
+    const pastDay = addDays(TODAY, -5);
+    await createSession(
+      'alice',
+      book,
+      sessionFields(book, { minutes: '25', endPage: '40', date: dateForDay(pastDay, new Date(), TODAY) }),
+      database,
+    );
+
+    const view = await live.until((current) => current.sessions.length === 1 && current.books[0].currentPage === 40);
+    expect(view.sessions[0].dateKey).toBe(pastDay);
+    expect(view.days.get(pastDay)).toMatchObject({ minutes: 25, pages: 40, isReadingDay: true });
+    expect(view.days.has(TODAY)).toBe(false);
+    expect(view.streaks).toEqual({ current: 0, longest: 1 });
+    expectBooksMatchSessions(view);
+  });
+
+  it('una fecha futura se rechaza antes de guardar nada', () => {
+    const book = { currentPage: 0, pageCount: 300 };
+    const tomorrow = new Date(Date.now() + 24 * 60 * 60 * 1000);
+    const result = parseSessionForm({ date: tomorrow, minutes: '20', startPage: '', endPage: '', notes: '' }, 'b', book);
+    expect(result.ok).toBe(false);
+  });
+});
+
+describe('cronómetro', () => {
+  const MINUTE = 60_000;
+
+  it('la lectura medida se guarda con el id del cronómetro y se refleja en todas las vistas', async () => {
+    const book = await addBook();
+    const timer = pauseTimer(startTimer(book.id, Date.now() - 25 * MINUTE), Date.now());
+    const draft = buildTimerDraft(timer, Date.now());
+
+    await createSession('alice', book, sessionFields(book, { minutes: draft.minutes, endPage: '30' }), database, draft.sessionId);
+
+    const view = await live.until((current) => current.sessions.length === 1 && current.books[0].currentPage === 30);
+    expect(view.sessions[0].id).toBe(draft.sessionId);
+    expect(view.sessions[0].durationMinutes).toBe(25);
+    expect(view.days.get(TODAY)).toMatchObject({ minutes: 25, pages: 30 });
+  });
+
+  it('guardar dos veces la misma lectura no la duplica ni avanza el libro dos veces', async () => {
+    const book = await addBook();
+    const draft = buildTimerDraft(pauseTimer(startTimer(book.id, Date.now() - 10 * MINUTE), Date.now()), Date.now());
+    await createSession('alice', book, sessionFields(book, { minutes: draft.minutes, endPage: '30' }), database, draft.sessionId);
+    const saved = await live.until((current) => current.sessions.length === 1 && current.books[0].currentPage === 30);
+
+    // Un segundo intento (p. ej. una pulsación repetida con la primera aún sin confirmar) lo rechaza Firestore.
+    await expect(
+      createSession('alice', saved.books[0], sessionFields(saved.books[0], { minutes: '99', endPage: '200' }), database, draft.sessionId),
+    ).rejects.toBeDefined();
+
+    // La escritura rechazada se ve un instante en local (Firestore la aplica antes de que el servidor responda) y se
+    // revierte al llegar el rechazo: se espera a que la vista converja, que es lo que importa.
+    const view = await live.until(
+      (current) =>
+        current.sessions.length === 1 && current.sessions[0].durationMinutes === 10 && current.books[0].currentPage === 30,
+    );
+    expect(view.sessions[0].id).toBe(draft.sessionId);
+  });
+
+  it('dos cronómetros distintos generan dos sesiones', async () => {
+    const book = await addBook();
+    const first = buildTimerDraft(pauseTimer(startTimer(book.id, 1_000), 1_000 + 5 * MINUTE), 10 * MINUTE);
+    const second = buildTimerDraft(pauseTimer(startTimer(book.id, 2_000), 2_000 + 5 * MINUTE), 10 * MINUTE);
+    await createSession('alice', book, sessionFields(book, { minutes: first.minutes }), database, first.sessionId);
+    await createSession('alice', book, sessionFields(book, { minutes: second.minutes }), database, second.sessionId);
+    const view = await live.until((current) => current.sessions.length === 2);
+    expect(new Set(view.sessions.map((session) => session.id)).size).toBe(2);
   });
 });

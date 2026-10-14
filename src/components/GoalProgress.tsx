@@ -1,0 +1,69 @@
+import { Ionicons } from '@expo/vector-icons';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
+
+import { colors } from '../theme/colors';
+import { iconSize, opacity, spacing } from '../theme/spacing';
+import { fontSize, fontWeight } from '../theme/typography';
+import { describeGoalProgress, type GoalProgressInfo } from '../utils/dailyGoal';
+import { formatDuration } from '../utils/readingStats';
+import { ReadingProgress } from './ReadingProgress';
+
+interface GoalProgressProps {
+  progress: GoalProgressInfo;
+  /** El día ya pasó: el texto habla en pasado («Faltaron 10 min»). */
+  past?: boolean;
+  /** Si se indica, el bloque es un botón (en Inicio abre el cambio de meta). */
+  onPress?: () => void;
+}
+
+/**
+ * Cuánto de la meta diaria se ha leído: «12 min de 30 min», una barra y lo que falta (o «Meta cumplida»).
+ * El estado se comunica con texto e icono, no solo con la barra. Lo usan Inicio (hoy) y el Calendario (cualquier día).
+ */
+export function GoalProgress({ progress, past = false, onPress }: GoalProgressProps) {
+  const summary = `${formatDuration(progress.minutes)} de ${formatDuration(progress.goalMinutes)}`;
+  const status = describeGoalProgress(progress, past);
+
+  const body = (
+    <>
+      <View style={styles.row}>
+        <Text style={styles.summary}>{summary}</Text>
+        {onPress ? <Ionicons name="create-outline" size={iconSize.md} color={colors.primary} accessible={false} /> : null}
+      </View>
+      <ReadingProgress
+        percent={progress.percent}
+        showLabel={false}
+        accessibilityLabel="Meta diaria"
+        valueText={`${summary}. ${status}`}
+      />
+      <View style={styles.statusRow}>
+        {progress.met ? <Ionicons name="checkmark-circle" size={iconSize.sm} color={colors.success} accessible={false} /> : null}
+        <Text style={[styles.status, progress.met && styles.statusMet]}>{status}</Text>
+      </View>
+    </>
+  );
+
+  if (!onPress) return <View style={styles.container}>{body}</View>;
+
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={`Meta diaria: ${summary}. ${status}`}
+      accessibilityHint="Toca para cambiar la meta"
+      onPress={onPress}
+      style={({ pressed }) => [styles.container, pressed && styles.pressed]}
+    >
+      {body}
+    </Pressable>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { gap: spacing.sm },
+  row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.xs },
+  statusRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
+  summary: { fontSize: fontSize.md, color: colors.textPrimary },
+  status: { fontSize: fontSize.sm, color: colors.textSecondary },
+  statusMet: { fontWeight: fontWeight.semibold, color: colors.success },
+  pressed: { opacity: opacity.pressed },
+});

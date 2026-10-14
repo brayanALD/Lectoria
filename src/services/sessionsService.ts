@@ -26,16 +26,19 @@ const sessionsCollection = (uid: string, database: Firestore) => collection(data
  * o ninguna, así el progreso del libro nunca queda desfasado de sus sesiones.
  * Efecto en el libro (ver `planSessionBookUpdate`): avanza la página actual, pasa a «Leyendo» si no lo estaba y
  * a «Terminado» al llegar a la última página. Devuelve el id de la sesión.
+ * `sessionId` fija el id (el cronómetro usa uno propio): si ya existe una sesión con ese id, las reglas rechazan el
+ * segundo guardado, así que una misma lectura no puede registrarse dos veces.
  */
 export async function createSession(
   uid: string,
   book: UserBookWithId,
   fields: NewSessionFields,
   database: Firestore = db,
+  sessionId?: string,
 ): Promise<string> {
   const batch = writeBatch(database);
 
-  const sessionRef = doc(sessionsCollection(uid, database));
+  const sessionRef = sessionId ? doc(sessionsCollection(uid, database), sessionId) : doc(sessionsCollection(uid, database));
   batch.set(sessionRef, {
     bookId: fields.bookId,
     date: Timestamp.fromDate(fields.date),

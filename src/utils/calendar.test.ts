@@ -13,6 +13,8 @@ import {
   formatMonthLabel,
   getMonthGrid,
   monthOf,
+  msUntilNextDay,
+  resolveDayKey,
   toDayKey,
 } from './calendar';
 import { toDateKey } from './session';
@@ -193,5 +195,54 @@ describe('formatWeekdayAndDay / formatMonthShort', () => {
     expect([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map(formatMonthShort)).toEqual([
       'ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic',
     ]);
+  });
+});
+
+describe('resolveDayKey', () => {
+  const today = '2026-10-13';
+
+  it('conserva el día elegido si es hoy o anterior', () => {
+    expect(resolveDayKey('2026-10-13', today)).toBe('2026-10-13');
+    expect(resolveDayKey('2026-10-01', today)).toBe('2026-10-01');
+    expect(resolveDayKey('2025-12-31', today)).toBe('2025-12-31');
+  });
+
+  it('un día futuro nunca se respeta: se usa hoy', () => {
+    expect(resolveDayKey('2026-10-14', today)).toBe(today);
+    expect(resolveDayKey('2027-01-01', today)).toBe(today);
+  });
+
+  it('sin día, mal formado o inexistente, se usa hoy', () => {
+    expect(resolveDayKey(undefined, today)).toBe(today);
+    expect(resolveDayKey('', today)).toBe(today);
+    expect(resolveDayKey('ayer', today)).toBe(today);
+    expect(resolveDayKey('2026-1-5', today)).toBe(today);
+    expect(resolveDayKey('2026-02-30', today)).toBe(today);
+    expect(resolveDayKey('2026-13-01', today)).toBe(today);
+  });
+
+  it('respeta el 29 de febrero solo en año bisiesto', () => {
+    expect(resolveDayKey('2024-02-29', today)).toBe('2024-02-29');
+    expect(resolveDayKey('2025-02-29', today)).toBe(today);
+  });
+});
+
+describe('msUntilNextDay', () => {
+  const HOUR = 3_600_000;
+
+  it('a mediodía faltan unas doce horas', () => {
+    expect(msUntilNextDay(new Date(2026, 9, 13, 12, 0, 0))).toBe(12 * HOUR);
+  });
+
+  it('un segundo antes de medianoche falta un segundo', () => {
+    expect(msUntilNextDay(new Date(2026, 9, 13, 23, 59, 59))).toBe(1000);
+  });
+
+  it('a medianoche exacta faltan unas 24 horas (el día nuevo acaba de empezar)', () => {
+    expect(msUntilNextDay(new Date(2026, 9, 13, 0, 0, 0))).toBeGreaterThanOrEqual(23 * HOUR);
+  });
+
+  it('cruza el fin de mes y de año', () => {
+    expect(msUntilNextDay(new Date(2026, 11, 31, 23, 0, 0))).toBe(HOUR);
   });
 });

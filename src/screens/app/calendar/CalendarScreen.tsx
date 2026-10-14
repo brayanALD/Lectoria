@@ -1,19 +1,18 @@
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useMemo, useState } from 'react';
-import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { CalendarSkeleton } from '../../../components/CalendarSkeleton';
 import { Chip } from '../../../components/Chip';
 import { EmptyState } from '../../../components/EmptyState';
 import { MonthCalendar } from '../../../components/MonthCalendar';
-import { useAuth } from '../../../context/AuthContext';
 import { useBooks } from '../../../hooks/useBooks';
+import { useDailyGoal } from '../../../hooks/useDailyGoal';
+import { useDeleteSession } from '../../../hooks/useDeleteSession';
 import { useReadingStats } from '../../../hooks/useReadingStats';
 import { useSessions } from '../../../hooks/useSessions';
 import type { AppStackParamList } from '../../../navigation/types';
-import { deleteSession } from '../../../services/sessionsService';
-import type { ReadingSessionWithId } from '../../../types/session';
 import { colors } from '../../../theme/colors';
 import { spacing } from '../../../theme/spacing';
 import { fontSize } from '../../../theme/typography';
@@ -24,9 +23,6 @@ import {
   toDayKey,
   type YearMonth,
 } from '../../../utils/calendar';
-import { getFirestoreErrorMessage } from '../../../utils/firestoreErrors';
-import { toDateKey } from '../../../utils/session';
-import { withTimeout } from '../../../utils/withTimeout';
 import { DaySessions } from './DaySessions';
 import { WeekView } from './WeekView';
 import { YearView } from './YearView';
@@ -39,23 +35,20 @@ const VIEWS: { mode: ViewMode; label: string }[] = [
   { mode: 'year', label: 'Año' },
 ];
 
-const WRITE_TIMEOUT_MS = 10000;
-
 export function CalendarScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<AppStackParamList>>();
-  const { user } = useAuth();
   const { sessions, loading, error, retry } = useSessions();
   const { books, loading: booksLoading } = useBooks();
-  const { days, readingDays } = useReadingStats();
+  const { days, readingDays, todayKey } = useReadingStats();
+  const { goalMinutes } = useDailyGoal();
+  const { confirmDelete, error: actionError } = useDeleteSession();
 
-  const todayKey = toDateKey(new Date());
   const today = monthOf(todayKey);
 
   const [mode, setMode] = useState<ViewMode>('month');
   // `cursor` fija el periodo que se ve (mes, semana o año) y se conserva al cambiar de vista.
   const [cursor, setCursor] = useState(todayKey);
   const [selectedKey, setSelectedKey] = useState<string | undefined>(todayKey);
-  const [actionError, setActionError] = useState<string | null>(null);
 
   const bookTitles = useMemo(() => new Map(books.map((book) => [book.id, book.title])), [books]);
 
@@ -89,25 +82,6 @@ export function CalendarScreen() {
   const goToday = () => {
     setCursor(todayKey);
     setSelectedKey(todayKey);
-  };
-
-  const confirmDelete = (session: ReadingSessionWithId) => {
-    Alert.alert('¿Eliminar esta sesión?', 'El progreso del libro se ajusta solo.', [
-      { text: 'Cancelar', style: 'cancel' },
-      { text: 'Eliminar', style: 'destructive', onPress: () => handleDelete(session) },
-    ]);
-  };
-
-  // Borra la sesión y, en la misma operación, devuelve el libro a la lectura anterior si ella fijaba su página.
-  const handleDelete = async (session: ReadingSessionWithId) => {
-    if (!user) return;
-    setActionError(null);
-    try {
-      const book = books.find((candidate) => candidate.id === session.bookId);
-      await withTimeout(deleteSession(user.uid, session, book, sessions), WRITE_TIMEOUT_MS);
-    } catch (e) {
-      setActionError(getFirestoreErrorMessage(e));
-    }
   };
 
   // Los títulos de cada sesión vienen de los libros: se espera a ambas listas para no mostrar «Libro eliminado» de más.
@@ -158,6 +132,7 @@ export function CalendarScreen() {
           todayKey={todayKey}
           selectedKey={selectedKey}
           days={days}
+          goalMinutes={goalMinutes}
           onSelect={setSelectedKey}
         />
       ) : null}
@@ -186,6 +161,8 @@ export function CalendarScreen() {
           sessions={daySessions}
           bookTitles={bookTitles}
           totals={days.get(detailKey) ?? { minutes: 0, pages: 0 }}
+          goalMinutes={goalMinutes}
+          onRegister={detailKey <= todayKey ? () => navigation.navigate('AddSession', { day: detailKey }) : undefined}
           onEdit={(session) => navigation.navigate('AddSession', { sessionId: session.id })}
           onDelete={confirmDelete}
         />

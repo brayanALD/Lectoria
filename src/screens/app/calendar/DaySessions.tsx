@@ -1,11 +1,14 @@
-import { Ionicons } from '@expo/vector-icons';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 
+import { Button } from '../../../components/Button';
+import { GoalProgress } from '../../../components/GoalProgress';
+import { SessionRow } from '../../../components/SessionRow';
 import type { ReadingSessionWithId } from '../../../types/session';
 import { colors } from '../../../theme/colors';
-import { iconSize, minTouchSize, opacity, spacing } from '../../../theme/spacing';
+import { spacing } from '../../../theme/spacing';
 import { fontSize, fontWeight } from '../../../theme/typography';
 import { formatDayLabel } from '../../../utils/calendar';
+import { getGoalProgress } from '../../../utils/dailyGoal';
 import { formatTotals, type PeriodTotals } from '../../../utils/readingStats';
 
 interface DaySessionsProps {
@@ -16,12 +19,26 @@ interface DaySessionsProps {
   /** Título de cada libro por id (para mostrar de qué libro es cada sesión). */
   bookTitles: ReadonlyMap<string, string>;
   totals: Pick<PeriodTotals, 'minutes' | 'pages'>;
+  /** La meta diaria en minutos; sin ella no se muestra el cumplimiento. */
+  goalMinutes?: number;
+  /** Registrar una lectura en este día. Ausente en días futuros, donde no se puede registrar. */
+  onRegister?: () => void;
   onEdit: (session: ReadingSessionWithId) => void;
   onDelete: (session: ReadingSessionWithId) => void;
 }
 
-/** Detalle de un día: lo leído en total y cada sesión, con la opción de editarla o eliminarla. */
-export function DaySessions({ dateKey, todayKey, sessions, bookTitles, totals, onEdit, onDelete }: DaySessionsProps) {
+/** Detalle de un día: lo leído en total, la meta, cada sesión (editar o eliminar) y registrar una lectura ese día. */
+export function DaySessions({
+  dateKey,
+  todayKey,
+  sessions,
+  bookTitles,
+  totals,
+  goalMinutes,
+  onRegister,
+  onEdit,
+  onDelete,
+}: DaySessionsProps) {
   return (
     <View style={styles.container}>
       <View style={styles.heading}>
@@ -31,37 +48,25 @@ export function DaySessions({ dateKey, todayKey, sessions, bookTitles, totals, o
         <Text style={styles.totals}>{formatTotals(totals)}</Text>
       </View>
 
+      {goalMinutes !== undefined ? (
+        <GoalProgress progress={getGoalProgress(totals.minutes, goalMinutes)} past={dateKey < todayKey} />
+      ) : null}
+
       {sessions.map((session) => {
         const title = bookTitles.get(session.bookId) ?? 'Libro eliminado';
-        const detail = formatTotals({ minutes: session.durationMinutes, pages: session.pagesRead });
         return (
-          <View key={session.id} style={styles.item}>
-            <View style={styles.itemText}>
-              <Text style={styles.title} numberOfLines={2}>
-                {title}
-              </Text>
-              <Text style={styles.detail}>{detail}</Text>
-              {session.notes ? <Text style={styles.notes}>{session.notes}</Text> : null}
-            </View>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={`Editar la sesión de ${title}`}
-              onPress={() => onEdit(session)}
-              style={({ pressed }) => [styles.action, pressed && styles.pressed]}
-            >
-              <Ionicons name="pencil-outline" size={iconSize.md} color={colors.primary} />
-            </Pressable>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={`Eliminar la sesión de ${title}`}
-              onPress={() => onDelete(session)}
-              style={({ pressed }) => [styles.action, pressed && styles.pressed]}
-            >
-              <Ionicons name="trash-outline" size={iconSize.md} color={colors.error} />
-            </Pressable>
-          </View>
+          <SessionRow
+            key={session.id}
+            title={title}
+            detail={formatTotals({ minutes: session.durationMinutes, pages: session.pagesRead })}
+            notes={session.notes}
+            onEdit={() => onEdit(session)}
+            onDelete={() => onDelete(session)}
+          />
         );
       })}
+
+      {onRegister ? <Button title="Registrar lectura" variant="secondary" onPress={onRegister} /> : null}
     </View>
   );
 }
@@ -71,18 +76,4 @@ const styles = StyleSheet.create({
   heading: { gap: spacing.xs },
   day: { fontSize: fontSize.lg, fontWeight: fontWeight.bold, color: colors.textPrimary },
   totals: { fontSize: fontSize.md, color: colors.textSecondary },
-  item: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    paddingVertical: spacing.sm,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-  },
-  itemText: { flex: 1, gap: spacing.xs },
-  title: { fontSize: fontSize.md, fontWeight: fontWeight.semibold, color: colors.textPrimary },
-  detail: { fontSize: fontSize.sm, color: colors.textSecondary },
-  notes: { fontSize: fontSize.sm, color: colors.textPrimary },
-  action: { width: minTouchSize, height: minTouchSize, alignItems: 'center', justifyContent: 'center' },
-  pressed: { opacity: opacity.pressed },
 });

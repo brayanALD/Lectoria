@@ -6,11 +6,15 @@ import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-nati
 import { BookCover } from '../../../components/BookCover';
 import { Button } from '../../../components/Button';
 import { EmptyState } from '../../../components/EmptyState';
-import { BookDetailSkeleton } from '../../../components/BookSkeletons';
+import { BookDetailSkeleton, SessionListSkeleton } from '../../../components/BookSkeletons';
 import { ReadingProgress } from '../../../components/ReadingProgress';
+import { SessionRow } from '../../../components/SessionRow';
 import { StatusSelector } from '../../../components/StatusSelector';
 import { useAuth } from '../../../context/AuthContext';
 import { useBook } from '../../../hooks/useBook';
+import { useBookSessions } from '../../../hooks/useBookSessions';
+import { useDeleteSession } from '../../../hooks/useDeleteSession';
+import { useReadingStats } from '../../../hooks/useReadingStats';
 import type { AppStackParamList } from '../../../navigation/types';
 import { changeBookStatus, deleteBook } from '../../../services/booksService';
 import { adjustBookProgress } from '../../../services/sessionsService';
@@ -19,8 +23,10 @@ import { colors } from '../../../theme/colors';
 import { iconSize, opacity, spacing } from '../../../theme/spacing';
 import { fontSize, fontWeight } from '../../../theme/typography';
 import { getProgressPercent } from '../../../utils/book';
+import { formatDayLabel } from '../../../utils/calendar';
 import { formatLongDate } from '../../../utils/dateUtils';
 import { getFirestoreErrorMessage } from '../../../utils/firestoreErrors';
+import { formatTotals } from '../../../utils/readingStats';
 import { withTimeout } from '../../../utils/withTimeout';
 import { ProgressAdjustSheet } from './ProgressAdjustSheet';
 
@@ -31,10 +37,16 @@ const COVER_WIDTH = 112;
 const WRITE_TIMEOUT_MS = 10000;
 // Eliminar consulta y borra las sesiones del libro en varios lotes: se da más margen.
 const DELETE_TIMEOUT_MS = 20000;
+// Cuántas lecturas se muestran de golpe en la lista de sesiones del libro.
+const SESSIONS_PAGE_SIZE = 10;
 
 export function BookDetailScreen({ navigation, route }: Props) {
   const { user } = useAuth();
   const { book, loading, error, retry } = useBook(route.params.bookId);
+  const bookSessions = useBookSessions(route.params.bookId);
+  const { todayKey } = useReadingStats();
+  const { confirmDelete: confirmDeleteSession, error: sessionError } = useDeleteSession();
+  const [visibleSessions, setVisibleSessions] = useState(SESSIONS_PAGE_SIZE);
   const [changingStatus, setChangingStatus] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
@@ -157,14 +169,47 @@ export function BookDetailScreen({ navigation, route }: Props) {
         </View>
       ) : null}
 
-      {actionError ? (
+      {(actionError ?? sessionError) ? (
         <Text style={styles.error} accessibilityRole="alert">
-          {actionError}
+          {actionError ?? sessionError}
         </Text>
       ) : null}
 
+      <Button title="Registrar lectura" onPress={() => navigation.navigate('AddSession', { bookId: book.id })} />
+
+      {/* Las lecturas de este libro, derivadas de la misma lista de sesiones que usan Inicio y el Calendario. */}
+      {bookSessions.loading ? (
+        <SessionListSkeleton />
+      ) : bookSessions.sessions.length > 0 ? (
+        <View style={styles.sessions}>
+          <Text style={styles.heading} accessibilityRole="header">
+            Lecturas
+          </Text>
+          <Text style={styles.sessionsSummary}>
+            {formatTotals(bookSessions.totals)} · {bookSessions.totals.sessions}{' '}
+            {bookSessions.totals.sessions === 1 ? 'sesión' : 'sesiones'}
+          </Text>
+          {bookSessions.sessions.slice(0, visibleSessions).map((session) => (
+            <SessionRow
+              key={session.id}
+              title={formatDayLabel(session.dateKey, todayKey)}
+              detail={formatTotals({ minutes: session.durationMinutes, pages: session.pagesRead })}
+              notes={session.notes}
+              onEdit={() => navigation.navigate('AddSession', { sessionId: session.id })}
+              onDelete={() => confirmDeleteSession(session)}
+            />
+          ))}
+          {bookSessions.sessions.length > visibleSessions ? (
+            <Button
+              title="Mostrar más"
+              variant="secondary"
+              onPress={() => setVisibleSessions((count) => count + SESSIONS_PAGE_SIZE)}
+            />
+          ) : null}
+        </View>
+      ) : null}
+
       <View style={styles.actions}>
-        <Button title="Registrar lectura" onPress={() => navigation.navigate('AddSession', { bookId: book.id })} />
         <Button title="Editar" variant="secondary" onPress={() => navigation.navigate('EditBook', { bookId: book.id })} />
         <Button title="Eliminar" variant="danger" onPress={confirmDelete} />
       </View>
@@ -198,5 +243,8 @@ const styles = StyleSheet.create({
   rowLabel: { fontSize: fontSize.md, color: colors.textSecondary },
   rowValue: { flex: 1, fontSize: fontSize.md, color: colors.textPrimary, textAlign: 'right' },
   error: { fontSize: fontSize.sm, color: colors.error },
+  sessions: { gap: spacing.sm },
+  heading: { fontSize: fontSize.lg, fontWeight: fontWeight.bold, color: colors.textPrimary },
+  sessionsSummary: { fontSize: fontSize.md, color: colors.textSecondary },
   actions: { gap: spacing.md },
 });

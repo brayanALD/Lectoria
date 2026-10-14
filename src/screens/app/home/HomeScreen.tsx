@@ -1,28 +1,49 @@
+import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { StyleSheet, Text, View } from 'react-native';
+import { useMemo, useState } from 'react';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { Button } from '../../../components/Button';
 import { EmptyState } from '../../../components/EmptyState';
+import { GoalProgress } from '../../../components/GoalProgress';
 import { HomeSkeleton } from '../../../components/HomeSkeleton';
+import { SessionRow } from '../../../components/SessionRow';
+import { useAuth } from '../../../context/AuthContext';
 import { useBooks } from '../../../hooks/useBooks';
+import { useDailyGoal } from '../../../hooks/useDailyGoal';
 import { useReadingStats } from '../../../hooks/useReadingStats';
 import { useSessions } from '../../../hooks/useSessions';
 import type { AppStackParamList } from '../../../navigation/types';
+import { setDailyGoal } from '../../../services/userService';
 import { colors } from '../../../theme/colors';
-import { spacing } from '../../../theme/spacing';
+import { iconSize, minTouchSize, opacity, spacing } from '../../../theme/spacing';
 import { fontSize, fontWeight } from '../../../theme/typography';
+import { formatDayLabel } from '../../../utils/calendar';
+import { formatTotals } from '../../../utils/readingStats';
+import { withTimeout } from '../../../utils/withTimeout';
+import { DailyGoalSheet } from './DailyGoalSheet';
+import { TimerButton } from './TimerButton';
 
 // Tamaño de la cifra de la racha: lo más grande de la app, es lo primero que debe leerse en Inicio.
 const STREAK_NUMBER_SCALE = 2;
+// Cuántas lecturas se muestran en «Actividad reciente».
+const RECENT_ACTIVITY_COUNT = 5;
+// Sin conexión, una escritura de Firestore no termina hasta recuperar la red: se corta la espera.
+const WRITE_TIMEOUT_MS = 10000;
 
 export function HomeScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<AppStackParamList>>();
+  const { user } = useAuth();
   const books = useBooks();
   const sessions = useSessions();
-  const { streaks } = useReadingStats();
+  const goal = useDailyGoal();
+  const { streaks, todayKey } = useReadingStats();
+  const [editingGoal, setEditingGoal] = useState(false);
 
-  if (books.loading || sessions.loading) return <HomeSkeleton />;
+  const bookTitles = useMemo(() => new Map(books.books.map((book) => [book.id, book.title])), [books.books]);
+
+  if (books.loading || sessions.loading || goal.loading) return <HomeSkeleton />;
 
   const error = books.error ?? sessions.error;
   if (error && books.books.length === 0) {
@@ -36,6 +57,7 @@ export function HomeScreen() {
           onPress: () => {
             books.retry();
             sessions.retry();
+            goal.retry();
           },
         }}
       />
@@ -52,15 +74,78 @@ export function HomeScreen() {
     );
   }
 
+  const recent = sessions.sessions.slice(0, RECENT_ACTIVITY_COUNT);
+
   return (
-    <View style={styles.container}>
-      <View style={styles.streak} accessible accessibilityLabel={describeStreak(streaks.current, streaks.longest)}>
-        <Text style={styles.number}>{streaks.current}</Text>
-        <Text style={styles.caption}>{streaks.current === 1 ? 'día seguido' : 'días seguidos'}</Text>
-        {streaks.longest > streaks.current ? <Text style={styles.record}>Récord: {streaks.longest}</Text> : null}
-      </View>
-      <Button title="Registrar lectura" onPress={() => navigation.navigate('AddSession')} />
-    </View>
+    <>
+      <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
+        <View style={styles.streak} accessible accessibilityLabel={describeStreak(streaks.current, streaks.longest)}>
+          <Text style={styles.number}>{streaks.current}</Text>
+          <Text style={styles.caption}>{streaks.current === 1 ? 'día seguido' : 'días seguidos'}</Text>
+          {streaks.longest > streaks.current ? <Text style={styles.record}>Récord: {streaks.longest}</Text> : null}
+        </View>
+
+        {goal.progress ? (
+          <GoalProgress progress={goal.progress} onPress={() => setEditingGoal(true)} />
+        ) : (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Fijar meta diaria"
+            onPress={() => setEditingGoal(true)}
+            style={({ pressed }) => [styles.setGoal, pressed && styles.pressed]}
+          >
+            <Ionicons name="flag-outline" size={iconSize.md} color={colors.primary} accessible={false} />
+            <Text style={styles.setGoalLabel}>Fijar meta diaria</Text>
+          </Pressable>
+        )}
+
+        <View style={styles.actions}>
+          <Button title="Registrar lectura" onPress={() => navigation.navigate('AddSession')} />
+          <TimerButton />
+        </View>
+
+        <View style={styles.activity}>
+          <Text style={styles.heading} accessibilityRole="header">
+            Actividad reciente
+          </Text>
+          {recent.length === 0 ? (
+            <View style={styles.empty}>
+              <Ionicons name="book-outline" size={iconSize.xl} color={colors.textSecondary} accessible={false} />
+              <Text style={styles.emptyTitle}>Aún no has registrado lecturas</Text>
+            </View>
+          ) : (
+            recent.map((session) => {
+              const title = bookTitles.get(session.bookId);
+              const totals = formatTotals({ minutes: session.durationMinutes, pages: session.pagesRead });
+              return (
+                <SessionRow
+                  key={session.id}
+                  title={title ?? 'Libro eliminado'}
+                  detail={`${formatDayLabel(session.dateKey, todayKey)} · ${totals}`}
+                  onPress={title ? () => navigation.navigate('BookDetail', { bookId: session.bookId }) : undefined}
+                />
+              );
+            })
+          )}
+        </View>
+
+        {error ? (
+          <Text style={styles.error} accessibilityRole="alert">
+            {error}
+          </Text>
+        ) : null}
+      </ScrollView>
+
+      <DailyGoalSheet
+        visible={editingGoal}
+        onClose={() => setEditingGoal(false)}
+        goalMinutes={goal.goalMinutes}
+        onSave={async (minutes) => {
+          if (!user) throw new Error('No hay sesión iniciada');
+          await withTimeout(setDailyGoal(user.uid, minutes), WRITE_TIMEOUT_MS);
+        }}
+      />
+    </>
   );
 }
 
@@ -71,9 +156,25 @@ function describeStreak(current: number, longest: number): string {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: spacing.lg, justifyContent: 'center', gap: spacing.xl, backgroundColor: colors.background },
+  scroll: { flex: 1, backgroundColor: colors.background },
+  content: { padding: spacing.lg, gap: spacing.xl, paddingBottom: spacing.xl * 2 },
   streak: { alignItems: 'center', gap: spacing.xs },
   number: { fontSize: fontSize.xl * STREAK_NUMBER_SCALE, fontWeight: fontWeight.bold, color: colors.primary },
   caption: { fontSize: fontSize.lg, color: colors.textPrimary },
   record: { fontSize: fontSize.sm, color: colors.textSecondary },
+  setGoal: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+    minHeight: minTouchSize,
+  },
+  setGoalLabel: { fontSize: fontSize.md, fontWeight: fontWeight.semibold, color: colors.primary },
+  pressed: { opacity: opacity.pressed },
+  actions: { gap: spacing.md },
+  activity: { gap: spacing.sm },
+  heading: { fontSize: fontSize.lg, fontWeight: fontWeight.bold, color: colors.textPrimary },
+  empty: { alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.lg },
+  emptyTitle: { fontSize: fontSize.md, color: colors.textSecondary, textAlign: 'center' },
+  error: { fontSize: fontSize.sm, color: colors.error },
 });

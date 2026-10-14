@@ -1,5 +1,5 @@
 import { summarizeByDay } from './readingDays';
-import { formatDuration, formatTotals, summarizeYear, totalsForDays } from './readingStats';
+import { formatDuration, formatTotals, summarizeYear, totalsForDays, totalsForSessions } from './readingStats';
 
 const session = (dateKey: string, durationMinutes: number, pagesRead: number) => ({ dateKey, durationMinutes, pagesRead });
 
@@ -85,5 +85,29 @@ describe('formatTotals', () => {
 
   it('sin nada, «Sin lectura»', () => {
     expect(formatTotals({ minutes: 0, pages: 0 })).toBe('Sin lectura');
+  });
+});
+
+describe('totalsForSessions', () => {
+  it('suma minutos, páginas y cuenta cada sesión una sola vez', () => {
+    const sessions = [
+      { durationMinutes: 30, pagesRead: 20 },
+      { durationMinutes: 0, pagesRead: 15 },
+      { durationMinutes: 45, pagesRead: 0 },
+    ];
+    expect(totalsForSessions(sessions)).toEqual({ minutes: 75, pages: 35, sessions: 3 });
+  });
+
+  it('sin sesiones, todo en cero', () => {
+    expect(totalsForSessions([])).toEqual({ minutes: 0, pages: 0, sessions: 0 });
+  });
+
+  it('coincide con la suma de los días cuando las sesiones son las mismas', () => {
+    const sessions = [
+      { dateKey: '2026-10-12', durationMinutes: 30, pagesRead: 20 },
+      { dateKey: '2026-10-13', durationMinutes: 10, pagesRead: 5 },
+    ];
+    const byDays = totalsForDays(summarizeByDay(sessions), ['2026-10-12', '2026-10-13']);
+    expect(totalsForSessions(sessions)).toEqual({ minutes: byDays.minutes, pages: byDays.pages, sessions: byDays.sessions });
   });
 });
