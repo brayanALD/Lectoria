@@ -198,3 +198,46 @@ export function planProgressCorrection(book: BookProgressState, page: number): S
   const next = book.status === 'finished' ? 'reading' : book.status;
   return { ...planStatusChange(book, next), currentPage: page };
 }
+
+/** Lo mínimo de una sesión para decidir cómo cambia el libro: solo importa en qué página terminó. */
+export interface SessionPages {
+  endPage?: number;
+}
+
+/**
+ * Qué cambia en el libro cuando una sesión se CREA, se EDITA o se ELIMINA, para que el progreso del libro siga
+ * siendo coherente con sus sesiones sin que haya que corregirlo a mano.
+ *
+ * - Crear (`before` indefinido): avanza como `planSessionBookUpdate`.
+ * - Una sesión «define» el progreso cuando su página final es la página actual del libro. Si la que cambia lo
+ *   define, el progreso se recalcula como la página final MÁS ALTA de las demás sesiones del libro (`siblings`) y de
+ *   la sesión ya editada (`after`), o 0 si no queda ninguna: eliminar la última lectura devuelve el libro a la
+ *   página de la lectura anterior.
+ * - Si la que cambia NO define el progreso (p. ej. un ajuste a mano hacia atrás, o una sesión antigua), el libro
+ *   solo avanza si la edición supera la página actual; nunca retrocede por algo que no lo había movido.
+ * - Subir la página sigue las mismas reglas que al crear (pasa a «Leyendo», o a «Terminado» en la última página);
+ *   bajarla es una corrección (un libro terminado vuelve a «Leyendo»).
+ *
+ * `siblings` son las demás sesiones del MISMO libro, sin la que cambia.
+ */
+export function planBookAfterSessionChange(
+  book: BookProgressState,
+  siblings: readonly SessionPages[],
+  before: SessionPages | undefined,
+  after: SessionPages | undefined,
+): SessionBookUpdate {
+  if (!before) return planSessionBookUpdate(book, after?.endPage);
+
+  const definesProgress = before.endPage !== undefined && before.endPage === book.currentPage;
+  let target: number;
+  if (definesProgress) {
+    const ends = [...siblings.map((s) => s.endPage), after?.endPage].filter((end): end is number => end !== undefined);
+    target = ends.length > 0 ? Math.max(...ends) : 0;
+  } else {
+    target = Math.max(book.currentPage, after?.endPage ?? 0);
+  }
+
+  if (target > book.currentPage) return planSessionBookUpdate(book, target);
+  if (target < book.currentPage) return { ...planProgressCorrection(book, target), changed: true };
+  return { ...planStatusChange(book, book.status), changed: false };
+}

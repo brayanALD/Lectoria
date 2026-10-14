@@ -1,3 +1,5 @@
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useMemo, useState } from 'react';
 import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
 
@@ -7,7 +9,9 @@ import { EmptyState } from '../../../components/EmptyState';
 import { MonthCalendar } from '../../../components/MonthCalendar';
 import { useAuth } from '../../../context/AuthContext';
 import { useBooks } from '../../../hooks/useBooks';
+import { useReadingStats } from '../../../hooks/useReadingStats';
 import { useSessions } from '../../../hooks/useSessions';
+import type { AppStackParamList } from '../../../navigation/types';
 import { deleteSession } from '../../../services/sessionsService';
 import type { ReadingSessionWithId } from '../../../types/session';
 import { colors } from '../../../theme/colors';
@@ -21,7 +25,6 @@ import {
   type YearMonth,
 } from '../../../utils/calendar';
 import { getFirestoreErrorMessage } from '../../../utils/firestoreErrors';
-import { getReadingDays, summarizeByDay } from '../../../utils/readingDays';
 import { toDateKey } from '../../../utils/session';
 import { withTimeout } from '../../../utils/withTimeout';
 import { DaySessions } from './DaySessions';
@@ -39,9 +42,11 @@ const VIEWS: { mode: ViewMode; label: string }[] = [
 const WRITE_TIMEOUT_MS = 10000;
 
 export function CalendarScreen() {
+  const navigation = useNavigation<NativeStackNavigationProp<AppStackParamList>>();
   const { user } = useAuth();
   const { sessions, loading, error, retry } = useSessions();
-  const { books } = useBooks();
+  const { books, loading: booksLoading } = useBooks();
+  const { days, readingDays } = useReadingStats();
 
   const todayKey = toDateKey(new Date());
   const today = monthOf(todayKey);
@@ -52,8 +57,6 @@ export function CalendarScreen() {
   const [selectedKey, setSelectedKey] = useState<string | undefined>(todayKey);
   const [actionError, setActionError] = useState<string | null>(null);
 
-  const days = useMemo(() => summarizeByDay(sessions), [sessions]);
-  const readingDays = useMemo(() => getReadingDays(sessions), [sessions]);
   const bookTitles = useMemo(() => new Map(books.map((book) => [book.id, book.title])), [books]);
 
   // Hoy cae en el mes actual; el resto de meses se abren en su día 1.
@@ -89,23 +92,26 @@ export function CalendarScreen() {
   };
 
   const confirmDelete = (session: ReadingSessionWithId) => {
-    Alert.alert('¿Eliminar esta sesión?', 'La página del libro no cambia.', [
+    Alert.alert('¿Eliminar esta sesión?', 'El progreso del libro se ajusta solo.', [
       { text: 'Cancelar', style: 'cancel' },
       { text: 'Eliminar', style: 'destructive', onPress: () => handleDelete(session) },
     ]);
   };
 
+  // Borra la sesión y, en la misma operación, devuelve el libro a la lectura anterior si ella fijaba su página.
   const handleDelete = async (session: ReadingSessionWithId) => {
     if (!user) return;
     setActionError(null);
     try {
-      await withTimeout(deleteSession(user.uid, session.id), WRITE_TIMEOUT_MS);
+      const book = books.find((candidate) => candidate.id === session.bookId);
+      await withTimeout(deleteSession(user.uid, session, book, sessions), WRITE_TIMEOUT_MS);
     } catch (e) {
       setActionError(getFirestoreErrorMessage(e));
     }
   };
 
-  if (loading) return <CalendarSkeleton />;
+  // Los títulos de cada sesión vienen de los libros: se espera a ambas listas para no mostrar «Libro eliminado» de más.
+  if (loading || booksLoading) return <CalendarSkeleton />;
 
   if (error && sessions.length === 0) {
     return (
@@ -180,6 +186,7 @@ export function CalendarScreen() {
           sessions={daySessions}
           bookTitles={bookTitles}
           totals={days.get(detailKey) ?? { minutes: 0, pages: 0 }}
+          onEdit={(session) => navigation.navigate('AddSession', { sessionId: session.id })}
           onDelete={confirmDelete}
         />
       ) : null}

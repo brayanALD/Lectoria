@@ -7,11 +7,17 @@ import { readFileSync } from 'fs';
 import { join } from 'path';
 
 import { createBook } from '../../src/services/booksService';
-import { adjustBookProgress, createSession, deleteSession, subscribeToSessions } from '../../src/services/sessionsService';
+import {
+  adjustBookProgress,
+  createSession,
+  deleteSession,
+  subscribeToSessions,
+  updateSession,
+} from '../../src/services/sessionsService';
 import type { BookFormValues, UserBook, UserBookWithId } from '../../src/types/book';
 import type { ReadingSession, ReadingSessionWithId, SessionFormValues } from '../../src/types/session';
 import { EMPTY_BOOK_FORM, parseBookForm } from '../../src/utils/book';
-import { isReadingSession, parseSessionForm } from '../../src/utils/session';
+import { isReadingSession, parseSessionForm, toDateKey } from '../../src/utils/session';
 
 // El servicio importa db de firebaseConfig (React Native); en las pruebas se le pasa el Firestore del emulador.
 jest.mock('../../firebaseConfig', () => ({ db: {}, auth: {} }));
@@ -47,6 +53,17 @@ async function createTestBook(values: Partial<BookFormValues> = {}): Promise<Use
 async function readBook(id: string): Promise<UserBookWithId> {
   const snapshot = await getDoc(doc(alice(), 'users/alice/books', id));
   return { id, ...(snapshot.data() as UserBook) };
+}
+
+async function readSession(id: string): Promise<ReadingSessionWithId> {
+  const snapshot = await getDoc(doc(alice(), 'users/alice/sessions', id));
+  return { id, ...(snapshot.data() as ReadingSession) };
+}
+
+/** Todas las sesiones, como las entrega `subscribeToSessions` a la app. */
+async function readSessions(): Promise<ReadingSessionWithId[]> {
+  const snapshot = await getDocs(collection(alice(), 'users/alice/sessions'));
+  return snapshot.docs.map((document) => ({ id: document.id, ...(document.data() as ReadingSession) }));
 }
 
 /** Pasa por el formulario, como hará la app (misma validación y mismos datos que acepta la regla). */
@@ -135,22 +152,244 @@ describe('createSession', () => {
   });
 });
 
+/** Registra una lectura hasta `endPage` partiendo de la página actual del libro y devuelve el libro y la sesión al día. */
+async function readUntil(bookId: string, endPage: string, extra: Partial<SessionFormValues> = {}) {
+  const book = await readBook(bookId);
+  const id = await createSession('alice', book, buildSession(book, { endPage, ...extra }), alice());
+  return { book: await readBook(bookId), session: await readSession(id) };
+}
+
 describe('deleteSession', () => {
-  it('elimina la sesión sin tocar el libro', async () => {
-    const book = await createTestBook({ status: 'reading' });
-    const id = await createSession('alice', book, buildSession(book, { endPage: '80' }), alice());
+  const sessionExists = async (id: string) => (await getDoc(doc(alice(), 'users/alice/sessions', id))).exists();
 
-    await deleteSession('alice', id, alice());
+  it('elimina la sesión que fijaba la página y el libro vuelve a la lectura anterior', async () => {
+    const { id } = await createTestBook({ status: 'reading' });
+    await readUntil(id, '80');
+    const { book, session } = await readUntil(id, '150');
+    expect(book.currentPage).toBe(150);
 
-    expect((await getDoc(doc(alice(), 'users/alice/sessions', id))).exists()).toBe(false);
-    expect((await readBook(book.id)).currentPage).toBe(80);
+    await deleteSession('alice', session, book, await readSessions(), alice());
+
+    expect(await sessionExists(session.id)).toBe(false);
+    expect((await readBook(id)).currentPage).toBe(80);
   });
 
-  it('un usuario no puede eliminar las sesiones de otro', async () => {
-    const book = await createTestBook({ status: 'reading' });
-    const id = await createSession('alice', book, buildSession(book, { minutes: '10' }), alice());
-    await assertFails(deleteSession('alice', id, bob()));
-    expect((await getDoc(doc(alice(), 'users/alice/sessions', id))).exists()).toBe(true);
+  it('eliminar la única sesión con páginas devuelve el libro a la página 0', async () => {
+    const { id } = await createTestBook({ status: 'reading' });
+    const { book, session } = await readUntil(id, '80');
+
+    await deleteSession('alice', session, book, await readSessions(), alice());
+
+    expect((await readBook(id)).currentPage).toBe(0);
+    expect(await readSessions()).toEqual([]);
+  });
+
+  it('eliminar una sesión que no fijaba la página no escribe el libro', async () => {
+    const { id } = await createTestBook({ status: 'reading' });
+    const first = await readUntil(id, '80');
+    const { book } = await readUntil(id, '150');
+
+    await deleteSession('alice', first.session, book, await readSessions(), alice());
+
+    const after = await readBook(id);
+    expect(after.currentPage).toBe(150);
+    expect(after.updatedAt).toEqual(book.updatedAt);
+  });
+
+  it('eliminar una sesión solo con minutos no toca el libro', async () => {
+    const { id } = await createTestBook({ status: 'reading' });
+    await readUntil(id, '80');
+    const book = await readBook(id);
+    const minutesId = await createSession('alice', book, buildSession(book, { minutes: '25' }), alice());
+
+    await deleteSession('alice', await readSession(minutesId), book, await readSessions(), alice());
+
+    const after = await readBook(id);
+    expect(after.currentPage).toBe(80);
+    expect(after.updatedAt).toEqual(book.updatedAt);
+    expect(await sessionExists(minutesId)).toBe(false);
+  });
+
+  it('eliminar la sesión que terminó el libro lo reabre en «Leyendo» sin fecha de fin', async () => {
+    const { id } = await createTestBook({ status: 'reading' });
+    await readUntil(id, '100');
+    const { book, session } = await readUntil(id, '300');
+    expect(book).toMatchObject({ status: 'finished', currentPage: 300 });
+
+    await deleteSession('alice', session, book, await readSessions(), alice());
+
+    const after = await readBook(id);
+    expect(after).toMatchObject({ status: 'reading', currentPage: 100 });
+    expect(after.finishedAt).toBeUndefined();
+  });
+
+  it('solo se tienen en cuenta las sesiones del mismo libro', async () => {
+    const dune = await createTestBook({ status: 'reading' });
+    const other = await createTestBook({ title: 'Emma', status: 'reading' });
+    await readUntil(other.id, '250');
+    const { book, session } = await readUntil(dune.id, '80');
+
+    await deleteSession('alice', session, book, await readSessions(), alice());
+
+    expect((await readBook(dune.id)).currentPage).toBe(0);
+    expect((await readBook(other.id)).currentPage).toBe(250);
+  });
+
+  it('si el libro ya no existe, solo se elimina la sesión', async () => {
+    const { id } = await createTestBook({ status: 'reading' });
+    const { session } = await readUntil(id, '80');
+
+    await deleteSession('alice', session, undefined, await readSessions(), alice());
+
+    expect(await sessionExists(session.id)).toBe(false);
+  });
+
+  it('un usuario no puede eliminar las sesiones de otro, y no se toca ni la sesión ni el libro', async () => {
+    const { id } = await createTestBook({ status: 'reading' });
+    const { book, session } = await readUntil(id, '80');
+
+    await assertFails(deleteSession('alice', session, book, await readSessions(), bob()));
+
+    expect(await sessionExists(session.id)).toBe(true);
+    expect((await readBook(id)).currentPage).toBe(80);
+  });
+});
+
+describe('updateSession', () => {
+  /** Los campos de la sesión editada: parten de la sesión actual y cambian solo lo indicado. */
+  function edit(book: UserBookWithId, session: ReadingSessionWithId, values: Partial<SessionFormValues>) {
+    return buildSession(book, {
+      date: session.date.toDate(),
+      minutes: session.durationMinutes ? String(session.durationMinutes) : '',
+      startPage: session.startPage !== undefined ? String(session.startPage) : '',
+      endPage: session.endPage !== undefined ? String(session.endPage) : '',
+      notes: session.notes ?? '',
+      ...values,
+    });
+  }
+
+  it('subir la página final de la sesión que fijaba el progreso avanza el libro', async () => {
+    const { id } = await createTestBook({ status: 'reading' });
+    const { book, session } = await readUntil(id, '80');
+
+    await updateSession('alice', session, edit(book, session, { endPage: '120' }), book, await readSessions(), alice());
+
+    expect(await readSession(session.id)).toMatchObject({ startPage: 0, endPage: 120, pagesRead: 120 });
+    expect((await readBook(id)).currentPage).toBe(120);
+  });
+
+  it('bajar la página final de la sesión que fijaba el progreso hace retroceder el libro', async () => {
+    const { id } = await createTestBook({ status: 'reading' });
+    const { book, session } = await readUntil(id, '80');
+
+    await updateSession('alice', session, edit(book, session, { endPage: '50' }), book, await readSessions(), alice());
+
+    expect((await readSession(session.id)).pagesRead).toBe(50);
+    expect((await readBook(id)).currentPage).toBe(50);
+  });
+
+  it('bajar la página final nunca deja el libro por debajo de otra sesión anterior', async () => {
+    const { id } = await createTestBook({ status: 'reading' });
+    await readUntil(id, '80');
+    const { book, session } = await readUntil(id, '150');
+
+    await updateSession('alice', session, edit(book, session, { startPage: '80', endPage: '90' }), book, await readSessions(), alice());
+
+    expect((await readBook(id)).currentPage).toBe(90);
+
+    const lowered = await readBook(id);
+    const latest = await readSession(session.id);
+    await updateSession('alice', latest, edit(lowered, latest, { startPage: '10', endPage: '20' }), lowered, await readSessions(), alice());
+    expect((await readBook(id)).currentPage).toBe(80);
+  });
+
+  it('quitar la página final elimina esos campos y devuelve el libro a la lectura anterior', async () => {
+    const { id } = await createTestBook({ status: 'reading' });
+    await readUntil(id, '80');
+    const { book, session } = await readUntil(id, '150', { minutes: '30' });
+
+    await updateSession('alice', session, edit(book, session, { startPage: '', endPage: '' }), book, await readSessions(), alice());
+
+    const stored = (await getDoc(doc(alice(), 'users/alice/sessions', session.id))).data() as ReadingSession;
+    expect(stored).toMatchObject({ durationMinutes: 30, pagesRead: 0 });
+    expect(stored).not.toHaveProperty('startPage');
+    expect(stored).not.toHaveProperty('endPage');
+    expect((await readBook(id)).currentPage).toBe(80);
+  });
+
+  it('editar solo minutos y notas no escribe el libro', async () => {
+    const { id } = await createTestBook({ status: 'reading' });
+    const { book, session } = await readUntil(id, '80', { minutes: '10', notes: 'antes' });
+
+    await updateSession('alice', session, edit(book, session, { minutes: '45', notes: 'después' }), book, await readSessions(), alice());
+
+    expect(await readSession(session.id)).toMatchObject({ durationMinutes: 45, notes: 'después' });
+    const after = await readBook(id);
+    expect(after.currentPage).toBe(80);
+    expect(after.updatedAt).toEqual(book.updatedAt);
+  });
+
+  it('vaciar las notas elimina el campo', async () => {
+    const { id } = await createTestBook({ status: 'reading' });
+    const { book, session } = await readUntil(id, '80', { notes: 'algo' });
+
+    await updateSession('alice', session, edit(book, session, { notes: '' }), book, await readSessions(), alice());
+
+    expect((await getDoc(doc(alice(), 'users/alice/sessions', session.id))).data()).not.toHaveProperty('notes');
+  });
+
+  it('cambiar la fecha actualiza el día de la sesión y conserva cuándo se creó', async () => {
+    const { id } = await createTestBook({ status: 'reading' });
+    const { book, session } = await readUntil(id, '80');
+    const earlier = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000);
+
+    await updateSession('alice', session, edit(book, session, { date: earlier }), book, await readSessions(), alice());
+
+    const after = await readSession(session.id);
+    expect(after.dateKey).toBe(toDateKey(earlier));
+    expect(after.dateKey).not.toBe(session.dateKey);
+    expect(after.createdAt).toEqual(session.createdAt);
+  });
+
+  it('subir hasta la última página termina el libro, y bajarla lo reabre', async () => {
+    const { id } = await createTestBook({ status: 'reading' });
+    const { book, session } = await readUntil(id, '80');
+
+    await updateSession('alice', session, edit(book, session, { endPage: '300' }), book, await readSessions(), alice());
+    const finished = await readBook(id);
+    expect(finished).toMatchObject({ status: 'finished', currentPage: 300 });
+    expect(finished.finishedAt).toBeInstanceOf(Timestamp);
+
+    const latest = await readSession(session.id);
+    await updateSession('alice', latest, edit(finished, latest, { endPage: '200' }), finished, await readSessions(), alice());
+    const reopened = await readBook(id);
+    expect(reopened).toMatchObject({ status: 'reading', currentPage: 200 });
+    expect(reopened.finishedAt).toBeUndefined();
+  });
+
+  it('una sesión que no fijaba el progreso solo lo mueve si lo supera', async () => {
+    const { id } = await createTestBook({ status: 'reading' });
+    const first = await readUntil(id, '80');
+    const { book } = await readUntil(id, '150');
+
+    // La primera sesión sube a 120: no supera la página 150, el libro no cambia.
+    await updateSession('alice', first.session, edit(book, first.session, { endPage: '120' }), book, await readSessions(), alice());
+    expect((await readBook(id)).currentPage).toBe(150);
+
+    // Ahora la sube a 200: supera la página del libro y la mueve.
+    const again = await readSession(first.session.id);
+    await updateSession('alice', again, edit(book, again, { endPage: '200' }), book, await readSessions(), alice());
+    expect((await readBook(id)).currentPage).toBe(200);
+  });
+
+  it('un usuario no puede editar las sesiones de otro, y no se toca ni la sesión ni el libro', async () => {
+    const { id } = await createTestBook({ status: 'reading' });
+    const { book, session } = await readUntil(id, '80');
+
+    await assertFails(updateSession('alice', session, edit(book, session, { endPage: '10' }), book, await readSessions(), bob()));
+
+    expect((await readSession(session.id)).endPage).toBe(80);
+    expect((await readBook(id)).currentPage).toBe(80);
   });
 });
 

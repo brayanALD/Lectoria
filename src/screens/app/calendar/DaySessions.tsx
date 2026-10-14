@@ -16,11 +16,12 @@ interface DaySessionsProps {
   /** Título de cada libro por id (para mostrar de qué libro es cada sesión). */
   bookTitles: ReadonlyMap<string, string>;
   totals: Pick<PeriodTotals, 'minutes' | 'pages'>;
+  onEdit: (session: ReadingSessionWithId) => void;
   onDelete: (session: ReadingSessionWithId) => void;
 }
 
-/** Detalle de un día: lo leído en total y cada sesión, con la opción de eliminarla. */
-export function DaySessions({ dateKey, todayKey, sessions, bookTitles, totals, onDelete }: DaySessionsProps) {
+/** Detalle de un día: lo leído en total y cada sesión, con la opción de editarla o eliminarla. */
+export function DaySessions({ dateKey, todayKey, sessions, bookTitles, totals, onEdit, onDelete }: DaySessionsProps) {
   return (
     <View style={styles.container}>
       <View style={styles.heading}>
@@ -44,9 +45,17 @@ export function DaySessions({ dateKey, todayKey, sessions, bookTitles, totals, o
             </View>
             <Pressable
               accessibilityRole="button"
+              accessibilityLabel={`Editar la sesión de ${title}`}
+              onPress={() => onEdit(session)}
+              style={({ pressed }) => [styles.action, pressed && styles.pressed]}
+            >
+              <Ionicons name="pencil-outline" size={iconSize.md} color={colors.primary} />
+            </Pressable>
+            <Pressable
+              accessibilityRole="button"
               accessibilityLabel={`Eliminar la sesión de ${title}`}
               onPress={() => onDelete(session)}
-              style={({ pressed }) => [styles.delete, pressed && styles.pressed]}
+              style={({ pressed }) => [styles.action, pressed && styles.pressed]}
             >
               <Ionicons name="trash-outline" size={iconSize.md} color={colors.error} />
             </Pressable>
@@ -74,6 +83,6 @@ const styles = StyleSheet.create({
   title: { fontSize: fontSize.md, fontWeight: fontWeight.semibold, color: colors.textPrimary },
   detail: { fontSize: fontSize.sm, color: colors.textSecondary },
   notes: { fontSize: fontSize.sm, color: colors.textPrimary },
-  delete: { width: minTouchSize, height: minTouchSize, alignItems: 'center', justifyContent: 'center' },
+  action: { width: minTouchSize, height: minTouchSize, alignItems: 'center', justifyContent: 'center' },
   pressed: { opacity: opacity.pressed },
 });

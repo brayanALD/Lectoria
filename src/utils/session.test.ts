@@ -5,6 +5,7 @@ import {
   isReadingSession,
   parseProgressInput,
   parseSessionForm,
+  planBookAfterSessionChange,
   planProgressCorrection,
   planSessionBookUpdate,
   toDateKey,
@@ -261,5 +262,109 @@ describe('planProgressCorrection', () => {
 
   it.each(['paused', 'abandoned', 'want_to_read'] as const)('un libro «%s» conserva su estado', (status) => {
     expect(planProgressCorrection({ status, currentPage: 80 }, 10)).toMatchObject({ status, currentPage: 10 });
+  });
+});
+
+describe('planBookAfterSessionChange', () => {
+  const reading = { status: 'reading' as const, currentPage: 120, pageCount: 300, startedAt: {} };
+  const ends = (...pages: number[]) => pages.map((endPage) => ({ endPage }));
+
+  describe('crear', () => {
+    it('avanza igual que planSessionBookUpdate', () => {
+      expect(planBookAfterSessionChange(reading, ends(50, 80), undefined, { endPage: 150 })).toMatchObject({
+        changed: true,
+        currentPage: 150,
+      });
+    });
+
+    it('una sesión solo con minutos no mueve un libro que ya se lee', () => {
+      expect(planBookAfterSessionChange(reading, ends(120), undefined, {}).changed).toBe(false);
+    });
+  });
+
+  describe('eliminar', () => {
+    it('eliminar la sesión que define el progreso devuelve el libro a la mayor página de las demás', () => {
+      // Las demás terminaron en 100 y en 60; la eliminada (120) definía el progreso.
+      const plan = planBookAfterSessionChange(reading, ends(100, 60), { endPage: 120 }, undefined);
+      expect(plan).toMatchObject({ changed: true, currentPage: 100, status: 'reading' });
+    });
+
+    it('si no queda ninguna sesión con página, el libro vuelve a la página 0', () => {
+      const plan = planBookAfterSessionChange(reading, [{}], { endPage: 120 }, undefined);
+      expect(plan).toMatchObject({ changed: true, currentPage: 0 });
+    });
+
+    it('si otra sesión termina en la misma página, el progreso no cambia (no se retrocede)', () => {
+      expect(planBookAfterSessionChange(reading, ends(120, 80), { endPage: 120 }, undefined).changed).toBe(false);
+    });
+
+    it('eliminar una sesión que no definía el progreso no toca el libro', () => {
+      expect(planBookAfterSessionChange(reading, ends(120), { endPage: 80 }, undefined).changed).toBe(false);
+    });
+
+    it('eliminar una sesión sin páginas (solo minutos) no toca el libro', () => {
+      expect(planBookAfterSessionChange(reading, ends(120), {}, undefined).changed).toBe(false);
+    });
+
+    it('no deshace una corrección a mano hacia atrás: la sesión eliminada ya no coincidía con la página', () => {
+      // El usuario corrigió a 80 a mano; la sesión eliminada terminaba en 120.
+      expect(planBookAfterSessionChange({ ...reading, currentPage: 80 }, ends(60), { endPage: 120 }, undefined).changed).toBe(false);
+    });
+
+    it('eliminar la sesión que terminó el libro lo devuelve a «Leyendo» sin fecha de fin', () => {
+      const finished = { status: 'finished' as const, currentPage: 300, pageCount: 300, startedAt: {}, finishedAt: {} };
+      const plan = planBookAfterSessionChange(finished, ends(250), { endPage: 300 }, undefined);
+      expect(plan).toMatchObject({ changed: true, status: 'reading', currentPage: 250, clearFinishedAt: true });
+    });
+  });
+
+  describe('editar', () => {
+    it('bajar la página final de la sesión que define el progreso baja el libro (hasta la mayor página)', () => {
+      const plan = planBookAfterSessionChange(reading, ends(60), { endPage: 120 }, { endPage: 90 });
+      expect(plan).toMatchObject({ changed: true, currentPage: 90 });
+    });
+
+    it('bajarla por debajo de otra sesión deja el libro en esa otra', () => {
+      const plan = planBookAfterSessionChange(reading, ends(100), { endPage: 120 }, { endPage: 30 });
+      expect(plan).toMatchObject({ changed: true, currentPage: 100 });
+    });
+
+    it('subir la página final de la sesión que define el progreso sube el libro', () => {
+      expect(planBookAfterSessionChange(reading, ends(60), { endPage: 120 }, { endPage: 180 })).toMatchObject({
+        changed: true,
+        currentPage: 180,
+      });
+    });
+
+    it('subir una sesión antigua por encima de la página actual también sube el libro', () => {
+      expect(planBookAfterSessionChange(reading, ends(120), { endPage: 50 }, { endPage: 200 })).toMatchObject({
+        changed: true,
+        currentPage: 200,
+      });
+    });
+
+    it('editar una sesión antigua sin superar la página actual no cambia el libro', () => {
+      expect(planBookAfterSessionChange(reading, ends(120), { endPage: 50 }, { endPage: 70 }).changed).toBe(false);
+    });
+
+    it('editar solo los minutos o las notas no cambia el libro', () => {
+      expect(planBookAfterSessionChange(reading, ends(60), { endPage: 120 }, { endPage: 120 }).changed).toBe(false);
+    });
+
+    it('subir una sesión hasta la última página termina el libro', () => {
+      expect(planBookAfterSessionChange(reading, ends(60), { endPage: 120 }, { endPage: 300 })).toMatchObject({
+        changed: true,
+        status: 'finished',
+        currentPage: 300,
+        setFinishedAt: true,
+      });
+    });
+
+    it('quitar la página final de la sesión que define el progreso lo devuelve a la mayor de las demás', () => {
+      expect(planBookAfterSessionChange(reading, ends(60), { endPage: 120 }, {})).toMatchObject({
+        changed: true,
+        currentPage: 60,
+      });
+    });
   });
 });

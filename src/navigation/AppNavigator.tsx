@@ -29,7 +29,10 @@ export function AppNavigator() {
       <Stack.Screen
         name="AddSession"
         component={AddSessionScreen}
-        options={{ headerShown: true, title: 'Registrar lectura' }}
+        options={({ route }) => ({
+          headerShown: true,
+          title: route.params?.sessionId ? 'Editar lectura' : 'Registrar lectura',
+        })}
       />
       {/* Sin título: la propia pantalla ya muestra el nombre del libro. */}
       <Stack.Screen name="BookDetail" component={BookDetailScreen} options={{ headerShown: true, title: '' }} />

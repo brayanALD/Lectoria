@@ -1,10 +1,7 @@
-import { useCallback, useEffect, useReducer, useState } from 'react';
+import { useMemo } from 'react';
 
-import { useAuth } from '../context/AuthContext';
-import { subscribeToSessions } from '../services/sessionsService';
+import { useReadingData } from '../context/ReadingDataContext';
 import type { ReadingSessionWithId } from '../types/session';
-import { getFirestoreErrorMessage } from '../utils/firestoreErrors';
-import { initialListState, listReducer } from '../utils/listState';
 
 interface UseSessionsResult {
   /** Todas las sesiones del usuario actual, de la más reciente a la más antigua. */
@@ -18,29 +15,13 @@ interface UseSessionsResult {
 }
 
 /**
- * Sesiones de lectura del usuario autenticado en tiempo real (misma mecánica que `useBooks`). El calendario,
- * las rachas y las estadísticas se calculan en la pantalla sobre `sessions`.
+ * Sesiones de lectura del usuario autenticado en tiempo real (misma fuente que `useBooks`: la suscripción de
+ * `ReadingDataProvider`). Los resúmenes por día y las rachas se leen de `useReadingStats`, no se recalculan.
  */
 export function useSessions(): UseSessionsResult {
-  const { user } = useAuth();
-  const uid = user?.uid;
-  const [state, dispatch] = useReducer(listReducer<ReadingSessionWithId>, initialListState<ReadingSessionWithId>());
-  const [attempt, setAttempt] = useState(0);
-
-  useEffect(() => {
-    if (!uid) {
-      dispatch({ type: 'idle' });
-      return;
-    }
-    dispatch({ type: 'subscribe' });
-    return subscribeToSessions(
-      uid,
-      (items) => dispatch({ type: 'success', items }),
-      (error) => dispatch({ type: 'failure', message: getFirestoreErrorMessage(error) }),
-    );
-  }, [uid, attempt]);
-
-  const retry = useCallback(() => setAttempt((count) => count + 1), []);
-
-  return { sessions: state.items, loading: state.loading, error: state.error, retry };
+  const { sessions } = useReadingData();
+  return useMemo(
+    () => ({ sessions: sessions.items, loading: sessions.loading, error: sessions.error, retry: sessions.retry }),
+    [sessions],
+  );
 }

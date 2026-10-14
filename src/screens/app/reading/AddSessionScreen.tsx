@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import type { NativeStackScreenProps } from '@react-navigation/native-stack';
+import type { NativeStackNavigationProp, NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useMemo, useRef, useState } from 'react';
 import { KeyboardAvoidingView, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
@@ -11,17 +11,18 @@ import { EmptyState } from '../../../components/EmptyState';
 import { TextField } from '../../../components/TextField';
 import { useAuth } from '../../../context/AuthContext';
 import { useBooks } from '../../../hooks/useBooks';
+import { useReadingStats } from '../../../hooks/useReadingStats';
 import { useSessions } from '../../../hooks/useSessions';
 import { useWindowTop } from '../../../hooks/useWindowTop';
 import type { AppStackParamList } from '../../../navigation/types';
-import { createSession } from '../../../services/sessionsService';
-import type { SessionFormErrors } from '../../../types/session';
+import { createSession, updateSession } from '../../../services/sessionsService';
+import type { UserBookWithId } from '../../../types/book';
+import type { ReadingSessionWithId, SessionFormErrors } from '../../../types/session';
 import { colors } from '../../../theme/colors';
 import { iconSize, minTouchSize, opacity, radius, spacing } from '../../../theme/spacing';
 import { fontSize, fontWeight } from '../../../theme/typography';
 import { dateForDay, formatDayLabel } from '../../../utils/calendar';
 import { getFirestoreErrorMessage } from '../../../utils/firestoreErrors';
-import { getReadingDays } from '../../../utils/readingDays';
 import { MAX_SESSION_NOTES, parseSessionForm, toDateKey } from '../../../utils/session';
 import { pickDefaultBook } from '../../../utils/sessionBooks';
 import { withTimeout } from '../../../utils/withTimeout';
@@ -32,13 +33,56 @@ type Props = NativeStackScreenProps<AppStackParamList, 'AddSession'>;
 const SAVE_TIMEOUT_MS = 10000;
 const MAX_DIGITS = 6;
 
+/**
+ * Registrar una lectura o, con `sessionId`, editar una ya registrada. Esta pantalla solo resuelve los datos
+ * (libros y sesiones vienen de la fuente única de `ReadingDataProvider`); el formulario es `SessionForm`.
+ */
 export function AddSessionScreen({ navigation, route }: Props) {
-  const { user } = useAuth();
-  const { books, loading } = useBooks();
-  const { sessions } = useSessions();
+  const { books, loading: booksLoading } = useBooks();
+  const { sessions, loading: sessionsLoading } = useSessions();
 
-  // Con `bookId` (desde el detalle) el libro va fijo; sin él (desde Inicio) se preselecciona uno y se puede cambiar.
-  const fixedBookId = route.params?.bookId;
+  const sessionId = route.params?.sessionId;
+  const editing = sessionId ? sessions.find((candidate) => candidate.id === sessionId) : undefined;
+
+  if (booksLoading || (sessionId && sessionsLoading)) return <BookFormSkeleton />;
+
+  if (sessionId && !editing) {
+    return (
+      <EmptyState
+        icon="book-outline"
+        title="Esta lectura ya no existe"
+        action={{ label: 'Volver', onPress: () => navigation.goBack() }}
+      />
+    );
+  }
+
+  // `key`: cada sesión editada parte de sus propios valores.
+  return (
+    <SessionForm
+      key={editing?.id ?? 'new'}
+      navigation={navigation}
+      books={books}
+      sessions={sessions}
+      fixedBookId={editing?.bookId ?? route.params?.bookId}
+      editing={editing}
+    />
+  );
+}
+
+interface SessionFormProps {
+  navigation: NativeStackNavigationProp<AppStackParamList, 'AddSession'>;
+  books: UserBookWithId[];
+  sessions: ReadingSessionWithId[];
+  /** Libro fijo (desde su detalle o al editar). Sin él (desde Inicio) se preselecciona uno y se puede cambiar. */
+  fixedBookId?: string;
+  /** Sesión que se edita; sin ella se registra una nueva. */
+  editing?: ReadingSessionWithId;
+}
+
+function SessionForm({ navigation, books, sessions, fixedBookId, editing }: SessionFormProps) {
+  const { user } = useAuth();
+  const { readingDays } = useReadingStats();
+
   const [chosenId, setChosenId] = useState<string | undefined>();
   const book = useMemo(() => {
     const id = fixedBookId ?? chosenId;
@@ -46,12 +90,11 @@ export function AddSessionScreen({ navigation, route }: Props) {
   }, [books, fixedBookId, chosenId]);
 
   const todayKey = toDateKey(new Date());
-  const [dayKey, setDayKey] = useState(todayKey);
-  const readingDays = useMemo(() => getReadingDays(sessions), [sessions]);
+  const [dayKey, setDayKey] = useState(editing?.dateKey ?? todayKey);
 
-  const [minutes, setMinutes] = useState('');
-  const [endPage, setEndPage] = useState('');
-  const [notes, setNotes] = useState('');
+  const [minutes, setMinutes] = useState(editing?.durationMinutes ? String(editing.durationMinutes) : '');
+  const [endPage, setEndPage] = useState(editing?.endPage !== undefined ? String(editing.endPage) : '');
+  const [notes, setNotes] = useState(editing?.notes ?? '');
   const [errors, setErrors] = useState<SessionFormErrors>({});
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -63,10 +106,14 @@ export function AddSessionScreen({ navigation, route }: Props) {
   const pageRef = useRef<TextInput>(null);
   const notesRef = useRef<TextInput>(null);
 
-  if (loading) return <BookFormSkeleton />;
-
   if (!book) {
-    return (
+    return editing ? (
+      <EmptyState
+        icon="book-outline"
+        title="Este libro ya no existe"
+        action={{ label: 'Volver', onPress: () => navigation.goBack() }}
+      />
+    ) : (
       <EmptyState
         icon="library-outline"
         title="Añade un libro para registrar lecturas"
@@ -85,12 +132,11 @@ export function AddSessionScreen({ navigation, route }: Props) {
     if (saving || !user) return;
 
     const now = new Date();
-    const result = parseSessionForm(
-      { date: dateForDay(dayKey, now, toDateKey(now)), minutes, startPage: '', endPage, notes },
-      book.id,
-      book,
-      now,
-    );
+    // Al editar sin cambiar el día se conserva la hora original; con otro día se aplica la misma regla que al crear.
+    const date = editing && dayKey === editing.dateKey ? editing.date.toDate() : dateForDay(dayKey, now, toDateKey(now));
+    // Al editar, las páginas leídas se calculan desde la página inicial original (si aún se indica página final).
+    const startPage = editing?.startPage !== undefined && endPage.trim() ? String(editing.startPage) : '';
+    const result = parseSessionForm({ date, minutes, startPage, endPage, notes }, book.id, book, now);
     if (!result.ok) {
       setErrors(result.errors);
       setSubmitError(null);
@@ -102,7 +148,10 @@ export function AddSessionScreen({ navigation, route }: Props) {
     setSubmitError(null);
     setSaving(true);
     try {
-      await withTimeout(createSession(user.uid, book, result.data), SAVE_TIMEOUT_MS);
+      const save = editing
+        ? updateSession(user.uid, editing, { ...result.data, dateKey: dayKey }, book, sessions)
+        : createSession(user.uid, book, result.data).then(() => undefined);
+      await withTimeout(save, SAVE_TIMEOUT_MS);
       navigation.goBack();
     } catch (error) {
       setSubmitError(getFirestoreErrorMessage(error));

@@ -14,8 +14,8 @@ interface UseBookResult {
 }
 
 /**
- * Un libro de la biblioteca del usuario, en tiempo real. Reutiliza la suscripción de `useBooks` (Firestore
- * comparte las consultas idénticas), así que el detalle se actualiza solo cuando cambia el libro.
+ * Un libro de la biblioteca del usuario, en tiempo real. Se deriva de `useBooks` (la suscripción única de
+ * `ReadingDataProvider`), así que el detalle se actualiza solo cuando cambia el libro o sus sesiones.
  */
 export function useBook(bookId: string): UseBookResult {
   const { books, loading, error, retry } = useBooks();

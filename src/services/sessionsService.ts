@@ -1,6 +1,6 @@
 import {
   collection,
-  deleteDoc,
+  deleteField,
   doc,
   onSnapshot,
   orderBy,
@@ -15,7 +15,7 @@ import {
 import { db } from '../../firebaseConfig';
 import type { UserBookWithId } from '../types/book';
 import type { NewSessionFields, ReadingSession, ReadingSessionWithId } from '../types/session';
-import { planProgressCorrection, planSessionBookUpdate, toDateKey } from '../utils/session';
+import { planBookAfterSessionChange, planProgressCorrection, planSessionBookUpdate, toDateKey } from '../utils/session';
 import { statusChangeToUpdate } from './booksService';
 
 // El parámetro `database` permite probar el servicio contra el emulador; en la app siempre se usa `db`.
@@ -93,11 +93,62 @@ export async function adjustBookProgress(
 }
 
 /**
- * Elimina una sesión. No modifica el libro: la página actual no retrocede sola (se ajustaría a mano), para no
- * borrar un avance que pudo registrarse por otro camino.
+ * Elimina una sesión y deja el libro coherente en la MISMA operación atómica: si esa sesión era la que fijaba la
+ * página actual, el libro vuelve a la mayor página de sus demás sesiones (ver `planBookAfterSessionChange`), sin
+ * que haya que corregirlo a mano. `sessions` es la lista completa de sesiones del usuario (la que ya sincroniza
+ * `useSessions`); de ella se toman las demás sesiones del libro. Si el libro ya no existe, solo se borra la sesión.
  */
-export async function deleteSession(uid: string, sessionId: string, database: Firestore = db): Promise<void> {
-  await deleteDoc(doc(database, 'users', uid, 'sessions', sessionId));
+export async function deleteSession(
+  uid: string,
+  session: ReadingSessionWithId,
+  book: UserBookWithId | undefined,
+  sessions: readonly ReadingSessionWithId[],
+  database: Firestore = db,
+): Promise<void> {
+  const batch = writeBatch(database);
+  batch.delete(doc(database, 'users', uid, 'sessions', session.id));
+
+  if (book) {
+    const plan = planBookAfterSessionChange(book, siblingsOf(session, sessions), session, undefined);
+    if (plan.changed) batch.update(doc(database, 'users', uid, 'books', book.id), statusChangeToUpdate(plan));
+  }
+  await batch.commit();
+}
+
+/**
+ * Edita una sesión (fecha, minutos, páginas y notas; el libro no cambia) y actualiza el libro en la MISMA
+ * operación atómica según `planBookAfterSessionChange`: subir o bajar la página final mueve el progreso del libro
+ * de forma coherente. Los campos opcionales que se vacían se eliminan de la sesión.
+ */
+export async function updateSession(
+  uid: string,
+  session: ReadingSessionWithId,
+  fields: NewSessionFields,
+  book: UserBookWithId | undefined,
+  sessions: readonly ReadingSessionWithId[],
+  database: Firestore = db,
+): Promise<void> {
+  const batch = writeBatch(database);
+  batch.update(doc(database, 'users', uid, 'sessions', session.id), {
+    date: Timestamp.fromDate(fields.date),
+    dateKey: fields.dateKey,
+    pagesRead: fields.pagesRead,
+    durationMinutes: fields.durationMinutes,
+    startPage: fields.startPage ?? deleteField(),
+    endPage: fields.endPage ?? deleteField(),
+    notes: fields.notes ?? deleteField(),
+  });
+
+  if (book) {
+    const plan = planBookAfterSessionChange(book, siblingsOf(session, sessions), session, fields);
+    if (plan.changed) batch.update(doc(database, 'users', uid, 'books', book.id), statusChangeToUpdate(plan));
+  }
+  await batch.commit();
+}
+
+/** Las demás sesiones del mismo libro (sin la indicada). */
+function siblingsOf(session: ReadingSessionWithId, sessions: readonly ReadingSessionWithId[]): ReadingSessionWithId[] {
+  return sessions.filter((other) => other.bookId === session.bookId && other.id !== session.id);
 }
 
 /**

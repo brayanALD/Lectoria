@@ -1,19 +1,17 @@
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { Button } from '../../../components/Button';
 import { EmptyState } from '../../../components/EmptyState';
 import { HomeSkeleton } from '../../../components/HomeSkeleton';
 import { useBooks } from '../../../hooks/useBooks';
+import { useReadingStats } from '../../../hooks/useReadingStats';
 import { useSessions } from '../../../hooks/useSessions';
 import type { AppStackParamList } from '../../../navigation/types';
 import { colors } from '../../../theme/colors';
 import { spacing } from '../../../theme/spacing';
 import { fontSize, fontWeight } from '../../../theme/typography';
-import { computeStreaks, getReadingDays } from '../../../utils/readingDays';
-import { toDateKey } from '../../../utils/session';
 
 // Tamaño de la cifra de la racha: lo más grande de la app, es lo primero que debe leerse en Inicio.
 const STREAK_NUMBER_SCALE = 2;
@@ -22,12 +20,7 @@ export function HomeScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<AppStackParamList>>();
   const books = useBooks();
   const sessions = useSessions();
-
-  const todayKey = toDateKey(new Date());
-  const streaks = useMemo(
-    () => computeStreaks(getReadingDays(sessions.sessions), todayKey),
-    [sessions.sessions, todayKey],
-  );
+  const { streaks } = useReadingStats();
 
   if (books.loading || sessions.loading) return <HomeSkeleton />;
 
