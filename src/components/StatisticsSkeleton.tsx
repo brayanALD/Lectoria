@@ -1,0 +1,42 @@
+import { StyleSheet, View } from 'react-native';
+
+import { minTouchSize, radius, spacing } from '../theme/spacing';
+import { fontSize } from '../theme/typography';
+import { Skeleton, SkeletonPulse } from './Skeleton';
+
+// Medidas que coinciden con las de la pantalla real (`StatTile` y `DailyBars`), para que al cargar nada «salte».
+const TILE_HEIGHT = spacing.md * 2 + fontSize.lg + fontSize.sm + spacing.xs * 2;
+const CHART_HEIGHT = minTouchSize * 2;
+
+/** Silueta de Estadísticas: el selector de vista, el encabezado del periodo, las cifras y el gráfico. */
+export function StatisticsSkeleton() {
+  return (
+    <SkeletonPulse label="Cargando estadísticas">
+      <View style={styles.container}>
+        <View style={styles.row}>
+          <Skeleton height={minTouchSize} style={[styles.rounded, styles.flex]} />
+          <Skeleton height={minTouchSize} style={[styles.rounded, styles.flex]} />
+        </View>
+        <Skeleton width="55%" height={fontSize.md} style={styles.center} />
+        <View style={styles.row}>
+          <Skeleton height={TILE_HEIGHT} style={[styles.rounded, styles.flex]} />
+          <Skeleton height={TILE_HEIGHT} style={[styles.rounded, styles.flex]} />
+        </View>
+        <View style={styles.row}>
+          <Skeleton height={TILE_HEIGHT} style={[styles.rounded, styles.flex]} />
+          <Skeleton height={TILE_HEIGHT} style={[styles.rounded, styles.flex]} />
+        </View>
+        <Skeleton width="40%" height={fontSize.lg} />
+        <Skeleton height={CHART_HEIGHT} style={styles.rounded} />
+      </View>
+    </SkeletonPulse>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { flex: 1, padding: spacing.lg, gap: spacing.lg },
+  row: { flexDirection: 'row', gap: spacing.sm },
+  flex: { flex: 1 },
+  rounded: { borderRadius: radius.md },
+  center: { alignSelf: 'center' },
+});

@@ -1,14 +1,14 @@
 import { useEffect, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
-import { Button } from '../../../components/Button';
-import { Chip } from '../../../components/Chip';
-import { Sheet } from '../../../components/Sheet';
-import { TextField } from '../../../components/TextField';
-import type { DailyGoal, GoalType } from '../../../types/goal';
-import { spacing } from '../../../theme/spacing';
-import { GOAL_LIMITS, GOAL_TYPE_LABELS, parseGoalInput } from '../../../utils/dailyGoal';
-import { getFirestoreErrorMessage } from '../../../utils/firestoreErrors';
+import type { DailyGoal, GoalType } from '../types/goal';
+import { spacing } from '../theme/spacing';
+import { GOAL_LIMITS, GOAL_TYPE_LABELS, parseGoalInput } from '../utils/dailyGoal';
+import { getFirestoreErrorMessage } from '../utils/firestoreErrors';
+import { Button } from './Button';
+import { Chip } from './Chip';
+import { Sheet } from './Sheet';
+import { TextField } from './TextField';
 
 interface DailyGoalSheetProps {
   visible: boolean;
@@ -23,7 +23,10 @@ const GOAL_TYPES: GoalType[] = ['minutes', 'pages'];
 const PLACEHOLDERS: Record<GoalType, string> = { minutes: '30', pages: '20' };
 const FIELD_LABELS: Record<GoalType, string> = { minutes: 'Meta diaria (minutos)', pages: 'Meta diaria (páginas)' };
 
-/** Hoja para fijar, cambiar o quitar la meta diaria de lectura: se elige si se mide en minutos o en páginas. */
+/**
+ * Hoja para fijar, cambiar o quitar la meta diaria de lectura: se elige si se mide en minutos o en páginas.
+ * La usan Inicio y Estadísticas (guardan con `useSaveDailyGoal`).
+ */
 export function DailyGoalSheet({ visible, onClose, goal, onSave }: DailyGoalSheetProps) {
   const [type, setType] = useState<GoalType>(goal?.type ?? 'minutes');
   const [text, setText] = useState(goal ? String(goal.target) : '');

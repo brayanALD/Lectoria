@@ -16,13 +16,7 @@ import type { AppStackParamList } from '../../../navigation/types';
 import { colors } from '../../../theme/colors';
 import { spacing } from '../../../theme/spacing';
 import { fontSize } from '../../../theme/typography';
-import {
-  compareMonths,
-  monthOf,
-  startOfWeek,
-  toDayKey,
-  type YearMonth,
-} from '../../../utils/calendar';
+import { compareMonths, cursorForMonth, monthOf, startOfWeek } from '../../../utils/calendar';
 import { DaySessions } from './DaySessions';
 import { WeekView } from './WeekView';
 import { YearView } from './YearView';
@@ -51,9 +45,6 @@ export function CalendarScreen() {
   const [selectedKey, setSelectedKey] = useState<string | undefined>(todayKey);
 
   const bookTitles = useMemo(() => new Map(books.map((book) => [book.id, book.title])), [books]);
-
-  // Hoy cae en el mes actual; el resto de meses se abren en su día 1.
-  const cursorForMonth = (month: YearMonth) => (compareMonths(month, today) === 0 ? todayKey : toDayKey(month.year, month.month, 1));
 
   const cursorMonth = monthOf(cursor);
   const isCurrentPeriod =
@@ -116,7 +107,7 @@ export function CalendarScreen() {
       {mode === 'month' ? (
         <MonthCalendar
           month={cursorMonth}
-          onMonthChange={(month) => setCursor(cursorForMonth(month))}
+          onMonthChange={(month) => setCursor(cursorForMonth(month, todayKey))}
           todayKey={todayKey}
           selectedKey={selectedKey}
           markedDays={readingDays}
@@ -142,13 +133,13 @@ export function CalendarScreen() {
           year={cursorMonth.year}
           onYearChange={(year) => {
             const month = Math.min(cursorMonth.month, year === today.year ? today.month : 12);
-            setCursor(cursorForMonth({ year, month }));
+            setCursor(cursorForMonth({ year, month }, todayKey));
           }}
           today={today}
           days={days}
           onSelectMonth={(year, month) => {
             setMode('month');
-            setCursor(cursorForMonth({ year, month }));
+            setCursor(cursorForMonth({ year, month }, todayKey));
             setSelectedKey(compareMonths({ year, month }, today) === 0 ? todayKey : undefined);
           }}
         />

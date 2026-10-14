@@ -2,42 +2,39 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
+import { DailyGoalSheet } from '../../../components/DailyGoalSheet';
 import { EmptyState } from '../../../components/EmptyState';
 import { GoalProgress } from '../../../components/GoalProgress';
 import { HomeSkeleton } from '../../../components/HomeSkeleton';
 import { SessionRow } from '../../../components/SessionRow';
-import { useAuth } from '../../../context/AuthContext';
+import { SetGoalLink } from '../../../components/SetGoalLink';
 import { useBooks } from '../../../hooks/useBooks';
 import { useDailyGoal } from '../../../hooks/useDailyGoal';
 import { useReadingStats } from '../../../hooks/useReadingStats';
+import { useSaveDailyGoal } from '../../../hooks/useSaveDailyGoal';
 import { useSessions } from '../../../hooks/useSessions';
 import type { AppStackParamList } from '../../../navigation/types';
-import { setDailyGoal } from '../../../services/userService';
 import { colors } from '../../../theme/colors';
-import { iconSize, minTouchSize, opacity, spacing } from '../../../theme/spacing';
+import { iconSize, spacing } from '../../../theme/spacing';
 import { fontSize, fontWeight } from '../../../theme/typography';
 import { formatDayLabel } from '../../../utils/calendar';
 import { formatTotals } from '../../../utils/readingStats';
-import { withTimeout } from '../../../utils/withTimeout';
-import { DailyGoalSheet } from './DailyGoalSheet';
 import { ReadingActions } from './ReadingActions';
 
 // Tamaño de la cifra de la racha: lo más grande de la app, es lo primero que debe leerse en Inicio.
 const STREAK_NUMBER_SCALE = 2;
 // Cuántas lecturas se muestran en «Actividad reciente».
 const RECENT_ACTIVITY_COUNT = 5;
-// Sin conexión, una escritura de Firestore no termina hasta recuperar la red: se corta la espera.
-const WRITE_TIMEOUT_MS = 10000;
 
 export function HomeScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<AppStackParamList>>();
-  const { user } = useAuth();
   const books = useBooks();
   const sessions = useSessions();
   const goal = useDailyGoal();
   const { streaks, todayKey } = useReadingStats();
+  const saveGoal = useSaveDailyGoal();
   const [editingGoal, setEditingGoal] = useState(false);
 
   const bookTitles = useMemo(() => new Map(books.books.map((book) => [book.id, book.title])), [books.books]);
@@ -87,15 +84,7 @@ export function HomeScreen() {
         {goal.progress ? (
           <GoalProgress progress={goal.progress} onPress={() => setEditingGoal(true)} />
         ) : (
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Fijar meta diaria"
-            onPress={() => setEditingGoal(true)}
-            style={({ pressed }) => [styles.setGoal, pressed && styles.pressed]}
-          >
-            <Ionicons name="flag-outline" size={iconSize.md} color={colors.primary} accessible={false} />
-            <Text style={styles.setGoalLabel}>Fijar meta diaria</Text>
-          </Pressable>
+          <SetGoalLink onPress={() => setEditingGoal(true)} />
         )}
 
         <ReadingActions onRegister={() => navigation.navigate('AddSession')} onOpenTimer={() => navigation.navigate('Timer')} />
@@ -132,15 +121,7 @@ export function HomeScreen() {
         ) : null}
       </ScrollView>
 
-      <DailyGoalSheet
-        visible={editingGoal}
-        onClose={() => setEditingGoal(false)}
-        goal={goal.goal}
-        onSave={async (nextGoal) => {
-          if (!user) throw new Error('No hay sesión iniciada');
-          await withTimeout(setDailyGoal(user.uid, nextGoal), WRITE_TIMEOUT_MS);
-        }}
-      />
+      <DailyGoalSheet visible={editingGoal} onClose={() => setEditingGoal(false)} goal={goal.goal} onSave={saveGoal} />
     </>
   );
 }
@@ -158,15 +139,6 @@ const styles = StyleSheet.create({
   number: { fontSize: fontSize.xl * STREAK_NUMBER_SCALE, fontWeight: fontWeight.bold, color: colors.primary },
   caption: { fontSize: fontSize.lg, color: colors.textPrimary },
   record: { fontSize: fontSize.sm, color: colors.textSecondary },
-  setGoal: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.sm,
-    minHeight: minTouchSize,
-  },
-  setGoalLabel: { fontSize: fontSize.md, fontWeight: fontWeight.semibold, color: colors.primary },
-  pressed: { opacity: opacity.pressed },
   activity: { gap: spacing.sm },
   heading: { fontSize: fontSize.lg, fontWeight: fontWeight.bold, color: colors.textPrimary },
   empty: { alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.lg },

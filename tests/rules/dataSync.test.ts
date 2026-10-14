@@ -19,7 +19,7 @@ import type { UserBookWithId } from '../../src/types/book';
 import type { DailyGoal } from '../../src/types/goal';
 import type { ReadingSessionWithId, SessionFormValues } from '../../src/types/session';
 import { EMPTY_BOOK_FORM, parseBookForm } from '../../src/utils/book';
-import { dateForDay } from '../../src/utils/calendar';
+import { dateForDay, monthOf } from '../../src/utils/calendar';
 import { getGoalProgress } from '../../src/utils/dailyGoal';
 import { initialListState, listReducer, type ListState } from '../../src/utils/listState';
 import { addDays, computeStreaks, getReadingDays, summarizeByDay } from '../../src/utils/readingDays';
@@ -27,6 +27,7 @@ import { totalsForSessions } from '../../src/utils/readingStats';
 import { buildTimerDraft, pauseTimer, startTimer } from '../../src/utils/readingTimer';
 import { parseSessionForm, toDateKey } from '../../src/utils/session';
 import { sessionsOfBook, sortSessions } from '../../src/utils/sessionList';
+import { countFinishedBooks, summarizeDay, summarizeMonth } from '../../src/utils/statistics';
 
 // El servicio importa db de firebaseConfig (React Native); en las pruebas se le pasa el Firestore del emulador.
 jest.mock('../../firebaseConfig', () => ({ db: {}, auth: {} }));
@@ -626,5 +627,120 @@ describe('cronómetro', () => {
     await createSession('alice', book, sessionFields(book, { minutes: second.minutes }), database, second.sessionId);
     const view = await live.until((current) => current.sessions.length === 2);
     expect(new Set(view.sessions.map((session) => session.id)).size).toBe(2);
+  });
+});
+
+describe('estadísticas', () => {
+  const TODAY_MONTH = monthOf(TODAY);
+  const monthOf_ = (view: LiveView) => summarizeMonth(view.days, TODAY_MONTH, TODAY, view.goal);
+
+  it('el resumen del mes y del día sigue a las sesiones al crear, editar y eliminar', async () => {
+    const book = await addBook();
+    await createSession('alice', book, sessionFields(book, { minutes: '30', endPage: '40' }), database);
+    const first = await live.until((current) => current.sessions.length === 1 && current.books[0].currentPage === 40);
+    expect(monthOf_(first).totals).toEqual({ readingDays: 1, minutes: 30, pages: 40, sessions: 1 });
+    expect(summarizeDay(first.days, TODAY)).toMatchObject({ minutes: 30, pages: 40, sessions: 1, isReadingDay: true });
+
+    await createSession('alice', first.books[0], sessionFields(first.books[0], { minutes: '15', endPage: '55' }), database);
+    const second = await live.until((current) => current.sessions.length === 2);
+    expect(monthOf_(second).totals).toEqual({ readingDays: 1, minutes: 45, pages: 55, sessions: 2 });
+
+    // Editar una sesión cambia el total.
+    const latest = second.sessions.find((session) => session.endPage === 55) as ReadingSessionWithId;
+    await updateSession(
+      'alice',
+      latest,
+      sessionFields(second.books[0], { minutes: '60', startPage: '40', endPage: '55' }),
+      second.books[0],
+      second.sessions,
+      database,
+    );
+    const edited = await live.until((current) => current.days.get(TODAY)?.minutes === 90);
+    expect(monthOf_(edited).totals).toMatchObject({ minutes: 90, pages: 55, sessions: 2 });
+
+    // Eliminar una sesión la quita del resumen.
+    await deleteSession('alice', latest, edited.books[0], edited.sessions, database);
+    const deleted = await live.until((current) => current.sessions.length === 1);
+    expect(monthOf_(deleted).totals).toEqual({ readingDays: 1, minutes: 30, pages: 40, sessions: 1 });
+    expect(summarizeDay(deleted.days, TODAY)).toMatchObject({ minutes: 30, pages: 40, sessions: 1 });
+  });
+
+  it('mover una sesión a otro mes la saca del mes actual y la cuenta en el otro, una sola vez', async () => {
+    const book = await addBook();
+    await createSession('alice', book, sessionFields(book, { minutes: '30', endPage: '80' }), database);
+    const created = await live.until((current) => current.sessions.length === 1 && current.books[0].currentPage === 80);
+    expect(monthOf_(created).totals.minutes).toBe(30);
+
+    const oldDay = addDays(TODAY, -40);
+    await updateSession(
+      'alice',
+      created.sessions[0],
+      { ...sessionFields(created.books[0], { minutes: '30', startPage: '0', endPage: '80', date: dateForDay(oldDay, new Date(), TODAY) }), dateKey: oldDay },
+      created.books[0],
+      created.sessions,
+      database,
+    );
+
+    const moved = await live.until((current) => current.readingDays.has(oldDay));
+    expect(monthOf_(moved).totals).toEqual({ readingDays: 0, minutes: 0, pages: 0, sessions: 0 });
+    expect(summarizeMonth(moved.days, monthOf(oldDay), TODAY).totals).toMatchObject({ minutes: 30, pages: 80, sessions: 1 });
+    expect(summarizeDay(moved.days, oldDay)).toMatchObject({ minutes: 30, pages: 80 });
+  });
+
+  it('con meta, los días cumplidos del mes se recalculan al editar la sesión y al cambiar la meta o su tipo', async () => {
+    await setDailyGoal('alice', { type: 'minutes', target: 30 }, database);
+    const book = await addBook();
+    await createSession('alice', book, sessionFields(book, { minutes: '20', endPage: '25' }), database);
+    const below = await live.until((current) => current.goal?.target === 30 && current.sessions.length === 1);
+    expect(monthOf_(below).goal).toMatchObject({ daysMet: 0 });
+    expect(summarizeDay(below.days, TODAY, below.goal).progress).toMatchObject({ value: 20, met: false });
+
+    await updateSession('alice', below.sessions[0], sessionFields(below.books[0], { minutes: '35', startPage: '0', endPage: '25' }), below.books[0], below.sessions, database);
+    const met = await live.until((current) => current.days.get(TODAY)?.minutes === 35);
+    expect(monthOf_(met).goal?.daysMet).toBe(1);
+    expect(monthOf_(met).points.find((point) => point.dateKey === TODAY)).toMatchObject({ goalMet: true, value: 35 });
+
+    // La misma lectura frente a una meta de páginas: 25 páginas no llegan a 30.
+    await setDailyGoal('alice', { type: 'pages', target: 30 }, database);
+    const byPages = await live.until((current) => current.goal?.type === 'pages');
+    expect(monthOf_(byPages).goal?.daysMet).toBe(0);
+    expect(monthOf_(byPages).points.find((point) => point.dateKey === TODAY)).toMatchObject({ goalMet: false, value: 25 });
+
+    await setDailyGoal('alice', undefined, database);
+    const removed = await live.until((current) => current.goal === undefined);
+    expect(monthOf_(removed)).not.toHaveProperty('goal');
+  });
+
+  it('un libro terminado cuenta en el mes de su fecha de fin y deja de contar al reabrirlo', async () => {
+    const book = await addBook();
+    expect(countFinishedBooks((await live.until((current) => current.books.length === 1)).books, TODAY_MONTH)).toBe(0);
+
+    await changeBookStatus('alice', book, 'finished', database);
+    const finished = await live.until((current) => current.books[0].status === 'finished');
+    expect(countFinishedBooks(finished.books, TODAY_MONTH)).toBe(1);
+    expect(countFinishedBooks(finished.books, monthOf(addDays(TODAY, -40)))).toBe(0);
+
+    await changeBookStatus('alice', finished.books[0], 'reading', database);
+    const reopened = await live.until((current) => current.books[0].status === 'reading');
+    expect(countFinishedBooks(reopened.books, TODAY_MONTH)).toBe(0);
+  });
+
+  it('llegar a la última página al registrar una lectura termina el libro y lo cuenta en las estadísticas', async () => {
+    const book = await addBook();
+    await createSession('alice', book, sessionFields(book, { minutes: '40', endPage: '300' }), database);
+    const view = await live.until((current) => current.books[0].status === 'finished' && current.sessions.length === 1);
+    expect(countFinishedBooks(view.books, TODAY_MONTH)).toBe(1);
+    expect(monthOf_(view).totals).toMatchObject({ minutes: 40, pages: 300 });
+  });
+
+  it('eliminar el libro retira sus lecturas de las estadísticas', async () => {
+    const book = await addBook();
+    await createSession('alice', book, sessionFields(book, { minutes: '30', endPage: '40' }), database);
+    await live.until((current) => current.sessions.length === 1);
+
+    await deleteBook('alice', book.id, database);
+    const view = await live.until((current) => current.books.length === 0 && current.sessions.length === 0);
+    expect(monthOf_(view).totals).toEqual({ readingDays: 0, minutes: 0, pages: 0, sessions: 0 });
+    expect(countFinishedBooks(view.books, TODAY_MONTH)).toBe(0);
   });
 });

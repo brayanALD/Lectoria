@@ -1,6 +1,9 @@
 import {
   WEEKDAY_LABELS,
   addMonths,
+  cursorForMonth,
+  daysInMonth,
+  getMonthDayKeys,
   compareMonths,
   dateForDay,
   firstDayOfMonth,
@@ -244,5 +247,50 @@ describe('msUntilNextDay', () => {
 
   it('cruza el fin de mes y de año', () => {
     expect(msUntilNextDay(new Date(2026, 11, 31, 23, 0, 0))).toBe(HOUR);
+  });
+});
+
+describe('daysInMonth / getMonthDayKeys', () => {
+  it.each([
+    [{ year: 2026, month: 1 }, 31],
+    [{ year: 2026, month: 2 }, 28],
+    [{ year: 2028, month: 2 }, 29],
+    [{ year: 1900, month: 2 }, 28], // divisible entre 100 y no entre 400: no es bisiesto
+    [{ year: 2000, month: 2 }, 29], // divisible entre 400: sí es bisiesto
+    [{ year: 2026, month: 4 }, 30],
+    [{ year: 2026, month: 12 }, 31],
+  ])('%j tiene %i días', (month, expected) => {
+    expect(daysInMonth(month)).toBe(expected);
+    expect(getMonthDayKeys(month)).toHaveLength(expected);
+  });
+
+  it('las claves van de la primera a la última, con ceros a la izquierda y sin repetirse', () => {
+    const keys = getMonthDayKeys({ year: 2028, month: 2 });
+    expect(keys[0]).toBe('2028-02-01');
+    expect(keys[8]).toBe('2028-02-09');
+    expect(keys[28]).toBe('2028-02-29');
+    expect(new Set(keys).size).toBe(29);
+  });
+
+  it('la cuadrícula del mes contiene exactamente esos días', () => {
+    const month = { year: 2026, month: 10 };
+    const inGrid = getMonthGrid(month).flat().filter((cell): cell is string => cell !== null);
+    expect(inGrid).toEqual(getMonthDayKeys(month));
+  });
+});
+
+describe('cursorForMonth', () => {
+  it('en el mes actual conserva hoy', () => {
+    expect(cursorForMonth({ year: 2026, month: 10 }, '2026-10-13')).toBe('2026-10-13');
+  });
+
+  it('en otro mes, pasado o futuro, salta al día 1', () => {
+    expect(cursorForMonth({ year: 2026, month: 9 }, '2026-10-13')).toBe('2026-09-01');
+    expect(cursorForMonth({ year: 2026, month: 11 }, '2026-10-13')).toBe('2026-11-01');
+    expect(cursorForMonth({ year: 2025, month: 10 }, '2026-10-13')).toBe('2025-10-01'); // mismo mes, otro año
+  });
+
+  it('cruza el cambio de año', () => {
+    expect(cursorForMonth(addMonths({ year: 2027, month: 1 }, -1), '2027-01-05')).toBe('2026-12-01');
   });
 });

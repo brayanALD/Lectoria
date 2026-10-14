@@ -42,6 +42,25 @@ export function formatMonthLabel({ year, month }: YearMonth): string {
   return dayjs(new Date(year, month - 1, 1)).locale('es').format('MMMM [de] YYYY');
 }
 
+/** Cuántos días tiene un mes (1 a 12), contando el 29 de febrero de los años bisiestos. */
+export function daysInMonth({ year, month }: YearMonth): number {
+  // UTC para que el horario de verano del dispositivo no desplace el día.
+  return new Date(Date.UTC(year, month, 0)).getUTCDate();
+}
+
+/** Las claves «YYYY-MM-DD» de todos los días de un mes, en orden. */
+export function getMonthDayKeys(month: YearMonth): string[] {
+  return Array.from({ length: daysInMonth(month) }, (_, index) => toDayKey(month.year, month.month, index + 1));
+}
+
+/**
+ * Día al que se salta al cambiar de mes en una vista de periodos: hoy si es el mes actual; si no, el día 1 (así el
+ * periodo elegido nunca queda en un día de otro mes).
+ */
+export function cursorForMonth(month: YearMonth, todayKey: string): string {
+  return compareMonths(month, monthOf(todayKey)) === 0 ? todayKey : toDayKey(month.year, month.month, 1);
+}
+
 /**
  * Cuadrícula de un mes por semanas (lunes a domingo). Cada celda es la clave del día o `null` para los huecos
  * antes del día 1 y después del último día. Todas las filas tienen 7 celdas.
@@ -49,11 +68,10 @@ export function formatMonthLabel({ year, month }: YearMonth): string {
 export function getMonthGrid({ year, month }: YearMonth): (string | null)[][] {
   // UTC para que el horario de verano del dispositivo no desplace el día.
   const mondayFirstOffset = (new Date(Date.UTC(year, month - 1, 1)).getUTCDay() + 6) % 7;
-  const daysInMonth = new Date(Date.UTC(year, month, 0)).getUTCDate();
 
   const cells: (string | null)[] = [
     ...Array<null>(mondayFirstOffset).fill(null),
-    ...Array.from({ length: daysInMonth }, (_, index) => toDayKey(year, month, index + 1)),
+    ...getMonthDayKeys({ year, month }),
   ];
   while (cells.length % 7 !== 0) cells.push(null);
 
