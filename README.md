@@ -2,7 +2,7 @@
 
 Aplicación móvil para seguir tus lecturas: organiza tu biblioteca, registra cuánto lees y mantén el hábito. El nombre une *lectura* y *trayectoria*.
 
-> **Estado:** en desarrollo. Fases 1 a 4 cerradas; siguiente, la Fase 5 (estadísticas). Probada en Android; iOS pendiente.
+> **Estado:** versión 1.0 (Fases 1 a 5 cerradas). Probada en Android; iOS pendiente. Siguiente, la versión 1.1.
 
 ## Fases de desarrollo
 
@@ -12,7 +12,7 @@ Aplicación móvil para seguir tus lecturas: organiza tu biblioteca, registra cu
 | 2. Biblioteca | Libros: añadir, editar, eliminar, estados de lectura, búsqueda y filtros | Cerrada |
 | 3. ISBN | Añadir libros por ISBN: escribiéndolo o escaneando el código de barras | Cerrada |
 | 4. Sesiones | Registro de lecturas (manual y con cronómetro), progreso, calendario, rachas y meta diaria | Cerrada |
-| 5. Estadísticas | Resúmenes y objetivos de lectura | Pendiente |
+| 5. Estadísticas | Resúmenes de lectura por día y por mes, con la meta diaria integrada | Cerrada |
 | 6. Experiencia lectora | Lista de deseos, notas y reseñas, sagas, autores, colecciones, logros | Pendiente |
 | 7. Pulir | Estantería visual, recordatorios, accesibilidad, rendimiento | Pendiente |
 
@@ -29,6 +29,7 @@ El plan completo (alcance, modelo de datos, decisiones y pendientes) está en [`
 - **Calendario y rachas:** vistas semanal, mensual y anual con totales y detalle de cada día, y racha actual y récord en Inicio.
 - **Meta diaria:** una meta de minutos o de páginas al día, a elegir, con barra de progreso en Inicio y cumplimiento de cada día en el Calendario. El progreso se calcula solo con las lecturas registradas, a mano o con el cronómetro.
 - **Actividad reciente:** las últimas lecturas en Inicio y la lista de lecturas de cada libro, que se pueden editar y eliminar.
+- **Estadísticas:** resumen por día y por mes (tiempo, páginas, sesiones, días de lectura y libros terminados), gráfico de lo leído cada día, cumplimiento de la meta diaria y racha. Se calculan siempre a partir de las lecturas registradas, así que coinciden con Inicio y el Calendario.
 - **Datos privados:** cada persona solo accede a su propia biblioteca (reglas de Firestore con validación de campos).
 
 ## Tecnología

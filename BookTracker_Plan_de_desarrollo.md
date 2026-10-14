@@ -1,6 +1,6 @@
 # Lectoria — Plan de desarrollo de la aplicación móvil
 
-> Estado: **Fase 4 (sesiones) cerrada el 2026-10-13** (registro de lecturas manual y con cronómetro, progreso sincronizado, calendario, rachas y meta diaria; probada en Android por el usuario); siguiente: Fase 5 (estadísticas). **Fase 3 (ISBN) cerrada el 2026-10-13** (búsqueda por ISBN con Open Library, escáner con `expo-camera`, duplicados). **Fase 2 (biblioteca) cerrada el 2026-10-13.** **Fase 1 cerrada para Android (2026-10-12)**: Expo SDK 57 + TypeScript, autenticación con correo y Google (con nombre, apodo y vinculación de métodos), navegación condicional, tema, logo e iconos, Firestore en `us-east1` con reglas desplegadas. Verificado en dispositivo: registro, login, sesión persistente, cierre de sesión, perfil `users/{uid}` y vinculación. Siguiente: Fase 2 (biblioteca). Fuera del cierre: iOS (requiere cuenta de Apple Developer), ESLint y tema oscuro.
+> Estado: **Versión 1.0 cerrada el 2026-10-13** (Fases 1 a 5). **Fase 5 (estadísticas) cerrada el 2026-10-13** (pestaña Estadísticas con vistas Día y Mes y meta diaria integrada). **Fase 4 (sesiones) cerrada el 2026-10-13** (registro de lecturas manual y con cronómetro, progreso sincronizado, calendario, rachas y meta diaria; probada en Android por el usuario). Siguiente: versión 1.1 (Fase 6). **Fase 3 (ISBN) cerrada el 2026-10-13** (búsqueda por ISBN con Open Library, escáner con `expo-camera`, duplicados). **Fase 2 (biblioteca) cerrada el 2026-10-13.** **Fase 1 cerrada para Android (2026-10-12)**: Expo SDK 57 + TypeScript, autenticación con correo y Google (con nombre, apodo y vinculación de métodos), navegación condicional, tema, logo e iconos, Firestore en `us-east1` con reglas desplegadas. Verificado en dispositivo: registro, login, sesión persistente, cierre de sesión, perfil `users/{uid}` y vinculación. Siguiente: Fase 2 (biblioteca). Fuera del cierre: iOS (requiere cuenta de Apple Developer), ESLint y tema oscuro.
 > Nota de nombre: este archivo conserva el nombre `BookTracker_Plan_de_desarrollo.md` por compatibilidad con referencias existentes. «BookTracker» es el tipo de app; el nombre del producto es **Lectoria**.
 
 Leyenda de estado usada en todo el documento:
@@ -63,7 +63,7 @@ Debe permitir registrar libros, leer, medir el progreso y consultar la bibliotec
 | 1. Biblioteca personal | Añadir libros (manual o ISBN), editar, eliminar, buscar y filtrar, cambiar estado de lectura |
 | 2. Seguimiento | Registrar sesiones (páginas, duración, fecha) y ver el progreso del libro |
 | 3. Calendario y rachas | Días de lectura, tiempo acumulado, racha actual y máxima |
-| 4. Estadísticas básicas | Libros terminados, páginas, minutos y objetivo mensual |
+| 4. Estadísticas básicas | Libros terminados, páginas y minutos por día y por mes, y objetivo diario. **El objetivo mensual en libros se aplazó a la 1.1** (decisión al cerrar la 1.0, 2026-10-13) |
 | Base | Registro/login, navegación condicional por sesión, tema, reglas de Firestore |
 
 ### Versiones posteriores
@@ -353,7 +353,7 @@ Convenciones [Recomendado]: código e identificadores en inglés; textos de inte
 | 2. Biblioteca — **en curso**: modelo `UserBook`, validación del formulario y `booksService` (crear, escuchar, editar, cambiar estado, eliminar) `useBooks`, `BookCover`, `ReadingProgress` y `BookCard` y la pantalla de Biblioteca (cargando, error, vacío, lista y cuadrícula) hechos (2026-10-13; la parte visual aún sin ver en dispositivo). y el formulario «Añadir libro» (modo manual) hechos (2026-10-13; la parte visual aún sin ver en dispositivo). el detalle del libro (ver, editar, cambiar estado y eliminar) y `BookFilters` (búsqueda de texto y filtros por estado, género, autor y saga) hechos (2026-10-13). **Fase 2 cerrada (2026-10-13)** | `UserBook`; CRUD; `BookCard`, `BookCover`, `BookFilters`; búsqueda, filtros, estados de carga/error/vacío | 1.0 |
 | 3. ISBN — **cerrada (2026-10-13)** | Servicio de catálogo (Open Library); formulario manual; escáner (`expo-camera`); duplicados y errores | 1.0 |
 | 4. Sesiones — **cerrada (2026-10-13)**: modelo, validación, días de lectura, rachas y `sessionsService` (crear, editar y eliminar con actualización atómica del libro); fuente de datos única (`ReadingDataProvider`); formulario «Registrar lectura» (con página inicial en lecturas de otro día y al editar); pestaña Calendario (semana, mes y año; registrar desde un día); sesiones en el detalle del libro; cronómetro; meta diaria; actividad reciente en Inicio. Probada en Android por el usuario | Formulario de sesión; progreso; calendario y rachas | 1.0 |
-| 5. Estadísticas — **en curso** (2026-10-13): pestaña Estadísticas con vistas **Día** y **Mes** (tiempo, páginas, sesiones, días de lectura, libros terminados, gráfico diario, cumplimiento de la meta y racha), derivada de las mismas sesiones y libros que el resto de la app, y pruebas de fechas y casos límite (zonas horarias, cambio de día, mes y año, bisiestos, fechas pasadas y futuras, días sin actividad, metas cumplidas, sesiones creadas, editadas y eliminadas). Pendiente: probarla en dispositivo y cerrarla | Resúmenes diarios/mensuales; objetivos; pruebas de fechas y casos límite | 1.0 |
+| 5. Estadísticas — **cerrada (2026-10-13)**: pestaña Estadísticas con vistas **Día** y **Mes** (tiempo, páginas, sesiones, días de lectura, libros terminados, gráfico diario, cumplimiento de la meta y racha), derivada de las mismas sesiones y libros que el resto de la app, y pruebas de fechas y casos límite (zonas horarias, cambio de día, mes y año, bisiestos, fechas pasadas y futuras, días sin actividad, metas cumplidas, sesiones creadas, editadas y eliminadas). | Resúmenes diarios/mensuales; objetivos; pruebas de fechas y casos límite | 1.0 |
 | 6. Experiencia lectora | Deseos/compras, notas y reseñas (1.1); autores, sagas, colecciones (1.2); ruleta y logros (1.3) | 1.1–1.3 |
 | 7. Pulir | Estantería realista y recordatorios (1.3–1.4); pruebas de reglas; accesibilidad, rendimiento; capturas y documentación | 1.4–1.5 |
 
@@ -385,16 +385,18 @@ Orden de la Fase 1 (plantilla): theme → AuthContext → AppNavigator → Login
 
 **Criterios de aceptación del MVP**
 
-- [ ] Crear cuenta e iniciar sesión; la sesión persiste al reabrir la app.
-- [ ] Añadir un libro manualmente y por ISBN cuando haya información disponible.
-- [ ] Buscar, filtrar, editar y eliminar libros.
-- [ ] Registrar sesiones y consultar el progreso.
-- [ ] Ver los días de lectura en el calendario.
-- [ ] Rachas y estadísticas mensuales correctas (cada sesión contada una vez).
-- [ ] Datos aislados entre usuarios (verificado con el emulador).
-- [ ] Datos recuperados tras cerrar y reabrir la app.
-- [ ] Errores de red, cargas y estados vacíos gestionados.
-- [ ] Pruebas básicas de cálculos y de seguridad ejecutadas.
+- [x] Crear cuenta e iniciar sesión; la sesión persiste al reabrir la app.
+- [x] Añadir un libro manualmente y por ISBN cuando haya información disponible.
+- [x] Buscar, filtrar, editar y eliminar libros.
+- [x] Registrar sesiones y consultar el progreso.
+- [x] Ver los días de lectura en el calendario.
+- [x] Rachas y estadísticas mensuales correctas (cada sesión contada una vez).
+- [x] Datos aislados entre usuarios (verificado con el emulador).
+- [ ] Datos recuperados tras cerrar y reabrir la app. *(sin verificar de forma específica en dispositivo)*
+- [ ] Errores de red, cargas y estados vacíos gestionados. *(implementado en todas las pantallas; el comportamiento sin conexión no se ha probado en dispositivo)*
+- [x] Pruebas básicas de cálculos y de seguridad ejecutadas.
+
+**Cierre de la 1.0** [Confirmado, 2026-10-13]: la versión 1.0 se declara cerrada con las Fases 1 a 5 hechas y probadas en Android. Quedan fuera, y pasan a la 1.1 o a la fase de pulido: el **objetivo mensual en libros**, la verificación específica sin conexión y de «recuperar datos al reabrir», iOS (requiere cuenta de Apple Developer), el tema oscuro, el borrado completo de la cuenta y la publicación en tiendas (build de producción, capturas y ficha).
 
 ## 14. Riesgos, supuestos y decisiones pendientes
 
