@@ -18,7 +18,7 @@ import {
 
 import { db } from '../../firebaseConfig';
 import type { NewBookFields, ReadingStatus, UserBook, UserBookWithId } from '../types/book';
-import { getProgressAfterPageCountChange, planStatusChange } from '../utils/book';
+import { getProgressAfterPageCountChange, planStatusChange, type StatusChange } from '../utils/book';
 
 // Firestore permite 500 operaciones por lote; se deja margen.
 const BATCH_SIZE = 400;
@@ -96,6 +96,16 @@ export async function updateBookDetails(
   await updateDoc(bookDoc(uid, book.id, database), changes);
 }
 
+/** Campos de Firestore que hay que escribir para aplicar un `StatusChange` (estado, fechas y página). */
+export function statusChangeToUpdate(change: StatusChange): UpdateData<UserBook> {
+  const changes: UpdateData<UserBook> = { status: change.status, updatedAt: serverTimestamp() };
+  if (change.currentPage !== undefined) changes.currentPage = change.currentPage;
+  if (change.setStartedAt) changes.startedAt = serverTimestamp();
+  if (change.setFinishedAt) changes.finishedAt = serverTimestamp();
+  if (change.clearFinishedAt) changes.finishedAt = deleteField();
+  return changes;
+}
+
 /** Cambia el estado de lectura y ajusta fechas y progreso (ver `planStatusChange`). No hace nada si no cambia. */
 export async function changeBookStatus(
   uid: string,
@@ -106,12 +116,7 @@ export async function changeBookStatus(
   const plan = planStatusChange(book, next);
   if (book.status === next) return;
 
-  const changes: UpdateData<UserBook> = { status: next, updatedAt: serverTimestamp() };
-  if (plan.currentPage !== undefined) changes.currentPage = plan.currentPage;
-  if (plan.setStartedAt) changes.startedAt = serverTimestamp();
-  if (plan.setFinishedAt) changes.finishedAt = serverTimestamp();
-  if (plan.clearFinishedAt) changes.finishedAt = deleteField();
-  await updateDoc(bookDoc(uid, book.id, database), changes);
+  await updateDoc(bookDoc(uid, book.id, database), statusChangeToUpdate(plan));
 }
 
 /**

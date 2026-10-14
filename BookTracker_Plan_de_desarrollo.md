@@ -279,9 +279,11 @@ Casos a cubrir: ISBN-10/13, códigos inválidos, sin resultados, resultados inco
 
 **Registro de sesión:** libro, fecha y duración, páginas inicial/final (si se conocen), páginas leídas, notas.
 
-**Rachas** [Recomendado]:
+**Rachas** [Confirmado, 2026-10-13]:
 
-- Un día cuenta si tiene al menos una sesión válida (`pagesRead > 0` o `durationMinutes > 0`).
+- **Día de lectura:** un día cuenta si tiene al menos **una sesión con más de 1 minuto o con más de 1 página** (basta una de las dos condiciones; «más de» es estricto: una sesión de exactamente 1 minuto y 1 página se guarda pero no cuenta para la racha). El criterio se evalúa **por sesión**, no sumando el día. Las constantes son `READING_DAY_MIN_MINUTES` y `READING_DAY_MIN_PAGES` en `utils/session.ts`. Una sesión válida de registrar sigue exigiendo minutos o páginas > 0 (reglas de Firestore).
+- **Progreso:** registrar una sesión con página final actualiza la página actual del libro **en la misma operación atómica** (`createSession`). La página nunca retrocede (una sesión con fecha pasada no deshace un avance posterior); un libro pendiente, en pausa o abandonado pasa a «Leyendo» al leer, y al llegar a la última página (si se conoce el total) pasa a «Terminado». Borrar una sesión no cambia el libro.
+- **Dónde se registra:** desde «Inicio» (acceso rápido) y desde el detalle del libro.
 - Racha actual: días consecutivos hasta hoy; si hoy aún no hay sesión, se mantiene la del día anterior hasta que termine el día.
 - Racha máxima: récord histórico.
 - Se calculan sobre `dateKey` (zona horaria del usuario). Las sesiones son la fuente de verdad; cualquier contador guardado es solo caché recalculable.
@@ -343,7 +345,7 @@ Convenciones [Recomendado]: código e identificadores en inglés; textos de inte
 | 1. Preparar — **cerrada** (2026-10-12, Android) | Fijar versiones (Expo, RN, React Navigation) leyendo su documentación; scaffold TypeScript; Firebase y `.env`; tema; `AuthContext`; navegación condicional; reglas iniciales con validación | 1.0 |
 | 2. Biblioteca — **en curso**: modelo `UserBook`, validación del formulario y `booksService` (crear, escuchar, editar, cambiar estado, eliminar) `useBooks`, `BookCover`, `ReadingProgress` y `BookCard` y la pantalla de Biblioteca (cargando, error, vacío, lista y cuadrícula) hechos (2026-10-13; la parte visual aún sin ver en dispositivo). y el formulario «Añadir libro» (modo manual) hechos (2026-10-13; la parte visual aún sin ver en dispositivo). el detalle del libro (ver, editar, cambiar estado y eliminar) y `BookFilters` (búsqueda de texto y filtros por estado, género, autor y saga) hechos (2026-10-13). **Fase 2 cerrada (2026-10-13)** | `UserBook`; CRUD; `BookCard`, `BookCover`, `BookFilters`; búsqueda, filtros, estados de carga/error/vacío | 1.0 |
 | 3. ISBN — **cerrada (2026-10-13)** | Servicio de catálogo (Open Library); formulario manual; escáner (`expo-camera`); duplicados y errores | 1.0 |
-| 4. Sesiones | Formulario de sesión; progreso; calendario y rachas | 1.0 |
+| 4. Sesiones — **en curso**: etapa 1 hecha (2026-10-13): modelo, validación del formulario, días de lectura, rachas y servicio `sessionsService` (crear con actualización atómica del libro, eliminar, escuchar), todo probado. Siguen: hook `useSessions`, formulario «Registrar lectura», acceso desde Inicio y el detalle, y calendario | Formulario de sesión; progreso; calendario y rachas | 1.0 |
 | 5. Estadísticas | Resúmenes diarios/mensuales; objetivos; pruebas de fechas y casos límite | 1.0 |
 | 6. Experiencia lectora | Deseos/compras, notas y reseñas (1.1); autores, sagas, colecciones (1.2); ruleta y logros (1.3) | 1.1–1.3 |
 | 7. Pulir | Estantería realista y recordatorios (1.3–1.4); pruebas de reglas; accesibilidad, rendimiento; capturas y documentación | 1.4–1.5 |
