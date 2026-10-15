@@ -12,7 +12,7 @@ import { useBooks } from '../../../hooks/useBooks';
 import { useNow } from '../../../hooks/useNow';
 import type { AppStackParamList } from '../../../navigation/types';
 import { colors } from '../../../theme/colors';
-import { spacing } from '../../../theme/spacing';
+import { radius, spacing } from '../../../theme/spacing';
 import { fontSize, fontWeight } from '../../../theme/typography';
 import { describeClock, formatClock, getElapsedMs, isTimerRunning } from '../../../utils/readingTimer';
 import { pickDefaultBook } from '../../../utils/sessionBooks';
@@ -140,7 +140,7 @@ export function TimerScreen({ navigation }: Props) {
 const styles = StyleSheet.create({
   scroll: { flex: 1, backgroundColor: colors.background },
   content: { padding: spacing.lg, gap: spacing.xl },
-  clock: { alignItems: 'center', gap: spacing.xs, paddingVertical: spacing.lg },
+  clock: { alignItems: 'center', gap: spacing.xs, padding: spacing.xl, borderRadius: radius.lg, backgroundColor: colors.surfaceTint },
   time: {
     fontSize: fontSize.xl * CLOCK_SCALE,
     fontWeight: fontWeight.bold,

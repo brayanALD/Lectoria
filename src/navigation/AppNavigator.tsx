@@ -9,6 +9,7 @@ import { ScanBookScreen } from '../screens/app/library/ScanBookScreen';
 import { AddSessionScreen } from '../screens/app/reading/AddSessionScreen';
 import { TimerScreen } from '../screens/app/reading/TimerScreen';
 import { AuthNavigator } from './AuthNavigator';
+import { headerOptions } from './chrome';
 import { TabNavigator } from './TabNavigator';
 import type { AppStackParamList } from './types';
 
@@ -22,7 +23,7 @@ export function AppNavigator() {
   if (!user) return <AuthNavigator />;
 
   return (
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
+    <Stack.Navigator screenOptions={{ ...headerOptions, headerShown: false }}>
       <Stack.Screen name="Tabs" component={TabNavigator} />
       {/* Pantallas secundarias: se abren encima de las pestañas, con encabezado y botón de volver. */}
       <Stack.Screen name="AddBook" component={AddBookScreen} options={{ headerShown: true, title: 'Añadir libro' }} />

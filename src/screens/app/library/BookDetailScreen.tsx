@@ -20,7 +20,7 @@ import { changeBookStatus, deleteBook } from '../../../services/booksService';
 import { adjustBookProgress } from '../../../services/sessionsService';
 import type { ReadingStatus } from '../../../types/book';
 import { colors } from '../../../theme/colors';
-import { iconSize, opacity, spacing } from '../../../theme/spacing';
+import { iconSize, opacity, radius, spacing } from '../../../theme/spacing';
 import { fontSize, fontWeight } from '../../../theme/typography';
 import { getProgressPercent } from '../../../utils/book';
 import { formatDayLabel } from '../../../utils/calendar';
@@ -235,7 +235,7 @@ const styles = StyleSheet.create({
   headerText: { flex: 1, gap: spacing.xs },
   title: { fontSize: fontSize.xl, fontWeight: fontWeight.bold, color: colors.textPrimary },
   authors: { fontSize: fontSize.md, color: colors.textSecondary },
-  section: { gap: spacing.sm },
+  section: { gap: spacing.sm, padding: spacing.md, borderRadius: radius.lg, backgroundColor: colors.surfaceTint },
   progressRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   progressText: { fontSize: fontSize.md, color: colors.textPrimary },
   pressed: { opacity: opacity.pressed },

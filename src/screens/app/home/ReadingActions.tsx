@@ -74,7 +74,7 @@ function TimerCard({ onPress }: { onPress: () => void }) {
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel}
       onPress={onPress}
-      style={({ pressed }) => [styles.card, styles.timerCard, pressed && styles.timerCardPressed]}
+      style={({ pressed }) => [styles.card, styles.timerCard, timer && styles.timerCardActive, pressed && styles.timerCardPressed]}
     >
       <CardBadge icon={timer ? 'timer' : 'timer-outline'} />
       {timer ? (
@@ -100,12 +100,14 @@ const styles = StyleSheet.create({
     padding: spacing.md,
     minHeight: CARD_MIN_HEIGHT,
     borderWidth: 1,
-    borderRadius: radius.md,
+    borderRadius: radius.lg,
   },
   registerCard: { backgroundColor: colors.primary, borderColor: colors.primary },
   registerCardPressed: { backgroundColor: colors.pressed, borderColor: colors.pressed },
   // El borde `outline` es el límite del control: contraste ≥ 3:1 sobre el fondo.
   timerCard: { backgroundColor: colors.surface, borderColor: colors.outline },
+  // Con un cronómetro en marcha o en pausa la card se enmarca en el color principal (además del tiempo y su estado en texto).
+  timerCardActive: { borderColor: colors.primary },
   timerCardPressed: { opacity: opacity.pressed },
   badge: {
     width: minTouchSize,

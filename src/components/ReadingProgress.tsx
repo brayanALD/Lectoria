@@ -15,7 +15,7 @@ interface ReadingProgressProps {
   valueText?: string;
 }
 
-const TRACK_HEIGHT = 6;
+const TRACK_HEIGHT = spacing.sm;
 
 export function ReadingProgress({ percent, showLabel = true, accessibilityLabel = 'Progreso de lectura', valueText }: ReadingProgressProps) {
   const value = Math.min(100, Math.max(0, percent));

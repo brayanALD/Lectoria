@@ -10,6 +10,15 @@ function luminance(hex: string): number {
   return 0.2126 * r + 0.7152 * g + 0.0722 * b;
 }
 
+/** Color resultante de poner un `rgba(r, g, b, a)` sobre un fondo opaco (para medir el contraste real de un velo). */
+function over(rgba: string, background: string): string {
+  const [r, g, b, a] = rgba.match(/[\d.]+/g)!.map(Number);
+  const base = parseInt(background.slice(1), 16);
+  const mix = (top: number, bottom: number) => Math.round(top * a + bottom * (1 - a));
+  const value = (mix(r, (base >> 16) & 255) << 16) | (mix(g, (base >> 8) & 255) << 8) | mix(b, base & 255);
+  return `#${value.toString(16).padStart(6, '0')}`;
+}
+
 function contrast(a: string, b: string): number {
   const [light, dark] = [luminance(a), luminance(b)].sort((x, y) => y - x);
   return (light + 0.05) / (dark + 0.05);
@@ -70,5 +79,35 @@ describe('contraste de los tokens (accesibilidad visual)', () => {
 
   it('el color de acento no se usa para texto sobre el fondo claro (no cumple contraste)', () => {
     expect(contrast(colors.accent, colors.background)).toBeLessThan(3);
+  });
+});
+
+describe('superficies derivadas de la paleta (surfaceTint y accentSoft)', () => {
+  const tint = over(colors.surfaceTint, colors.background);
+  const soft = over(colors.accentSoft, colors.background);
+
+  it('son transparencias de colores de la paleta, no colores nuevos', () => {
+    expect(colors.surfaceTint).toBe('rgba(53, 88, 52, 0.07)'); // Hunter Green
+    expect(colors.accentSoft).toBe('rgba(194, 168, 120, 0.32)'); // Soft Fawn
+  });
+
+  it.each([
+    ['texto principal sobre la superficie tonal', colors.textPrimary, tint],
+    ['texto secundario sobre la superficie tonal', colors.textSecondary, tint],
+    ['texto primario (enlaces y cifras) sobre la superficie tonal', colors.primary, tint],
+    ['texto de error sobre la superficie tonal', colors.error, tint],
+    ['texto de éxito sobre la superficie tonal', colors.success, tint],
+    ['texto principal sobre el dorado suave', colors.textPrimary, soft],
+    ['texto primario sobre el dorado suave', colors.primary, soft],
+  ])('%s cumple 4,5:1', (_name, foreground, background) => {
+    expect(contrast(foreground, background)).toBeGreaterThanOrEqual(4.5);
+  });
+
+  it('el icono sobre el círculo dorado suave cumple 3:1', () => {
+    expect(contrast(colors.onAccent, soft)).toBeGreaterThanOrEqual(3);
+  });
+
+  it('la superficie tonal es decorativa: no vale como borde de un control (se distingue poco del fondo)', () => {
+    expect(contrast(tint, colors.background)).toBeLessThan(3);
   });
 });

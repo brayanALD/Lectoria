@@ -1,5 +1,6 @@
 import { StyleSheet, View } from 'react-native';
 
+import { colors } from '../theme/colors';
 import { minTouchSize, radius, spacing } from '../theme/spacing';
 import { fontSize } from '../theme/typography';
 import { SessionRowsSkeleton } from './BookSkeletons';
@@ -14,8 +15,11 @@ export function HomeSkeleton() {
     <SkeletonPulse label="Cargando inicio">
       <View style={styles.container}>
         <View style={styles.streak}>
-          <Skeleton width={spacing.xl * 2} height={fontSize.xl * 2} />
-          <Skeleton width={spacing.xl * 4} height={fontSize.md} />
+          <View style={styles.streakText}>
+            <Skeleton width={spacing.xl * 2} height={fontSize.xl * 2} />
+            <Skeleton width={spacing.xl * 4} height={fontSize.md} />
+          </View>
+          <Skeleton width={minTouchSize + spacing.sm} height={minTouchSize + spacing.sm} style={styles.circle} />
         </View>
         <View style={styles.goal}>
           <Skeleton width="45%" height={fontSize.md} />
@@ -41,10 +45,20 @@ export function HomeSkeleton() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, padding: spacing.lg, gap: spacing.xl },
-  streak: { alignItems: 'center', gap: spacing.sm },
-  goal: { gap: spacing.sm },
+  streak: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.md,
+    padding: spacing.lg,
+    borderRadius: radius.lg,
+    backgroundColor: colors.surfaceTint,
+  },
+  streakText: { flex: 1, gap: spacing.xs },
+  circle: { borderRadius: radius.pill },
+  goal: { gap: spacing.sm, padding: spacing.md, borderRadius: radius.lg, backgroundColor: colors.surfaceTint },
   cards: { flexDirection: 'row', gap: spacing.md },
   card: { flex: 1 },
   activity: { gap: spacing.sm },
-  rounded: { borderRadius: radius.md },
+  rounded: { borderRadius: radius.lg },
 });

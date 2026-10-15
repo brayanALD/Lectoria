@@ -48,9 +48,9 @@ export function LibrarySkeleton({ grid = false }: { grid?: boolean }) {
           <Skeleton width={minTouchSize} height={minTouchSize} style={styles.rounded} />
         </View>
         <View style={styles.chipRow}>
-          <Skeleton width={72} height={minTouchSize} style={styles.rounded} />
-          <Skeleton width={120} height={minTouchSize} style={styles.rounded} />
-          <Skeleton width={96} height={minTouchSize} style={styles.rounded} />
+          <Skeleton width={72} height={minTouchSize} style={styles.pill} />
+          <Skeleton width={120} height={minTouchSize} style={styles.pill} />
+          <Skeleton width={96} height={minTouchSize} style={styles.pill} />
         </View>
         {grid ? (
           <View style={styles.grid}>
@@ -99,14 +99,18 @@ export function BookDetailSkeleton() {
           </View>
         </View>
         <View style={styles.chipRow}>
-          <Skeleton width={110} height={minTouchSize} style={styles.rounded} />
-          <Skeleton width={90} height={minTouchSize} style={styles.rounded} />
-          <Skeleton width={100} height={minTouchSize} style={styles.rounded} />
+          <Skeleton width={110} height={minTouchSize} style={styles.pill} />
+          <Skeleton width={90} height={minTouchSize} style={styles.pill} />
+          <Skeleton width={100} height={minTouchSize} style={styles.pill} />
         </View>
-        <Skeleton width="40%" height={fontSize.md} />
-        <Skeleton height={spacing.sm} />
-        <Skeleton width="70%" height={fontSize.md} />
-        <Skeleton width="55%" height={fontSize.md} />
+        <View style={styles.block}>
+          <Skeleton width="40%" height={fontSize.md} />
+          <Skeleton height={spacing.sm} />
+        </View>
+        <View style={styles.block}>
+          <Skeleton width="70%" height={fontSize.md} />
+          <Skeleton width="55%" height={fontSize.md} />
+        </View>
       </View>
     </SkeletonPulse>
   );
@@ -144,9 +148,10 @@ const styles = StyleSheet.create({
   searchRow: { flexDirection: 'row', gap: spacing.sm, paddingHorizontal: spacing.lg },
   chipRow: { flexDirection: 'row', gap: spacing.sm, paddingHorizontal: spacing.lg },
   rounded: { borderRadius: radius.md },
+  pill: { borderRadius: radius.pill },
   list: { padding: spacing.lg, gap: spacing.md },
   grid: { flexDirection: 'row', flexWrap: 'wrap', padding: spacing.lg, gap: spacing.md },
-  card: { borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, padding: spacing.md },
+  card: { backgroundColor: colors.surfaceTint, borderRadius: radius.lg, padding: spacing.md },
   cardList: { flexDirection: 'row', gap: spacing.md },
   cardInfo: { flex: 1, gap: spacing.sm },
   gridCell: { width: GRID_CELL_WIDTH, gap: spacing.sm },
@@ -154,6 +159,8 @@ const styles = StyleSheet.create({
   formField: { gap: spacing.xs },
   detail: { padding: spacing.lg, gap: spacing.lg },
   detailHeader: { flexDirection: 'row', gap: spacing.md },
+  // Igual que los bloques tonales del detalle real (`section` de BookDetailScreen).
+  block: { gap: spacing.sm, padding: spacing.md, borderRadius: radius.lg, backgroundColor: colors.surfaceTint },
   // Igual que la fila real (`SessionRow`): separador arriba, texto en dos líneas y alto táctil mínimo.
   sessionList: { gap: spacing.sm },
   sessionRow: {

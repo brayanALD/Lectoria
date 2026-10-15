@@ -99,7 +99,9 @@ Tokens semánticos que **existen hoy** (los únicos que debes usar o ampliar):
 | Token | Valor | Uso |
 |---|---|---|
 | `background` | Porcelain | Fondo de pantallas |
-| `surface` | Porcelain | Campos, cards, hojas (**hoy es idéntico al fondo**: las cards se definen solo por borde) |
+| `surface` | Porcelain | Campos y hojas (igual al fondo: los campos se definen por su borde `outline`) |
+| `surfaceTint` | Hunter Green al 7 % | **Superficie tonal** de cards y bloques decorativos (sin borde). Añadida en el rediseño del 2026-10-14 |
+| `accentSoft` | Soft Fawn al 32 % | Fondo suave de círculos de icono (p. ej. `EmptyState`). Añadida el 2026-10-14 |
 | `textPrimary` | Evergreen | Títulos y texto principal |
 | `textSecondary` | Olive Bark | Metadatos, apoyo |
 | `primary` / `onPrimary` | Hunter Green / Porcelain | Acción principal y su texto |
@@ -130,7 +132,7 @@ Contrastes verificados (WCAG): Evergreen/Porcelain 14,13:1 · Hunter Green/Porce
 | Token | Valores |
 |---|---|
 | `spacing` | `xs` 4 · `sm` 8 · `md` 16 · `lg` 24 · `xl` 32 |
-| `radius` | `sm` 8 · `md` 12 (las hojas inferiores usan `md × 2` = 24 arriba) |
+| `radius` | `sm` 8 (portadas) · `md` 12 (campos) · `lg` 18 (cards, bloques, botones) · `pill` 999 (chips, etiquetas, círculos, barras). Las hojas inferiores usan `md × 2` = 24 arriba |
 | `minTouchSize` | 48 |
 | `iconSize` | `sm` 20 · `md` 24 · `lg` 28 · `xl` 56 |
 | `opacity` | `pressed` 0,85 · `disabled` 0,5 · `skeleton` 0,5 |
@@ -139,8 +141,8 @@ Patrón de maquetación dominante: pantallas con `padding: spacing.lg` (24), `ga
 
 ### 3.4 Superficies, bordes y profundidad
 
-- **No hay sombras ni elevación** en el código. La jerarquía se logra con **bordes** (`border` 1 px decorativo, `outline` 1 px en controles), **rellenos** (`primary`, `accent`) y **espacio**.
-- Cards y campos: fondo `surface` (= Porcelain), borde 1 px, radio `md`.
+- **No hay sombras ni elevación** en el código. Desde el 2026-10-14 la jerarquía se logra con **superficies tonales** (`surfaceTint`, sin borde) en cards y bloques de datos, **rellenos** (`primary`, `accent`) y **espacio**; los **controles** conservan el borde `outline` 1 px.
+- Cards decorativas: fondo `surfaceTint`, radio `lg`, sin borde. Campos: fondo `surface`, borde `outline`, radio `md`.
 - Hojas modales: `Sheet` desde abajo, `overlay`, esquinas superiores de 24, `maxHeight 85 %`, `accessibilityViewIsModal`.
 
 ### 3.5 Iconografía
@@ -157,8 +159,8 @@ Patrón de maquetación dominante: pantallas con `padding: spacing.lg` (24), `ga
 
 ### 3.7 Navegación y cromo
 
-- **Barra de pestañas inferior** (React Navigation `bottom-tabs`, **componente por defecto**): 5 pestañas — Inicio, Biblioteca, Calendario, Estadísticas, Mi espacio; activa `primary`, inactiva `textSecondary`; iconos *outline*.
-- **Encabezados** de React Navigation por defecto (título + volver), tematizados desde `App.tsx` (`card` = surface, `border`, `text`, `primary`, `notification` = accent). El stack de la app oculta el encabezado en `Tabs` y lo muestra en las pantallas secundarias; las pestañas muestran el suyo con su título.
+- **Barra de pestañas inferior** (React Navigation `bottom-tabs`): 5 pestañas — Inicio, Biblioteca, Calendario, Estadísticas, Mi espacio; activa `primary` con **icono relleno**, inactiva `textSecondary` con icono *outline*; fondo del lienzo, filo `border` y etiquetas `xs` semibold. Su apariencia está en `src/navigation/chrome.ts` (`tabBarOptions`).
+- **Encabezados** de React Navigation (título + volver) con `headerOptions` de `chrome.ts`: sin sombra, fondo del lienzo, título `lg` bold y acciones en `primary`; además tematizados desde `App.tsx`. El stack de la app oculta el encabezado en `Tabs` y lo muestra en las pantallas secundarias; las pestañas muestran el suyo con su título.
 - El arranque usa `StartupScreen` (logo sobre Porcelain, igual que la pantalla de inicio nativa).
 
 ---
@@ -302,7 +304,7 @@ Según el plan de desarrollo (`BookTracker_Plan_de_desarrollo.md`):
 
 ## 10. Diagnóstico visual: dónde modernizar
 
-Observaciones **derivadas del código**, para priorizar (no son bugs):
+Observaciones **derivadas del código antes del primer pase de rediseño (2026-10-14)**, para priorizar (no son bugs). El §16 recoge cuáles ya se atendieron:
 
 1. **Superficies planas:** `surface` = `background`. Todo se separa con bordes de 1 px; las cards y los campos casi no se distinguen del fondo. Falta un nivel de profundidad.
 2. **Jerarquía tipográfica corta:** cinco tamaños y tres pesos con fuente del sistema; los títulos de sección (Actividad reciente, Lecturas, Minutos por día) son solo texto `lg bold`. No hay un estilo de título de pantalla propio (se usa el encabezado por defecto de React Navigation).
@@ -473,3 +475,25 @@ CLAUDE.md                        Convenciones del proyecto (no versionado)
 - [ ] `npm run typecheck`, `npm test`, `npx expo export --platform android` y `npx expo-doctor` ejecutados y reportados con sus resultados reales.
 - [ ] Se indica expresamente qué no se pudo verificar en dispositivo.
 - [ ] Skills usadas/descartadas listadas, y skill de proyecto `lectoria-design` creada (o propuesta).
+
+---
+
+## 16. Registro del rediseño aplicado (primer pase, 2026-10-14)
+
+Primer pase de rediseño hecho siguiendo esta guía (§11). **Verificado:** tipos, 559 pruebas unitarias (incluidas las de tokens y contraste) y compilación del bundle de Android. **No verificado:** el aspecto en dispositivo (no hay pruebas de interfaz): hay que revisarlo visualmente antes de darlo por bueno.
+
+| Guía | Qué se hizo |
+|---|---|
+| §11.1.1 Profundidad | Token `surfaceTint` (Hunter Green al 7 %) para cards y bloques decorativos, sin borde ni sombra. Contraste de texto sobre él verificado en `colors.test.ts` |
+| §11.1.2 Formas | Escala `radius`: `sm` 8, `md` 12, `lg` 18, `pill`. Botones `lg`; chips, etiquetas de estado y barras en píldora; campos siguen en `md` |
+| §11.1.4 Cromo | `src/navigation/chrome.ts`: encabezados sin sombra con título bold y barra de pestañas con filo sutil, etiquetas con peso e **icono relleno en la pestaña activa** |
+| §11.1.5 Dorado de marca | Círculo `accent` con icono en la **racha de Inicio** (llama) y en el avatar de «Mi espacio»; `accentSoft` en los estados vacíos |
+| §11.1.6 Inicio | La racha es el único elemento «grande»: cifra de 56 + círculo dorado sobre superficie tonal; la meta en bloque tonal; las dos cards independientes con esquinas `lg`, y la del cronómetro se enmarca en `primary` cuando hay uno activo |
+| §11.1.7 Biblioteca/detalle | `BookCard` tonal con etiqueta de estado en píldora; el progreso y los datos del detalle en bloques tonales |
+| §11.1.8 Calendario/Estadísticas | Filas de Semana, recuadros de Año y `StatTile` tonales; el marco de selección ocupa siempre su sitio (borde transparente → `primary`) |
+| §11.1.9 Vacíos | `EmptyState` con el icono en un círculo `accentSoft` |
+| §11.1.10 Autenticación | Marca centrada y logo más grande |
+| Hojas | `Sheet` con asa de arrastre |
+| Skeletons | Igualados a los componentes nuevos (chips en píldora, bloques tonales, racha con círculo, reloj tonal, tiles con esquinas `lg`) |
+
+**Pendiente de este pase (no hecho):** tipografía propia (requiere fuente y aprobación), sombras o `elevation`, microinteracciones nuevas, tema oscuro, y la reordenación de contenidos de Biblioteca y Estadísticas más allá de las superficies.

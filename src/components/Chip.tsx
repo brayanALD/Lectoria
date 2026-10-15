@@ -36,7 +36,7 @@ const styles = StyleSheet.create({
   chip: {
     minHeight: minTouchSize,
     paddingHorizontal: spacing.md,
-    borderRadius: radius.md,
+    borderRadius: radius.pill,
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',

@@ -15,7 +15,7 @@ export function CalendarSkeleton() {
         <View style={styles.switch}>
           {[0, 1, 2].map((index) => (
             <View key={index} style={styles.switchItem}>
-              <Skeleton height={minTouchSize} style={styles.rounded} />
+              <Skeleton height={minTouchSize} style={styles.pill} />
             </View>
           ))}
         </View>
@@ -38,7 +38,7 @@ const styles = StyleSheet.create({
   container: { flex: 1, padding: spacing.lg, gap: spacing.md },
   switch: { flexDirection: 'row', gap: spacing.sm },
   switchItem: { flex: 1 },
-  rounded: { borderRadius: radius.md },
+  pill: { borderRadius: radius.pill },
   center: { alignSelf: 'center' },
   week: { flexDirection: 'row' },
   day: { flex: 1, minHeight: minTouchSize, alignItems: 'center', justifyContent: 'center' },

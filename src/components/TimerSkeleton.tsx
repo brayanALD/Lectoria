@@ -1,5 +1,6 @@
 import { StyleSheet, View } from 'react-native';
 
+import { colors } from '../theme/colors';
 import { minTouchSize, radius, spacing } from '../theme/spacing';
 import { fontSize } from '../theme/typography';
 import { Skeleton, SkeletonPulse } from './Skeleton';
@@ -25,6 +26,6 @@ export function TimerSkeleton() {
 const styles = StyleSheet.create({
   container: { flex: 1, padding: spacing.lg, gap: spacing.xl },
   field: { gap: spacing.xs },
-  clock: { alignItems: 'center' },
-  rounded: { borderRadius: radius.md },
+  clock: { alignItems: 'center', padding: spacing.xl, borderRadius: radius.lg, backgroundColor: colors.surfaceTint },
+  rounded: { borderRadius: radius.lg },
 });

@@ -5,7 +5,7 @@ import { Button } from '../../../components/Button';
 import { TextField } from '../../../components/TextField';
 import { useAuth } from '../../../context/AuthContext';
 import { colors } from '../../../theme/colors';
-import { spacing } from '../../../theme/spacing';
+import { minTouchSize, radius, spacing } from '../../../theme/spacing';
 import { fontSize, fontWeight } from '../../../theme/typography';
 import { getAuthErrorMessage } from '../../../utils/authErrors';
 import { MIN_PASSWORD_LENGTH, isValidPassword } from '../../../utils/validation';
@@ -65,7 +65,14 @@ export function ProfileScreen() {
       keyboardShouldPersistTaps="handled"
       keyboardDismissMode="on-drag"
     >
-      <Text style={styles.email}>{user?.email}</Text>
+      <View style={styles.account}>
+        <View style={styles.avatar} accessible={false} importantForAccessibility="no-hide-descendants">
+          <Text style={styles.avatarInitial}>{(user?.email ?? '?').charAt(0).toUpperCase()}</Text>
+        </View>
+        <Text style={styles.email} numberOfLines={1}>
+          {user?.email}
+        </Text>
+      </View>
 
       <View style={styles.block}>
         <Text style={styles.sectionTitle} accessibilityRole="header">
@@ -136,8 +143,18 @@ export function ProfileScreen() {
 const styles = StyleSheet.create({
   scroll: { flex: 1, backgroundColor: colors.background },
   container: { padding: spacing.lg, gap: spacing.lg, paddingBottom: spacing.xl * 4 },
-  block: { gap: spacing.sm },
-  email: { fontSize: fontSize.md, fontWeight: fontWeight.semibold, color: colors.textPrimary },
+  block: { gap: spacing.sm, padding: spacing.md, borderRadius: radius.lg, backgroundColor: colors.surfaceTint },
+  account: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+  avatar: {
+    width: minTouchSize + spacing.sm,
+    height: minTouchSize + spacing.sm,
+    borderRadius: radius.pill,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.accent,
+  },
+  avatarInitial: { fontSize: fontSize.lg, fontWeight: fontWeight.bold, color: colors.onAccent },
+  email: { flex: 1, fontSize: fontSize.md, fontWeight: fontWeight.semibold, color: colors.textPrimary },
   sectionTitle: { fontSize: fontSize.lg, fontWeight: fontWeight.bold, color: colors.textPrimary },
   method: { gap: spacing.sm, marginTop: spacing.sm },
   methodName: { fontSize: fontSize.md, fontWeight: fontWeight.semibold, color: colors.textPrimary },

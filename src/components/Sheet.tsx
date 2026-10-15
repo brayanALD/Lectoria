@@ -5,6 +5,10 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '../theme/colors';
 import { radius, spacing } from '../theme/spacing';
 
+// Asa decorativa de la hoja (indica que es una hoja inferior que se puede cerrar).
+const GRABBER_WIDTH = spacing.xl + spacing.sm;
+const GRABBER_HEIGHT = spacing.xs;
+
 interface SheetProps {
   visible: boolean;
   onClose: () => void;
@@ -22,6 +26,7 @@ export function Sheet({ visible, onClose, children }: SheetProps) {
       <KeyboardAvoidingView style={styles.root} behavior="padding">
         <Pressable style={styles.overlay} onPress={onClose} accessibilityRole="button" accessibilityLabel="Cerrar" />
         <View style={[styles.sheet, { paddingBottom: insets.bottom + spacing.md }]} accessibilityViewIsModal>
+          <View style={styles.grabber} accessible={false} importantForAccessibility="no-hide-descendants" />
           {children}
         </View>
       </KeyboardAvoidingView>
@@ -37,7 +42,15 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
     borderTopLeftRadius: radius.md * 2,
     borderTopRightRadius: radius.md * 2,
-    paddingTop: spacing.lg,
+    paddingTop: spacing.sm,
     paddingHorizontal: spacing.lg,
+    gap: spacing.md,
+  },
+  grabber: {
+    alignSelf: 'center',
+    width: GRABBER_WIDTH,
+    height: GRABBER_HEIGHT,
+    borderRadius: radius.pill,
+    backgroundColor: colors.outline,
   },
 });

@@ -14,8 +14,8 @@ export function StatisticsSkeleton() {
     <SkeletonPulse label="Cargando estadísticas">
       <View style={styles.container}>
         <View style={styles.row}>
-          <Skeleton height={minTouchSize} style={[styles.rounded, styles.flex]} />
-          <Skeleton height={minTouchSize} style={[styles.rounded, styles.flex]} />
+          <Skeleton height={minTouchSize} style={[styles.pill, styles.flex]} />
+          <Skeleton height={minTouchSize} style={[styles.pill, styles.flex]} />
         </View>
         <Skeleton width="55%" height={fontSize.md} style={styles.center} />
         <View style={styles.row}>
@@ -37,6 +37,7 @@ const styles = StyleSheet.create({
   container: { flex: 1, padding: spacing.lg, gap: spacing.lg },
   row: { flexDirection: 'row', gap: spacing.sm },
   flex: { flex: 1 },
-  rounded: { borderRadius: radius.md },
+  rounded: { borderRadius: radius.lg },
+  pill: { borderRadius: radius.pill },
   center: { alignSelf: 'center' },
 });

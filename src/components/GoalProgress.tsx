@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { colors } from '../theme/colors';
-import { iconSize, opacity, spacing } from '../theme/spacing';
+import { iconSize, opacity, radius, spacing } from '../theme/spacing';
 import { fontSize, fontWeight } from '../theme/typography';
 import { describeGoalProgress, describeGoalSummary, type GoalProgressInfo } from '../utils/dailyGoal';
 import { ReadingProgress } from './ReadingProgress';
@@ -58,7 +58,7 @@ export function GoalProgress({ progress, past = false, onPress }: GoalProgressPr
 }
 
 const styles = StyleSheet.create({
-  container: { gap: spacing.sm },
+  container: { gap: spacing.sm, padding: spacing.md, borderRadius: radius.lg, backgroundColor: colors.surfaceTint },
   row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.xs },
   statusRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
   summary: { fontSize: fontSize.md, color: colors.textPrimary },

@@ -7,7 +7,7 @@ import { spacing } from '../theme/spacing';
 import { fontSize, fontWeight } from '../theme/typography';
 
 const logo = require('../../assets/logo.png');
-const LOGO_SIZE = spacing.xl + spacing.lg;
+const LOGO_SIZE = spacing.xl * 2 + spacing.sm;
 
 interface AuthLayoutProps {
   children: ReactNode;
@@ -48,7 +48,7 @@ export function AuthLayout({ children, scrollRef }: AuthLayoutProps) {
 const styles = StyleSheet.create({
   flex: { flex: 1, backgroundColor: colors.background },
   content: { flexGrow: 1, paddingHorizontal: spacing.lg, gap: spacing.md },
-  brandRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.md },
+  brandRow: { alignItems: 'center', gap: spacing.sm, marginBottom: spacing.lg },
   logo: { width: LOGO_SIZE, height: LOGO_SIZE },
   brand: { fontSize: fontSize.xl, fontWeight: fontWeight.bold, color: colors.primary },
 });

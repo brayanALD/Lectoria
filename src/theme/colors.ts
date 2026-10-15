@@ -21,12 +21,19 @@ function withAlpha(hex: string, alpha: number): string {
 export const colors = {
   background: palette.porcelain,
   surface: palette.porcelain,
+  /**
+   * Superficie tonal: un velo de Hunter Green sobre Porcelain. Separa cards y bloques de datos del fondo con color en
+   * lugar de bordes o sombras (profundidad sin salir de la paleta). Es decorativa: no define el borde de un control.
+   */
+  surfaceTint: withAlpha(palette.hunterGreen, 0.07),
   textPrimary: palette.evergreen,
   textSecondary: palette.oliveBark,
   primary: palette.hunterGreen,
   onPrimary: palette.porcelain,
   accent: palette.softFawn,
   onAccent: palette.evergreen,
+  /** Dorado suave: fondo de círculos de icono e insignias (el icono o texto encima va en `onAccent`/`primary`). */
+  accentSoft: withAlpha(palette.softFawn, 0.32),
   /** Separadores y bordes decorativos (no definen un control: contraste bajo a propósito). */
   border: withAlpha(palette.evergreen, 0.12),
   /** Borde de controles (campos, buscador, etiquetas): ≥ 3:1 sobre el fondo (WCAG 1.4.11). */

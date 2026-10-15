@@ -6,9 +6,12 @@ export const spacing = {
   xl: 32,
 } as const;
 
+// sm: portadas y detalles pequeños · md: controles (campos, botones) · lg: cards y bloques · pill: etiquetas y barras.
 export const radius = {
   sm: 8,
   md: 12,
+  lg: 18,
+  pill: 999,
 } as const;
 
 // Alto mínimo de los elementos táctiles (pt); WCAG 2.5.8 exige 24 y las guías móviles recomiendan 44-48.

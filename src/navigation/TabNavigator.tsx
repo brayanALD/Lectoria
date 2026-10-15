@@ -6,7 +6,7 @@ import { HomeScreen } from '../screens/app/home/HomeScreen';
 import { LibraryScreen } from '../screens/app/library/LibraryScreen';
 import { ProfileScreen } from '../screens/app/profile/ProfileScreen';
 import { StatisticsScreen } from '../screens/app/statistics/StatisticsScreen';
-import { colors } from '../theme/colors';
+import { headerOptions, tabBarOptions } from './chrome';
 import type { TabParamList } from './types';
 
 const Tab = createBottomTabNavigator<TabParamList>();
@@ -24,10 +24,7 @@ const TABS: { name: keyof TabParamList; title: string; icon: IconName; component
 export function TabNavigator() {
   return (
     <Tab.Navigator
-      screenOptions={{
-        tabBarActiveTintColor: colors.primary,
-        tabBarInactiveTintColor: colors.textSecondary,
-      }}
+      screenOptions={{ ...headerOptions, ...tabBarOptions }}
     >
       {TABS.map(({ name, title, icon, component }) => (
         <Tab.Screen
@@ -36,7 +33,10 @@ export function TabNavigator() {
           component={component}
           options={{
             title,
-            tabBarIcon: ({ color, size }) => <Ionicons name={icon} color={color} size={size} />,
+            // La pestaña activa usa el icono relleno (sin el sufijo «-outline»); las demás, el de contorno.
+            tabBarIcon: ({ color, size, focused }) => (
+              <Ionicons name={(focused ? icon.replace('-outline', '') : icon) as IconName} color={color} size={size} />
+            ),
           }}
         />
       ))}

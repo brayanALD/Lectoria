@@ -82,10 +82,8 @@ export function BookCard({ book, variant = 'list', onPress }: BookCardProps) {
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.md,
+    backgroundColor: colors.surfaceTint,
+    borderRadius: radius.lg,
     padding: spacing.md,
   },
   cardList: { flexDirection: 'row', gap: spacing.md, alignItems: 'flex-start' },
@@ -98,8 +96,8 @@ const styles = StyleSheet.create({
   badgeRow: { flexDirection: 'row', marginVertical: spacing.xs },
   badge: {
     borderWidth: 1,
-    borderRadius: radius.sm,
-    paddingHorizontal: spacing.sm,
+    borderRadius: radius.pill,
+    paddingHorizontal: spacing.sm + spacing.xs,
     paddingVertical: spacing.xs,
   },
   badgeText: { fontSize: fontSize.sm, fontWeight: fontWeight.semibold },

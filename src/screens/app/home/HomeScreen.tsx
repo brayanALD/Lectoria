@@ -17,7 +17,7 @@ import { useSaveDailyGoal } from '../../../hooks/useSaveDailyGoal';
 import { useSessions } from '../../../hooks/useSessions';
 import type { AppStackParamList } from '../../../navigation/types';
 import { colors } from '../../../theme/colors';
-import { iconSize, spacing } from '../../../theme/spacing';
+import { iconSize, minTouchSize, radius, spacing } from '../../../theme/spacing';
 import { fontSize, fontWeight } from '../../../theme/typography';
 import { formatDayLabel } from '../../../utils/calendar';
 import { formatTotals } from '../../../utils/readingStats';
@@ -76,9 +76,14 @@ export function HomeScreen() {
     <>
       <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
         <View style={styles.streak} accessible accessibilityLabel={describeStreak(streaks.current, streaks.longest)}>
-          <Text style={styles.number}>{streaks.current}</Text>
-          <Text style={styles.caption}>{streaks.current === 1 ? 'día seguido' : 'días seguidos'}</Text>
-          {streaks.longest > streaks.current ? <Text style={styles.record}>Récord: {streaks.longest}</Text> : null}
+          <View style={styles.streakText}>
+            <Text style={styles.number}>{streaks.current}</Text>
+            <Text style={styles.caption}>{streaks.current === 1 ? 'día seguido' : 'días seguidos'}</Text>
+            {streaks.longest > streaks.current ? <Text style={styles.record}>Récord: {streaks.longest}</Text> : null}
+          </View>
+          <View style={styles.streakBadge}>
+            <Ionicons name="flame" size={iconSize.lg} color={colors.onAccent} accessible={false} />
+          </View>
         </View>
 
         {goal.progress ? (
@@ -135,7 +140,25 @@ function describeStreak(current: number, longest: number): string {
 const styles = StyleSheet.create({
   scroll: { flex: 1, backgroundColor: colors.background },
   content: { padding: spacing.lg, gap: spacing.xl, paddingBottom: spacing.xl * 2 },
-  streak: { alignItems: 'center', gap: spacing.xs },
+  // La racha es lo único «grande» de Inicio: cifra protagonista y el círculo dorado de marca sobre una superficie tonal.
+  streak: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.md,
+    padding: spacing.lg,
+    borderRadius: radius.lg,
+    backgroundColor: colors.surfaceTint,
+  },
+  streakText: { flex: 1, gap: spacing.xs },
+  streakBadge: {
+    width: minTouchSize + spacing.sm,
+    height: minTouchSize + spacing.sm,
+    borderRadius: radius.pill,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.accent,
+  },
   number: { fontSize: fontSize.xl * STREAK_NUMBER_SCALE, fontWeight: fontWeight.bold, color: colors.primary },
   caption: { fontSize: fontSize.lg, color: colors.textPrimary },
   record: { fontSize: fontSize.sm, color: colors.textSecondary },
