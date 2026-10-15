@@ -5,7 +5,7 @@ import { useMemo } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
-import { BlurTarget } from './src/components/BlurTarget';
+import { BlurTarget, BlurTargetProvider } from './src/components/BlurTarget';
 import { SettingsPanel } from './src/components/SettingsPanel';
 import { StartupScreen } from './src/components/StartupScreen';
 import { AuthProvider } from './src/context/AuthContext';
@@ -64,22 +64,24 @@ function ThemedApp() {
   }, [colors, isDark]);
 
   return (
-    <View style={styles.root}>
-      {/* Con el panel abierto, la app queda detrás (desenfocada) y no recibe el foco de los lectores de pantalla. */}
-      <BlurTarget inert={visible}>
-        <AuthProvider>
-          <ReadingDataProvider>
-            <ReadingTimerProvider>
-              <NavigationContainer theme={navigationTheme}>
-                <AppNavigator />
-              </NavigationContainer>
-            </ReadingTimerProvider>
-          </ReadingDataProvider>
-        </AuthProvider>
-      </BlurTarget>
-      <SettingsPanel />
-      <StatusBar style={isDark ? 'light' : 'dark'} />
-    </View>
+    <BlurTargetProvider>
+      <View style={styles.root}>
+        {/* Con el panel abierto, la app queda detrás (desenfocada) y no recibe el foco de los lectores de pantalla. */}
+        <BlurTarget inert={visible}>
+          <AuthProvider>
+            <ReadingDataProvider>
+              <ReadingTimerProvider>
+                <NavigationContainer theme={navigationTheme}>
+                  <AppNavigator />
+                </NavigationContainer>
+              </ReadingTimerProvider>
+            </ReadingDataProvider>
+          </AuthProvider>
+        </BlurTarget>
+        <SettingsPanel />
+        <StatusBar style={isDark ? 'light' : 'dark'} />
+      </View>
+    </BlurTargetProvider>
   );
 }
 

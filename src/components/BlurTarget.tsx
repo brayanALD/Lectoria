@@ -29,20 +29,24 @@ interface BlurTargetProps {
  * de un `BlurTargetView` de la misma ventana, así que toda la app va dentro y el panel se dibuja como capa superpuesta
  * (no como `Modal`, que es otra ventana).
  */
-export function BlurTarget({ children, inert = false }: BlurTargetProps) {
+/** Comparte el ref del contenido a desenfocar entre `BlurTarget` y `BlurBackdrop`, que son hermanos en la raíz. */
+export function BlurTargetProvider({ children }: { children: ReactNode }) {
   const ref = useRef<View>(null);
+  return <TargetContext.Provider value={ref}>{children}</TargetContext.Provider>;
+}
+
+export function BlurTarget({ children, inert = false }: BlurTargetProps) {
+  const ref = useContext(TargetContext);
   const Target = blur?.BlurTargetView ?? View;
   return (
-    <TargetContext.Provider value={ref}>
-      <Target
-        ref={ref}
-        style={styles.fill}
-        importantForAccessibility={inert ? 'no-hide-descendants' : 'auto'}
-        accessibilityElementsHidden={inert}
-      >
-        {children}
-      </Target>
-    </TargetContext.Provider>
+    <Target
+      ref={ref ?? undefined}
+      style={styles.fill}
+      importantForAccessibility={inert ? 'no-hide-descendants' : 'auto'}
+      accessibilityElementsHidden={inert}
+    >
+      {children}
+    </Target>
   );
 }
 
