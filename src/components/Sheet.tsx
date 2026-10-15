@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import { KeyboardAvoidingView, Modal, Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { colors } from '../theme/colors';
+import { makeStyles } from '../context/ThemeContext';
 import { elevation } from '../theme/elevation';
 import { radius, spacing } from '../theme/spacing';
 
@@ -20,6 +20,7 @@ interface SheetProps {
 // accessibilityViewIsModal evita que el lector de pantalla salga hacia el contenido que queda detrás.
 // KeyboardAvoidingView la levanta cuando el contenido tiene un campo de texto (el Modal es una ventana propia).
 export function Sheet({ visible, onClose, children }: SheetProps) {
+  const styles = useStyles();
   const insets = useSafeAreaInsets();
 
   return (
@@ -35,7 +36,7 @@ export function Sheet({ visible, onClose, children }: SheetProps) {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((colors) => StyleSheet.create({
   root: { flex: 1 },
   overlay: { flex: 1, backgroundColor: colors.overlay },
   sheet: {
@@ -55,4 +56,4 @@ const styles = StyleSheet.create({
     borderRadius: radius.pill,
     backgroundColor: colors.outline,
   },
-});
+}));

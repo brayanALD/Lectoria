@@ -1,6 +1,6 @@
 import { StyleSheet, View } from 'react-native';
 
-import { colors } from '../theme/colors';
+import { makeStyles } from '../context/ThemeContext';
 import { minTouchSize, radius, spacing } from '../theme/spacing';
 import { fontSize } from '../theme/typography';
 import { Skeleton, SkeletonPulse } from './Skeleton';
@@ -11,6 +11,7 @@ const CHART_HEIGHT = minTouchSize * 2;
 
 /** Silueta de Estadísticas: el selector de vista, el encabezado del periodo, las cifras y el gráfico. */
 export function StatisticsSkeleton() {
+  const styles = useStyles();
   return (
     <SkeletonPulse label="Cargando estadísticas">
       <View style={styles.container}>
@@ -36,7 +37,7 @@ export function StatisticsSkeleton() {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((colors) => StyleSheet.create({
   container: { flex: 1, padding: spacing.lg, gap: spacing.lg },
   row: { flexDirection: 'row', gap: spacing.sm },
   flex: { flex: 1 },
@@ -45,4 +46,4 @@ const styles = StyleSheet.create({
   center: { alignSelf: 'center' },
   // Igual que `section` de StatisticsScreen: tarjeta tonal.
   card: { gap: spacing.sm, padding: spacing.md, borderRadius: radius.lg, backgroundColor: colors.surfaceTint },
-});
+}));

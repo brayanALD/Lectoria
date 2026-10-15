@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 
-import { colors } from '../theme/colors';
+import { makeStyles, useTheme } from '../context/ThemeContext';
 import { minTouchSize, opacity, radius, spacing } from '../theme/spacing';
 import { fontFamily, fontSize } from '../theme/typography';
 import { PressableScale } from './PressableScale';
@@ -26,6 +26,8 @@ export function Button({
   loading = false,
   disabled = false,
 }: ButtonProps) {
+  const styles = useStyles();
+  const { colors } = useTheme();
   const inactive = disabled || loading;
   const isPrimary = variant === 'primary';
   const isGoogle = variant === 'google';
@@ -64,7 +66,7 @@ export function Button({
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((colors) => StyleSheet.create({
   base: {
     minHeight: minTouchSize,
     borderRadius: radius.lg,
@@ -80,4 +82,4 @@ const styles = StyleSheet.create({
   disabled: { opacity: opacity.disabled },
   content: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   label: { fontSize: fontSize.md, fontFamily: fontFamily.semibold },
-});
+}));

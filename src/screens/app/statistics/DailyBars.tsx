@@ -1,6 +1,6 @@
 import { StyleSheet, Text, View } from 'react-native';
 
-import { colors } from '../../../theme/colors';
+import { makeStyles } from '../../../context/ThemeContext';
 import { minTouchSize, spacing } from '../../../theme/spacing';
 import { fontFamily, fontSize } from '../../../theme/typography';
 import type { DayPoint } from '../../../utils/statistics';
@@ -27,6 +27,7 @@ const SWATCH_SIZE = spacing.sm + spacing.xs;
  * vista «Día» y en el Calendario.
  */
 export function DailyBars({ points, goalValue, accessibilityLabel }: DailyBarsProps) {
+  const styles = useStyles();
   const scaleMax = Math.max(1, goalValue ?? 0, ...points.map((point) => point.value));
   const hasGoal = goalValue !== undefined;
   const firstDay = Number(points[0]?.dateKey.slice(8));
@@ -65,6 +66,7 @@ export function DailyBars({ points, goalValue, accessibilityLabel }: DailyBarsPr
 }
 
 function LegendItem({ label, swatch }: { label: string; swatch: object }) {
+  const styles = useStyles();
   return (
     <View style={styles.legendItem}>
       <View style={swatch} />
@@ -73,7 +75,7 @@ function LegendItem({ label, swatch }: { label: string; swatch: object }) {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((colors) => StyleSheet.create({
   container: { gap: spacing.sm },
   chart: { gap: spacing.xs },
   plot: {
@@ -97,4 +99,4 @@ const styles = StyleSheet.create({
   swatch: { width: SWATCH_SIZE, height: SWATCH_SIZE, borderRadius: GOAL_LINE_HEIGHT * 2 },
   swatchLine: { width: SWATCH_SIZE, height: GOAL_LINE_HEIGHT, backgroundColor: colors.textSecondary },
   legendLabel: { fontSize: fontSize.xs, fontFamily: fontFamily.regular, color: colors.textSecondary },
-});
+}));

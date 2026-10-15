@@ -1,5 +1,3 @@
-import { Appearance } from 'react-native';
-
 // Paleta oficial de Lectoria (docs/palette-original.txt). No modificar estos valores.
 export const palette = {
   evergreen: '#14281D',
@@ -111,12 +109,3 @@ const darkColors: ColorTokens = {
 };
 
 export { darkColors, lightColors };
-
-/**
- * ¿La app arrancó con el tema oscuro del sistema? Se decide UNA vez, al cargar la app: los estilos se crean con estos
- * valores al importarse, así que un cambio de tema del sistema con la app abierta se aplica al volver a abrirla.
- */
-export const isDark = Appearance.getColorScheme() === 'dark';
-
-/** Los tokens del tema activo: lo único que usan los componentes. */
-export const colors: ColorTokens = isDark ? darkColors : lightColors;

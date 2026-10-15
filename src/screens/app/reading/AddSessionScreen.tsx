@@ -19,7 +19,7 @@ import type { AppStackParamList } from '../../../navigation/types';
 import { createSession, updateSession } from '../../../services/sessionsService';
 import type { UserBookWithId } from '../../../types/book';
 import type { ReadingSessionWithId, SessionFormErrors } from '../../../types/session';
-import { colors } from '../../../theme/colors';
+import { makeStyles } from '../../../context/ThemeContext';
 import { minTouchSize, spacing } from '../../../theme/spacing';
 import { fontFamily, fontSize } from '../../../theme/typography';
 import { dateForDay, formatDayLabel, resolveDayKey } from '../../../utils/calendar';
@@ -109,6 +109,7 @@ interface SessionFormProps {
 }
 
 function SessionForm({ navigation, books, sessions, fixedBookId, editing, draft, day }: SessionFormProps) {
+  const styles = useStyles();
   const { user } = useAuth();
   const { discard } = useReadingTimer();
   const { readingDays, todayKey } = useReadingStats();
@@ -330,9 +331,9 @@ function SessionForm({ navigation, books, sessions, fixedBookId, editing, draft,
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((colors) => StyleSheet.create({
   flex: { flex: 1, backgroundColor: colors.background },
   content: { padding: spacing.lg, gap: spacing.md, paddingBottom: spacing.xl * 3 },
   notes: { minHeight: minTouchSize * 2, textAlignVertical: 'top', paddingTop: spacing.sm },
   error: { fontSize: fontSize.sm, fontFamily: fontFamily.regular, color: colors.error },
-});
+}));

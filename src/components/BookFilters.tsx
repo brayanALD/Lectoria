@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { colors } from '../theme/colors';
+import { makeStyles, useTheme } from '../context/ThemeContext';
 import { iconSize, minTouchSize, opacity, radius, spacing } from '../theme/spacing';
 import { fontFamily, fontSize, maxFontScale } from '../theme/typography';
 import { READING_STATUSES, READING_STATUS_LABELS } from '../utils/book';
@@ -30,6 +30,8 @@ const BADGE_SIZE = spacing.md + spacing.xs;
 
 /** Búsqueda de texto, filtro por estado (siempre visible) y hoja con los filtros de género, autor y saga. */
 export function BookFilters({ filters, onChange, options }: BookFiltersProps) {
+  const styles = useStyles();
+  const { colors } = useTheme();
   const [sheetOpen, setSheetOpen] = useState(false);
   const insets = useSafeAreaInsets();
   const activeCount = countActiveFilters({ ...filters, status: null });
@@ -157,7 +159,7 @@ export function BookFilters({ filters, onChange, options }: BookFiltersProps) {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((colors) => StyleSheet.create({
   container: { gap: spacing.sm, paddingTop: spacing.sm },
   searchRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingHorizontal: spacing.lg },
   search: {
@@ -202,4 +204,4 @@ const styles = StyleSheet.create({
   sectionTitle: { fontSize: fontSize.md, fontFamily: fontFamily.semibold, color: colors.textPrimary },
   wrap: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   sheetActions: { gap: spacing.sm, paddingHorizontal: spacing.lg },
-});
+}));

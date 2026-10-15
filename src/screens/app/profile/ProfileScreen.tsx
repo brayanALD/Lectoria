@@ -4,13 +4,14 @@ import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Button } from '../../../components/Button';
 import { TextField } from '../../../components/TextField';
 import { useAuth } from '../../../context/AuthContext';
-import { colors } from '../../../theme/colors';
+import { makeStyles } from '../../../context/ThemeContext';
 import { minTouchSize, radius, spacing } from '../../../theme/spacing';
 import { fontFamily, fontSize } from '../../../theme/typography';
 import { getAuthErrorMessage } from '../../../utils/authErrors';
 import { MIN_PASSWORD_LENGTH, isValidPassword } from '../../../utils/validation';
 
 export function ProfileScreen() {
+  const styles = useStyles();
   const { user, hasGoogle, hasPassword, linkGoogle, linkPassword, signOut } = useAuth();
   const [linkingGoogle, setLinkingGoogle] = useState(false);
   const [showPasswordForm, setShowPasswordForm] = useState(false);
@@ -140,7 +141,7 @@ export function ProfileScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((colors) => StyleSheet.create({
   scroll: { flex: 1, backgroundColor: colors.background },
   container: { padding: spacing.lg, gap: spacing.lg, paddingBottom: spacing.xl * 4 },
   block: { gap: spacing.sm, padding: spacing.md, borderRadius: radius.lg, backgroundColor: colors.surfaceTint },
@@ -161,4 +162,4 @@ const styles = StyleSheet.create({
   linked: { fontSize: fontSize.md, fontFamily: fontFamily.regular, color: colors.success },
   form: { gap: spacing.md },
   error: { fontSize: fontSize.sm, fontFamily: fontFamily.regular, color: colors.error },
-});
+}));

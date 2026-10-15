@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { colors } from '../theme/colors';
+import { makeStyles, useTheme } from '../context/ThemeContext';
 import { iconSize, minTouchSize, opacity, radius, spacing } from '../theme/spacing';
 import { fontFamily, fontSize } from '../theme/typography';
 
@@ -16,6 +16,8 @@ interface PickerRowProps {
 
 // Campo que se elige en una hoja en lugar de escribirse; se ve igual que un `TextField`.
 export function PickerRow({ label, value, icon, onPress, error }: PickerRowProps) {
+  const styles = useStyles();
+  const { colors } = useTheme();
   const body = (
     <View style={[styles.field, error ? styles.fieldError : null]}>
       <Text style={styles.fieldValue} numberOfLines={1}>
@@ -52,7 +54,7 @@ export function PickerRow({ label, value, icon, onPress, error }: PickerRowProps
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((colors) => StyleSheet.create({
   group: { gap: spacing.xs },
   label: { fontSize: fontSize.sm, fontFamily: fontFamily.semibold, color: colors.textPrimary },
   field: {
@@ -71,4 +73,4 @@ const styles = StyleSheet.create({
   fieldValue: { flex: 1, fontSize: fontSize.md, fontFamily: fontFamily.regular, color: colors.textPrimary },
   pressed: { opacity: opacity.pressed },
   error: { fontSize: fontSize.sm, fontFamily: fontFamily.regular, color: colors.error },
-});
+}));

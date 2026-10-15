@@ -5,7 +5,7 @@ import { Button } from '../../../components/Button';
 import { Sheet } from '../../../components/Sheet';
 import { TextField } from '../../../components/TextField';
 import type { UserBookWithId } from '../../../types/book';
-import { colors } from '../../../theme/colors';
+import { makeStyles } from '../../../context/ThemeContext';
 import { spacing } from '../../../theme/spacing';
 import { fontFamily, fontSize } from '../../../theme/typography';
 import { getFirestoreErrorMessage } from '../../../utils/firestoreErrors';
@@ -23,6 +23,7 @@ const MAX_DIGITS = 6;
 
 /** Hoja para cambiar a mano la página en la que va un libro. */
 export function ProgressAdjustSheet({ visible, onClose, book, onSave }: ProgressAdjustSheetProps) {
+  const styles = useStyles();
   const [text, setText] = useState(String(book.currentPage));
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -79,7 +80,7 @@ export function ProgressAdjustSheet({ visible, onClose, book, onSave }: Progress
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((colors) => StyleSheet.create({
   content: { gap: spacing.md },
   total: { fontSize: fontSize.sm, fontFamily: fontFamily.regular, color: colors.textSecondary },
-});
+}));

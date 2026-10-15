@@ -17,7 +17,7 @@ import { useReadingStats } from '../../../hooks/useReadingStats';
 import { useSaveDailyGoal } from '../../../hooks/useSaveDailyGoal';
 import { useSessions } from '../../../hooks/useSessions';
 import type { AppStackParamList } from '../../../navigation/types';
-import { colors } from '../../../theme/colors';
+import { makeStyles, useTheme } from '../../../context/ThemeContext';
 import { iconSize, minTouchSize, radius, spacing } from '../../../theme/spacing';
 import { fontFamily, fontSize } from '../../../theme/typography';
 import { formatDayLabel } from '../../../utils/calendar';
@@ -32,6 +32,8 @@ const RECENT_ACTIVITY_COUNT = 5;
 const STAGGER_MS = 70;
 
 export function HomeScreen() {
+  const styles = useStyles();
+  const { colors } = useTheme();
   const navigation = useNavigation<NativeStackNavigationProp<AppStackParamList>>();
   const books = useBooks();
   const sessions = useSessions();
@@ -148,7 +150,7 @@ function describeStreak(current: number, longest: number): string {
   return longest > current ? `Racha de ${days(current)}. Récord: ${longest}.` : `Racha de ${days(current)}.`;
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((colors) => StyleSheet.create({
   scroll: { flex: 1, backgroundColor: colors.background },
   content: { padding: spacing.lg, gap: spacing.xl, paddingBottom: spacing.xl * 2 },
   // La racha es lo único «grande» de Inicio: cifra protagonista y el círculo dorado de marca sobre una superficie tonal.
@@ -186,4 +188,4 @@ const styles = StyleSheet.create({
   },
   emptyTitle: { fontSize: fontSize.md, fontFamily: fontFamily.regular, color: colors.textSecondary, textAlign: 'center' },
   error: { fontSize: fontSize.sm, fontFamily: fontFamily.regular, color: colors.error },
-});
+}));

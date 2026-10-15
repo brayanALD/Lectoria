@@ -1,4 +1,4 @@
-import { colors } from './colors';
+import { palette } from './colors';
 
 // Sombras: la profundidad que no basta con la superficie tonal. Cada nivel define la sombra de iOS (`shadow*`) y la de
 // Android (`elevation`); se aplican con `...elevation.low` en el estilo. El fondo del elemento debe ser OPACO (por eso
@@ -7,7 +7,7 @@ import { colors } from './colors';
 export const elevation = {
   /** Cards pulsables (libros, acciones de lectura): un apoyo sutil sobre el fondo. */
   low: {
-    shadowColor: colors.shadow,
+    shadowColor: palette.evergreen,
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.12,
     shadowRadius: 3,
@@ -15,7 +15,7 @@ export const elevation = {
   },
   /** Hojas inferiores: la sombra se proyecta hacia arriba, sobre el contenido que tapan. */
   high: {
-    shadowColor: colors.shadow,
+    shadowColor: palette.evergreen,
     shadowOffset: { width: 0, height: -3 },
     shadowOpacity: 0.18,
     shadowRadius: 10,

@@ -157,7 +157,7 @@ La paleta no define un color de error. Se propone `#B3261E` (claro) y `#F0A19B` 
 | **Soft Fawn / Porcelain** | **2,08:1** | **No usar para texto ni iconos informativos sobre fondo claro** |
 | Hunter Green / Evergreen | 1,92:1 | No usar juntos |
 
-Regla: los tokens se centralizan en `src/theme/colors.ts`; nunca se escriben colores sueltos en componentes.
+Regla: los tokens se centralizan en `src/theme/colors.ts`; nunca se escriben colores sueltos en componentes, que reciben los del tema activo con `useTheme()` / `makeStyles`.
 
 ## 6. Modelo de datos (Firestore)
 
@@ -414,7 +414,7 @@ Orden de la Fase 1 (plantilla): theme → AuthContext → AppNavigator → Login
 
 1. ~~Versión exacta de Expo/SDK~~ — resuelto: SDK 57 (sección 2).
 2. ~~Proveedor bibliográfico~~ — resuelto: Open Library (sección 8).
-3. ~~Tema oscuro~~ — resuelto (2026-10-14): implementado siguiendo al sistema; faltan el conmutador interno y el cambio en vivo.
+3. ~~Tema oscuro~~ — resuelto (2026-10-14): tema claro y oscuro con conmutador en el panel de Configuración (tuerca de las pestañas), cambio en vivo y elección guardada por dispositivo; si nunca se elige, sigue al sistema.
 4. Comportamiento sin conexión: la sesión se persiste con AsyncStorage (`getReactNativePersistence`, implementado en la Fase 1 pero **aún no probado en un dispositivo**). La caché sin conexión de Firestore en React Native sigue **por verificar**; 1.0 solo exige recuperar datos al reabrir con conexión.
 5. Objetivos anuales y unidades para el objetivo mensual. (El objetivo diario en páginas ya está resuelto, 2026-10-13.)
 6. Entidades propias de autores y sagas (1.2); caché compartida de catálogo.

@@ -1,12 +1,14 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Pressable, StyleSheet, Text } from 'react-native';
 
-import { colors } from '../theme/colors';
+import { makeStyles, useTheme } from '../context/ThemeContext';
 import { iconSize, minTouchSize, opacity, spacing } from '../theme/spacing';
 import { fontFamily, fontSize } from '../theme/typography';
 
 /** «Fijar meta diaria»: lo que se ofrece donde iría el progreso de la meta cuando todavía no hay ninguna. */
 export function SetGoalLink({ onPress }: { onPress: () => void }) {
+  const styles = useStyles();
+  const { colors } = useTheme();
   return (
     <Pressable
       accessibilityRole="button"
@@ -20,7 +22,7 @@ export function SetGoalLink({ onPress }: { onPress: () => void }) {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((colors) => StyleSheet.create({
   link: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -30,4 +32,4 @@ const styles = StyleSheet.create({
   },
   label: { fontSize: fontSize.md, fontFamily: fontFamily.semibold, color: colors.primary },
   pressed: { opacity: opacity.pressed },
-});
+}));

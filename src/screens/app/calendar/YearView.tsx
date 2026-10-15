@@ -1,7 +1,7 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { PeriodHeader } from '../../../components/PeriodHeader';
-import { colors } from '../../../theme/colors';
+import { makeStyles } from '../../../context/ThemeContext';
 import { minTouchSize, opacity, radius, spacing } from '../../../theme/spacing';
 import { fontFamily, fontSize, maxFontScale } from '../../../theme/typography';
 import { formatMonthLabel, formatMonthShort } from '../../../utils/calendar';
@@ -23,6 +23,7 @@ const TILE_WIDTH = `${100 / COLUMNS - 3}%` as const;
 
 /** Año completo: un recuadro por mes con sus días de lectura. Tocar un mes abre su vista mensual. */
 export function YearView({ year, onYearChange, today, days, onSelectMonth }: YearViewProps) {
+  const styles = useStyles();
   const { months, total } = summarizeYear(days, year);
 
   return (
@@ -80,7 +81,7 @@ export function YearView({ year, onYearChange, today, days, onSelectMonth }: Yea
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((colors) => StyleSheet.create({
   container: { gap: spacing.xs },
   totals: { fontSize: fontSize.md, fontFamily: fontFamily.regular, color: colors.textSecondary, textAlign: 'center', marginBottom: spacing.xs },
   grid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', rowGap: spacing.sm },
@@ -104,4 +105,4 @@ const styles = StyleSheet.create({
   days: { fontSize: fontSize.lg, fontFamily: fontFamily.bold, color: colors.textPrimary },
   track: { alignSelf: 'stretch', height: BAR_HEIGHT, borderRadius: BAR_HEIGHT / 2, backgroundColor: colors.border, overflow: 'hidden' },
   bar: { height: '100%', borderRadius: BAR_HEIGHT / 2, backgroundColor: colors.primary },
-});
+}));

@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { colors } from '../theme/colors';
+import { makeStyles, useTheme } from '../context/ThemeContext';
 import { iconSize, minTouchSize, opacity, spacing } from '../theme/spacing';
 import { fontFamily, fontSize } from '../theme/typography';
 
@@ -19,6 +19,8 @@ interface SessionRowProps {
 
 /** Una sesión de lectura en una lista. Es la misma fila en Inicio, el Calendario y el detalle del libro. */
 export function SessionRow({ title, detail, notes, onPress, onEdit, onDelete }: SessionRowProps) {
+  const styles = useStyles();
+  const { colors } = useTheme();
   const text = (
     <>
       <Text style={styles.title} numberOfLines={2}>
@@ -68,7 +70,7 @@ export function SessionRow({ title, detail, notes, onPress, onEdit, onDelete }: 
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((colors) => StyleSheet.create({
   item: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -84,4 +86,4 @@ const styles = StyleSheet.create({
   notes: { fontSize: fontSize.sm, fontFamily: fontFamily.regular, color: colors.textPrimary },
   action: { width: minTouchSize, height: minTouchSize, alignItems: 'center', justifyContent: 'center' },
   pressed: { opacity: opacity.pressed },
-});
+}));

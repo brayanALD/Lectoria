@@ -18,7 +18,7 @@ import { useReadingStats } from '../../../hooks/useReadingStats';
 import { useSaveDailyGoal } from '../../../hooks/useSaveDailyGoal';
 import { useSessions } from '../../../hooks/useSessions';
 import type { AppStackParamList } from '../../../navigation/types';
-import { colors } from '../../../theme/colors';
+import { makeStyles, useTheme } from '../../../context/ThemeContext';
 import { iconSize, opacity, radius, spacing } from '../../../theme/spacing';
 import { fontFamily, fontSize } from '../../../theme/typography';
 import {
@@ -49,6 +49,8 @@ const MODES: { mode: Mode; label: string }[] = [
  * sesión. La meta diaria, en minutos o en páginas, se integra en las dos vistas.
  */
 export function StatisticsScreen() {
+  const styles = useStyles();
+  const { colors } = useTheme();
   const navigation = useNavigation<NativeStackNavigationProp<AppStackParamList>>();
   const sessions = useSessions();
   const books = useBooks();
@@ -214,7 +216,7 @@ function describeStreaks(current: number, longest: number): string {
   return `Racha actual de ${days(current)}. Récord de ${days(longest)}.`;
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((colors) => StyleSheet.create({
   scroll: { flex: 1, backgroundColor: colors.background },
   content: { padding: spacing.lg, gap: spacing.lg, paddingBottom: spacing.xl * 2 },
   switch: { flexDirection: 'row', gap: spacing.sm },
@@ -227,4 +229,4 @@ const styles = StyleSheet.create({
   goalTarget: { fontSize: fontSize.sm, fontFamily: fontFamily.regular, color: colors.textSecondary },
   streak: { fontSize: fontSize.md, fontFamily: fontFamily.regular, color: colors.textSecondary, textAlign: 'center' },
   pressed: { opacity: opacity.pressed },
-});
+}));

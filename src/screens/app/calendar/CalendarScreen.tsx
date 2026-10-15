@@ -13,7 +13,7 @@ import { useDeleteSession } from '../../../hooks/useDeleteSession';
 import { useReadingStats } from '../../../hooks/useReadingStats';
 import { useSessions } from '../../../hooks/useSessions';
 import type { AppStackParamList } from '../../../navigation/types';
-import { colors } from '../../../theme/colors';
+import { makeStyles } from '../../../context/ThemeContext';
 import { spacing } from '../../../theme/spacing';
 import { fontFamily, fontSize } from '../../../theme/typography';
 import { compareMonths, cursorForMonth, monthOf, startOfWeek } from '../../../utils/calendar';
@@ -30,6 +30,7 @@ const VIEWS: { mode: ViewMode; label: string }[] = [
 ];
 
 export function CalendarScreen() {
+  const styles = useStyles();
   const navigation = useNavigation<NativeStackNavigationProp<AppStackParamList>>();
   const { sessions, loading, error, retry } = useSessions();
   const { books, loading: booksLoading } = useBooks();
@@ -168,10 +169,10 @@ export function CalendarScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((colors) => StyleSheet.create({
   scroll: { flex: 1, backgroundColor: colors.background },
   content: { padding: spacing.lg, gap: spacing.lg, paddingBottom: spacing.xl * 2 },
   switch: { flexDirection: 'row', gap: spacing.sm },
   switchItem: { flex: 1 },
   error: { fontSize: fontSize.sm, fontFamily: fontFamily.regular, color: colors.error },
-});
+}));

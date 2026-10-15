@@ -1,6 +1,6 @@
 import { StyleSheet, View } from 'react-native';
 
-import { colors } from '../theme/colors';
+import { makeStyles } from '../context/ThemeContext';
 import { minTouchSize, radius, spacing } from '../theme/spacing';
 import { fontSize } from '../theme/typography';
 import { SessionRowsSkeleton } from './BookSkeletons';
@@ -11,6 +11,7 @@ const ACTION_CARD_HEIGHT = minTouchSize * 2.5;
 
 /** Silueta de Inicio: la racha, la meta diaria, las dos cards de lectura y la actividad reciente. */
 export function HomeSkeleton() {
+  const styles = useStyles();
   return (
     <SkeletonPulse label="Cargando inicio">
       <View style={styles.container}>
@@ -43,7 +44,7 @@ export function HomeSkeleton() {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((colors) => StyleSheet.create({
   container: { flex: 1, padding: spacing.lg, gap: spacing.xl },
   streak: {
     flexDirection: 'row',
@@ -61,4 +62,4 @@ const styles = StyleSheet.create({
   card: { flex: 1 },
   activity: { gap: spacing.sm },
   rounded: { borderRadius: radius.lg },
-});
+}));

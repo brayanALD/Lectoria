@@ -8,7 +8,7 @@ import { GoogleSignInButton } from '../../components/GoogleSignInButton';
 import { TextField } from '../../components/TextField';
 import { useAuth } from '../../context/AuthContext';
 import type { AuthStackParamList } from '../../navigation/types';
-import { colors } from '../../theme/colors';
+import { makeStyles } from '../../context/ThemeContext';
 import { fontFamily, fontSize } from '../../theme/typography';
 import { getAuthErrorMessage } from '../../utils/authErrors';
 import { isValidEmail } from '../../utils/validation';
@@ -16,6 +16,7 @@ import { isValidEmail } from '../../utils/validation';
 type Props = NativeStackScreenProps<AuthStackParamList, 'Login'>;
 
 export function LoginScreen({ navigation }: Props) {
+  const styles = useStyles();
   const { signIn } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -76,6 +77,6 @@ export function LoginScreen({ navigation }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((colors) => StyleSheet.create({
   error: { fontSize: fontSize.sm, fontFamily: fontFamily.regular, color: colors.error },
-});
+}));

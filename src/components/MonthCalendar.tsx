@@ -1,6 +1,6 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { colors } from '../theme/colors';
+import { makeStyles, useTheme } from '../context/ThemeContext';
 import { minTouchSize, opacity, spacing } from '../theme/spacing';
 import { fontFamily, fontSize, maxFontScale } from '../theme/typography';
 import {
@@ -46,6 +46,8 @@ export function MonthCalendar({
   maxKey,
   onSelect,
 }: MonthCalendarProps) {
+  const styles = useStyles();
+  const { colors } = useTheme();
   const rows = getMonthGrid(month);
   const canGoForward = !maxKey || compareMonths(month, monthOf(maxKey)) < 0;
 
@@ -108,7 +110,7 @@ export function MonthCalendar({
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((colors) => StyleSheet.create({
   container: { gap: spacing.xs },
   row: { flexDirection: 'row' },
   weekday: {
@@ -126,4 +128,4 @@ const styles = StyleSheet.create({
   // El punto siempre ocupa su sitio (transparente si no hay lectura) para que las filas no cambien de altura.
   dot: { width: DOT_SIZE, height: DOT_SIZE, borderRadius: DOT_SIZE / 2 },
   disabled: { opacity: opacity.disabled },
-});
+}));

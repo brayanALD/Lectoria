@@ -9,9 +9,10 @@ import { BookFilters } from '../../../components/BookFilters';
 import { Button } from '../../../components/Button';
 import { EmptyState } from '../../../components/EmptyState';
 import { LibrarySkeleton } from '../../../components/BookSkeletons';
+import { SettingsButton } from '../../../components/SettingsButton';
 import { useBooks } from '../../../hooks/useBooks';
 import type { AppStackParamList } from '../../../navigation/types';
-import { colors } from '../../../theme/colors';
+import { makeStyles, useTheme } from '../../../context/ThemeContext';
 import { iconSize, minTouchSize, opacity, radius, spacing } from '../../../theme/spacing';
 import { fontFamily, fontSize } from '../../../theme/typography';
 import { formatFilteredBookCount } from '../../../utils/book';
@@ -22,6 +23,8 @@ type ViewMode = 'list' | 'grid';
 const GRID_COLUMNS = 2;
 
 export function LibraryScreen() {
+  const styles = useStyles();
+  const { colors } = useTheme();
   const { books, loading, error, retry } = useBooks();
   const [mode, setMode] = useState<ViewMode>('list');
   const [filters, setFilters] = useState<BookFilterState>(EMPTY_FILTERS);
@@ -35,19 +38,22 @@ export function LibraryScreen() {
   useLayoutEffect(() => {
     navigation.setOptions({
       headerRight: () => (
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Añadir libro"
-          onPress={openAddBook}
-          hitSlop={spacing.sm}
-          style={({ pressed }) => [styles.headerButton, pressed && styles.pressed]}
-        >
-          <Ionicons name="add" size={iconSize.lg} color={colors.primary} />
-        </Pressable>
+        <View style={styles.headerActions}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Añadir libro"
+            onPress={openAddBook}
+            hitSlop={spacing.sm}
+            style={({ pressed }) => [styles.headerButton, pressed && styles.pressed]}
+          >
+            <Ionicons name="add" size={iconSize.lg} color={colors.primary} />
+          </Pressable>
+          <SettingsButton />
+        </View>
       ),
     });
-    // openAddBook solo depende de `navigation`, que es estable.
-  }, [navigation]);
+    // openAddBook solo depende de `navigation`, que es estable; el botón se repinta al cambiar el tema.
+  }, [navigation, styles, colors]);
 
   if (loading) return <LibrarySkeleton grid={mode === 'grid'} />;
 
@@ -133,10 +139,11 @@ export function LibraryScreen() {
 }
 
 function ListSeparator() {
+  const styles = useStyles();
   return <View style={styles.separator} />;
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((colors) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   banner: {
     margin: spacing.md,
@@ -158,6 +165,7 @@ const styles = StyleSheet.create({
   count: { fontSize: fontSize.sm, fontFamily: fontFamily.semibold, color: colors.textSecondary },
   toggle: { width: minTouchSize, height: minTouchSize, alignItems: 'center', justifyContent: 'center' },
   pressed: { opacity: opacity.pressed },
+  headerActions: { flexDirection: 'row', alignItems: 'center' },
   headerButton: { width: minTouchSize, height: minTouchSize, alignItems: 'center', justifyContent: 'center' },
   listContent: { padding: spacing.lg, paddingTop: spacing.sm, paddingBottom: spacing.xl * 2 },
   growContent: { flexGrow: 1 },
@@ -165,4 +173,4 @@ const styles = StyleSheet.create({
   gridRow: { gap: spacing.md, marginBottom: spacing.md },
   // maxWidth evita que una última fila con un solo libro lo estire a todo el ancho.
   gridCell: { flex: 1, maxWidth: `${100 / GRID_COLUMNS}%` },
-});
+}));

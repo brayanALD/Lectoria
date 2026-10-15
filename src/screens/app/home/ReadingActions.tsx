@@ -4,7 +4,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import { PressableScale } from '../../../components/PressableScale';
 import { useReadingTimer } from '../../../context/ReadingTimerContext';
 import { useNow } from '../../../hooks/useNow';
-import { colors } from '../../../theme/colors';
+import { makeStyles, useTheme } from '../../../context/ThemeContext';
 import { elevation } from '../../../theme/elevation';
 import { iconSize, minTouchSize, opacity, radius, spacing } from '../../../theme/spacing';
 import { fontFamily, fontSize } from '../../../theme/typography';
@@ -26,6 +26,7 @@ const CARD_MIN_HEIGHT = minTouchSize * 2.5;
  * alternativa (fondo claro). Se distinguen por relleno, icono y nombre, no solo por color.
  */
 export function ReadingActions({ onRegister, onOpenTimer }: ReadingActionsProps) {
+  const styles = useStyles();
   return (
     <View style={styles.row}>
       <RegisterCard onPress={onRegister} />
@@ -36,6 +37,8 @@ export function ReadingActions({ onRegister, onOpenTimer }: ReadingActionsProps)
 
 /** El círculo dorado (`accent`) con el icono: la marca de identidad que comparten las dos cards. */
 function CardBadge({ icon }: { icon: keyof typeof Ionicons.glyphMap }) {
+  const styles = useStyles();
+  const { colors } = useTheme();
   return (
     <View style={styles.badge}>
       <Ionicons name={icon} size={iconSize.lg} color={colors.onAccent} accessible={false} />
@@ -44,6 +47,8 @@ function CardBadge({ icon }: { icon: keyof typeof Ionicons.glyphMap }) {
 }
 
 function RegisterCard({ onPress }: { onPress: () => void }) {
+  const styles = useStyles();
+  const { colors } = useTheme();
   return (
     <PressableScale
       containerStyle={styles.cell}
@@ -63,6 +68,8 @@ function RegisterCard({ onPress }: { onPress: () => void }) {
  * leyendo o en pausa. Tiene su propio reloj para que solo esta card se repinte cada segundo.
  */
 function TimerCard({ onPress }: { onPress: () => void }) {
+  const styles = useStyles();
+  const { colors } = useTheme();
   const { timer } = useReadingTimer();
   const running = timer ? isTimerRunning(timer) : false;
   const now = useNow(running ? TICK_MS : undefined);
@@ -93,7 +100,7 @@ function TimerCard({ onPress }: { onPress: () => void }) {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((colors) => StyleSheet.create({
   // Solo reparte el ancho entre las dos cards: sin borde ni fondo, para que no parezcan un solo módulo.
   row: { flexDirection: 'row', gap: spacing.md },
   // Contenedor animado de cada card: reparte la fila a partes iguales (la card lo rellena).
@@ -129,4 +136,4 @@ const styles = StyleSheet.create({
   time: { fontSize: fontSize.lg, fontFamily: fontFamily.bold, fontVariant: ['tabular-nums'] },
   status: { alignItems: 'center', gap: spacing.xs },
   caption: { fontSize: fontSize.sm, fontFamily: fontFamily.regular, color: colors.textSecondary },
-});
+}));

@@ -1,6 +1,6 @@
 import { Pressable, StyleSheet, Text } from 'react-native';
 
-import { colors } from '../theme/colors';
+import { makeStyles, useTheme } from '../context/ThemeContext';
 import { minTouchSize, opacity, radius, spacing } from '../theme/spacing';
 import { fontFamily, fontSize, maxFontScale } from '../theme/typography';
 
@@ -13,6 +13,8 @@ interface ChipProps {
 
 // Etiqueta pulsable de selección (filtros). La seleccionada se distingue por el fondo relleno, no solo por el color.
 export function Chip({ label, selected, onPress, accessibilityLabel }: ChipProps) {
+  const styles = useStyles();
+  const { colors } = useTheme();
   return (
     <Pressable
       accessibilityRole="button"
@@ -32,7 +34,7 @@ export function Chip({ label, selected, onPress, accessibilityLabel }: ChipProps
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((colors) => StyleSheet.create({
   chip: {
     minHeight: minTouchSize,
     paddingHorizontal: spacing.md,
@@ -45,4 +47,4 @@ const styles = StyleSheet.create({
   selected: { backgroundColor: colors.primary, borderColor: colors.primary },
   pressed: { opacity: opacity.pressed },
   label: { fontSize: fontSize.sm, fontFamily: fontFamily.semibold },
-});
+}));

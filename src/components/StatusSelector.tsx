@@ -1,7 +1,7 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import type { ReadingStatus } from '../types/book';
-import { colors } from '../theme/colors';
+import { makeStyles, useTheme } from '../context/ThemeContext';
 import { minTouchSize, opacity, radius, spacing } from '../theme/spacing';
 import { fontFamily, fontSize, maxFontScale } from '../theme/typography';
 import { READING_STATUSES, READING_STATUS_LABELS } from '../utils/book';
@@ -24,6 +24,8 @@ export function StatusSelector({
   onChange,
   error,
 }: StatusSelectorProps) {
+  const styles = useStyles();
+  const { colors } = useTheme();
   return (
     <View style={styles.container}>
       {showLabel ? <Text style={styles.label}>{label}</Text> : null}
@@ -58,7 +60,7 @@ export function StatusSelector({
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((colors) => StyleSheet.create({
   container: { gap: spacing.xs },
   label: { fontSize: fontSize.sm, fontFamily: fontFamily.semibold, color: colors.textPrimary },
   options: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
@@ -75,4 +77,4 @@ const styles = StyleSheet.create({
   pressed: { opacity: opacity.pressed },
   chipText: { fontSize: fontSize.md, fontFamily: fontFamily.semibold },
   error: { fontSize: fontSize.sm, fontFamily: fontFamily.regular, color: colors.error },
-});
+}));

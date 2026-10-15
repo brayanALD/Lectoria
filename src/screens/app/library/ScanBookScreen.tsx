@@ -5,7 +5,7 @@ import { Linking, StyleSheet, Text, View } from 'react-native';
 
 import { EmptyState } from '../../../components/EmptyState';
 import type { AppStackParamList } from '../../../navigation/types';
-import { colors } from '../../../theme/colors';
+import { makeStyles } from '../../../context/ThemeContext';
 import { radius, spacing } from '../../../theme/spacing';
 import { fontFamily, fontSize } from '../../../theme/typography';
 import { getScanFeedback, parseIsbn } from '../../../utils/isbn';
@@ -18,6 +18,7 @@ const GUIDE_RATIO = 1.8;
 const GUIDE_BORDER = 2;
 
 export function ScanBookScreen({ navigation }: Props) {
+  const styles = useStyles();
   const [permission, requestPermission] = useCameraPermissions();
   const [feedback, setFeedback] = useState<string | null>(null);
   // La cámara dispara el evento muchas veces por segundo: tras el primer ISBN válido se ignora el resto.
@@ -74,7 +75,7 @@ export function ScanBookScreen({ navigation }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((colors) => StyleSheet.create({
   flex: { flex: 1, backgroundColor: colors.textPrimary },
   viewfinder: { flex: 1, backgroundColor: colors.textPrimary },
   guideLayer: { alignItems: 'center', justifyContent: 'center' },
@@ -100,4 +101,4 @@ const styles = StyleSheet.create({
     fontFamily: fontFamily.semibold,
     color: colors.background,
   },
-});
+}));

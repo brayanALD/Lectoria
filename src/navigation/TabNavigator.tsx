@@ -1,12 +1,14 @@
 import { Ionicons } from '@expo/vector-icons';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 
+import { SettingsButton } from '../components/SettingsButton';
+import { useTheme } from '../context/ThemeContext';
 import { CalendarScreen } from '../screens/app/calendar/CalendarScreen';
 import { HomeScreen } from '../screens/app/home/HomeScreen';
 import { LibraryScreen } from '../screens/app/library/LibraryScreen';
 import { ProfileScreen } from '../screens/app/profile/ProfileScreen';
 import { StatisticsScreen } from '../screens/app/statistics/StatisticsScreen';
-import { headerOptions, tabBarOptions } from './chrome';
+import { getHeaderOptions, getTabBarOptions } from './chrome';
 import type { TabParamList } from './types';
 
 const Tab = createBottomTabNavigator<TabParamList>();
@@ -22,9 +24,16 @@ const TABS: { name: keyof TabParamList; title: string; icon: IconName; component
 ];
 
 export function TabNavigator() {
+  const { colors } = useTheme();
+
   return (
     <Tab.Navigator
-      screenOptions={{ ...headerOptions, ...tabBarOptions }}
+      screenOptions={{
+        ...getHeaderOptions(colors),
+        ...getTabBarOptions(colors),
+        // La tuerca de configuración, en la esquina superior derecha de todas las pestañas (Biblioteca añade el «+» a su izquierda).
+        headerRight: () => <SettingsButton />,
+      }}
     >
       {TABS.map(({ name, title, icon, component }) => (
         <Tab.Screen

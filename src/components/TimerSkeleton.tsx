@@ -1,12 +1,13 @@
 import { StyleSheet, View } from 'react-native';
 
-import { colors } from '../theme/colors';
+import { makeStyles } from '../context/ThemeContext';
 import { minTouchSize, radius, spacing } from '../theme/spacing';
 import { fontSize } from '../theme/typography';
 import { Skeleton, SkeletonPulse } from './Skeleton';
 
 /** Silueta del cronómetro: el libro, el tiempo y el botón principal. */
 export function TimerSkeleton() {
+  const styles = useStyles();
   return (
     <SkeletonPulse label="Cargando cronómetro">
       <View style={styles.container}>
@@ -23,9 +24,9 @@ export function TimerSkeleton() {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((colors) => StyleSheet.create({
   container: { flex: 1, padding: spacing.lg, gap: spacing.xl },
   field: { gap: spacing.xs },
   clock: { alignItems: 'center', padding: spacing.xl, borderRadius: radius.lg, backgroundColor: colors.surfaceTint },
   rounded: { borderRadius: radius.lg },
-});
+}));

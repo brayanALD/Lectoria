@@ -116,7 +116,7 @@ Tokens semánticos que **existen hoy** (los únicos que debes usar o ampliar):
 
 Contrastes verificados (WCAG): Evergreen/Porcelain 14,13:1 · Hunter Green/Porcelain 7,35:1 · Olive Bark/Porcelain 5,43:1 · Evergreen/Soft Fawn 6,78:1 · Error/Porcelain 5,94:1 · **Soft Fawn/Porcelain 2,08:1 (no usar para texto/iconos)** · Hunter Green/Evergreen 1,92:1 (no combinar).
 
-**Tema oscuro (2026-10-14):** **existe y sigue al tema del sistema al abrir la app.** `colors.ts` define `lightColors` y `darkColors`, ambos derivados de la misma paleta: fondo Evergreen, texto Porcelain, texto secundario Soft Fawn (6,78:1), `primary` = Hunter Green aclarado hacia Porcelain (Hunter Green puro sobre Evergreen solo da 1,92:1), error `#F0A19B`. El tema se decide **una vez al cargar** (`Appearance.getColorScheme()`): un cambio de tema del sistema con la app abierta se aplica al reabrirla, y no hay conmutador dentro de la app. `userInterfaceStyle: "automatic"` exige un build nuevo de EAS. La marca clara es fija en ambos temas (`brandSurface`, `onBrandSurface`, `brandOutline`): el logo va sobre una losa clara, y la pantalla de arranque y el botón de Google conservan su fondo claro. Los contrastes de los dos temas los verifica `colors.test.ts`.
+**Tema oscuro (2026-10-14):** **existe, sigue al sistema hasta que la persona elige y se cambia en vivo desde Configuración (§18).** `colors.ts` define `lightColors` y `darkColors`, ambos derivados de la misma paleta: fondo Evergreen, texto Porcelain, texto secundario Soft Fawn (6,78:1), `primary` = Hunter Green aclarado hacia Porcelain (Hunter Green puro sobre Evergreen solo da 1,92:1), error `#F0A19B`. El tema activo lo da `ThemeProvider` (`useTheme()`; los estilos se crean con `makeStyles`), de modo que cambia con la app abierta. `userInterfaceStyle: "automatic"` exige un build nuevo de EAS. La marca clara es fija en ambos temas (`brandSurface`, `onBrandSurface`, `brandOutline`): el logo va sobre una losa clara, y la pantalla de arranque y el botón de Google conservan su fondo claro. Los contrastes de los dos temas los verifica `colors.test.ts`.
 
 ### 3.2 Tipografía (`src/theme/typography.ts`)
 
@@ -512,4 +512,22 @@ Con permiso expreso para tipografía propia, sombras, tema oscuro y animaciones 
 | Movimiento | `PressableScale`, `FadeIn` (Inicio), relleno animado de `ReadingProgress`; todo con `useReducedMotion` |
 | Pulido | Buscador de Biblioteca en píldora, gráfico y cumplimiento de la meta de Estadísticas en tarjetas tonales, vacío de «Actividad reciente» con círculo de marca, filo en la portada de reemplazo |
 
-**Pendiente:** conmutador de tema dentro de la app y cambio en vivo con la app abierta (exigiría pasar los estilos a una fábrica dependiente del tema); pantalla de arranque nativa oscura (necesita una variante del logo); reordenación de contenidos de Biblioteca y Estadísticas más allá de las superficies.
+**Pendiente:** pantalla de arranque nativa oscura (necesita una variante del logo); reordenación de contenidos de Biblioteca y Estadísticas más allá de las superficies.
+
+---
+
+## 18. Registro del panel de Configuración (2026-10-14)
+
+Petición: tuerca arriba a la derecha que abre un panel lateral (mitad de la pantalla) con fondo desenfocado y un selector de tema claro/oscuro, aplicado a toda la app sin recargar y persistido. Se autorizó `expo-blur` por el requisito de *backdrop blur*.
+
+| Tema | Qué se hizo |
+|---|---|
+| Tema en vivo | `ThemeProvider` / `useTheme()` / `makeStyles((colors) => ...)`: 44 archivos pasaron de estilos fijos al importar a estilos que dependen del tema; `colors.ts` solo exporta `lightColors`, `darkColors`, `palette` y `ColorTokens` |
+| Persistencia | `utils/themeMode.ts` (`parseThemeMode`, `resolveThemeMode`) y AsyncStorage `lectoria.theme`; sin elección guardada, el del sistema |
+| Panel | `SettingsPanel` (carcasa) + `SettingsContext`; capa superpuesta en la raíz con `BlurTarget`/`BlurBackdrop`; ancho por `utils/settingsPanel.getPanelWidth`; cierre por fuera, X y «atrás»; animación con `useReducedMotion` |
+| Escalable | Secciones en `components/settings/` (`SettingsSection`, `AppearanceSection`): una opción nueva es una sección nueva |
+| Acceso | `SettingsButton` como `headerRight` de las 5 pestañas; Biblioteca muestra «+» y la tuerca a su derecha |
+
+**Decisión de contraste:** el panel usa `background` y no `surfaceRaised` porque, en el oscuro, el borde `outline` sobre `surfaceRaised` daba 2,86:1 (<3:1); se separa del contenido con un filo decorativo y la sombra.
+
+**No verificado en dispositivo:** el desenfoque, las animaciones, el cambio en vivo y el panel en pantallas pequeñas. `expo-blur` y `userInterfaceStyle` exigen un build nuevo de EAS; sin el módulo nativo el panel funciona con una capa oscura sin desenfoque.

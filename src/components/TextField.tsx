@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useState, type Ref } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View, type TextInputProps } from 'react-native';
 
-import { colors } from '../theme/colors';
+import { makeStyles, useTheme } from '../context/ThemeContext';
 import { iconSize, minTouchSize, opacity, radius, spacing } from '../theme/spacing';
 import { fontFamily, fontSize } from '../theme/typography';
 
@@ -16,6 +16,8 @@ interface TextFieldProps extends TextInputProps {
 }
 
 export function TextField({ label, error, action, style, secureTextEntry, ref, ...inputProps }: TextFieldProps) {
+  const styles = useStyles();
+  const { colors } = useTheme();
   // Los campos de contraseña (secureTextEntry) incluyen un botón para mostrar u ocultar el texto.
   const [passwordVisible, setPasswordVisible] = useState(false);
   const isPassword = Boolean(secureTextEntry);
@@ -69,7 +71,7 @@ export function TextField({ label, error, action, style, secureTextEntry, ref, .
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((colors) => StyleSheet.create({
   container: { gap: spacing.xs },
   label: { fontSize: fontSize.sm, fontFamily: fontFamily.semibold, color: colors.textPrimary },
   field: {
@@ -97,4 +99,4 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   error: { fontSize: fontSize.sm, fontFamily: fontFamily.regular, color: colors.error },
-});
+}));

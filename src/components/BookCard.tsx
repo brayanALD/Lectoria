@@ -1,7 +1,8 @@
 import { StyleSheet, Text, View } from 'react-native';
 
 import type { ReadingStatus, UserBookWithId } from '../types/book';
-import { colors } from '../theme/colors';
+import { makeStyles, useTheme } from '../context/ThemeContext';
+import type { ColorTokens } from '../theme/colors';
 import { elevation } from '../theme/elevation';
 import { opacity, radius, spacing } from '../theme/spacing';
 import { fontFamily, fontSize, maxFontScale } from '../theme/typography';
@@ -18,23 +19,25 @@ interface BookCardProps {
 }
 
 // Colores de la paleta; todos cumplen contraste AA entre texto y fondo (ver sección 5 del plan).
-const BADGE_STYLES: Record<ReadingStatus, { background: string; foreground: string; border: string }> = {
+const badgeStyles = (colors: ColorTokens): Record<ReadingStatus, { background: string; foreground: string; border: string }> => ({
   want_to_read: { background: 'transparent', foreground: colors.primary, border: colors.primary },
   reading: { background: colors.primary, foreground: colors.onPrimary, border: colors.primary },
   paused: { background: colors.accent, foreground: colors.onAccent, border: colors.accent },
   finished: { background: colors.textPrimary, foreground: colors.background, border: colors.textPrimary },
   abandoned: { background: 'transparent', foreground: colors.textSecondary, border: colors.textSecondary },
-};
+});
 
 const LIST_COVER_WIDTH = 64;
 
 export function BookCard({ book, variant = 'list', onPress }: BookCardProps) {
+  const styles = useStyles();
+  const { colors } = useTheme();
   const isGrid = variant === 'grid';
   const authors = book.authors.join(', ');
   const statusLabel = READING_STATUS_LABELS[book.status];
   const percent = getProgressPercent(book);
   const showProgress = (book.status === 'reading' || book.status === 'paused') && percent !== undefined;
-  const badge = BADGE_STYLES[book.status];
+  const badge = badgeStyles(colors)[book.status];
 
   const accessibilityLabel = [
     book.title,
@@ -82,7 +85,7 @@ export function BookCard({ book, variant = 'list', onPress }: BookCardProps) {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((colors) => StyleSheet.create({
   card: {
     // Opaca (no `surfaceTint`) porque lleva sombra: con un fondo translúcido la sombra se vería a través.
     backgroundColor: colors.surfaceRaised,
@@ -105,4 +108,4 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.xs,
   },
   badgeText: { fontSize: fontSize.sm, fontFamily: fontFamily.semibold },
-});
+}));

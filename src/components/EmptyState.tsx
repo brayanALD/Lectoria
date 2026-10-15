@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { StyleSheet, Text, View } from 'react-native';
 
-import { colors } from '../theme/colors';
+import { makeStyles, useTheme } from '../context/ThemeContext';
 import { iconSize, minTouchSize, radius, spacing } from '../theme/spacing';
 import { fontFamily, fontSize } from '../theme/typography';
 import { Button } from './Button';
@@ -16,6 +16,8 @@ interface EmptyStateProps {
 
 // Estado vacío o de error de una lista o pantalla.
 export function EmptyState({ icon, title, description, action }: EmptyStateProps) {
+  const styles = useStyles();
+  const { colors } = useTheme();
   return (
     <View style={styles.container}>
       <View style={styles.badge}>
@@ -34,7 +36,7 @@ export function EmptyState({ icon, title, description, action }: EmptyStateProps
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((colors) => StyleSheet.create({
   container: {
     flex: 1,
     alignItems: 'center',
@@ -55,4 +57,4 @@ const styles = StyleSheet.create({
   title: { fontSize: fontSize.lg, fontFamily: fontFamily.display, color: colors.textPrimary, textAlign: 'center' },
   description: { fontSize: fontSize.md, fontFamily: fontFamily.regular, color: colors.textSecondary, textAlign: 'center' },
   action: { alignSelf: 'stretch', marginTop: spacing.md },
-});
+}));

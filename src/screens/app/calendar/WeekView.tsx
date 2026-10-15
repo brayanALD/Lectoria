@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { PeriodHeader } from '../../../components/PeriodHeader';
-import { colors } from '../../../theme/colors';
+import { makeStyles, useTheme } from '../../../context/ThemeContext';
 import { iconSize, minTouchSize, opacity, radius, spacing } from '../../../theme/spacing';
 import { fontFamily, fontSize, maxFontScale } from '../../../theme/typography';
 import { addDays } from '../../../utils/readingDays';
@@ -28,6 +28,8 @@ const BAR_HEIGHT = spacing.sm;
 
 /** Semana de lunes a domingo: una fila por día con una barra proporcional a lo leído esa semana. */
 export function WeekView({ cursor, onCursorChange, todayKey, selectedKey, days, goal, onSelect }: WeekViewProps) {
+  const styles = useStyles();
+  const { colors } = useTheme();
   const weekDays = getWeekDays(cursor);
   const totals = totalsForDays(days, weekDays);
   const canGoNext = startOfWeek(cursor) < startOfWeek(todayKey);
@@ -86,7 +88,7 @@ export function WeekView({ cursor, onCursorChange, todayKey, selectedKey, days, 
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((colors) => StyleSheet.create({
   container: { gap: spacing.xs },
   totals: { fontSize: fontSize.md, fontFamily: fontFamily.regular, color: colors.textSecondary, textAlign: 'center', marginBottom: spacing.xs },
   row: {
@@ -109,4 +111,4 @@ const styles = StyleSheet.create({
   track: { height: BAR_HEIGHT, borderRadius: BAR_HEIGHT / 2, backgroundColor: colors.border, overflow: 'hidden' },
   bar: { height: '100%', borderRadius: BAR_HEIGHT / 2, backgroundColor: colors.primary },
   summary: { fontSize: fontSize.sm, fontFamily: fontFamily.regular, color: colors.textSecondary },
-});
+}));

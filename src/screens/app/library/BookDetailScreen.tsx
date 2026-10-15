@@ -19,7 +19,7 @@ import type { AppStackParamList } from '../../../navigation/types';
 import { changeBookStatus, deleteBook } from '../../../services/booksService';
 import { adjustBookProgress } from '../../../services/sessionsService';
 import type { ReadingStatus } from '../../../types/book';
-import { colors } from '../../../theme/colors';
+import { makeStyles, useTheme } from '../../../context/ThemeContext';
 import { iconSize, opacity, radius, spacing } from '../../../theme/spacing';
 import { fontFamily, fontSize } from '../../../theme/typography';
 import { getProgressPercent } from '../../../utils/book';
@@ -41,6 +41,8 @@ const DELETE_TIMEOUT_MS = 20000;
 const SESSIONS_PAGE_SIZE = 10;
 
 export function BookDetailScreen({ navigation, route }: Props) {
+  const styles = useStyles();
+  const { colors } = useTheme();
   const { user } = useAuth();
   const { book, loading, error, retry } = useBook(route.params.bookId);
   const bookSessions = useBookSessions(route.params.bookId);
@@ -228,7 +230,7 @@ export function BookDetailScreen({ navigation, route }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((colors) => StyleSheet.create({
   scroll: { flex: 1, backgroundColor: colors.background },
   content: { padding: spacing.lg, gap: spacing.lg, paddingBottom: spacing.xl * 2 },
   header: { flexDirection: 'row', gap: spacing.md, alignItems: 'flex-start' },
@@ -247,4 +249,4 @@ const styles = StyleSheet.create({
   heading: { fontSize: fontSize.lg, fontFamily: fontFamily.display, color: colors.textPrimary },
   sessionsSummary: { fontSize: fontSize.md, fontFamily: fontFamily.regular, color: colors.textSecondary },
   actions: { gap: spacing.md },
-});
+}));

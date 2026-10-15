@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { colors } from '../theme/colors';
+import { makeStyles, useTheme } from '../context/ThemeContext';
 import { iconSize, minTouchSize, opacity } from '../theme/spacing';
 import { fontFamily, fontSize } from '../theme/typography';
 
@@ -18,6 +18,8 @@ interface PeriodHeaderProps {
 
 /** Encabezado con flechas para recorrer periodos (meses, semanas o años). */
 export function PeriodHeader({ label, onPrevious, onNext, canGoNext, previousLabel, nextLabel }: PeriodHeaderProps) {
+  const styles = useStyles();
+  const { colors } = useTheme();
   return (
     <View style={styles.header}>
       <Pressable
@@ -45,7 +47,7 @@ export function PeriodHeader({ label, onPrevious, onNext, canGoNext, previousLab
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((colors) => StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   nav: { width: minTouchSize, height: minTouchSize, alignItems: 'center', justifyContent: 'center' },
   title: {
@@ -58,4 +60,4 @@ const styles = StyleSheet.create({
   },
   pressed: { opacity: opacity.pressed },
   disabled: { opacity: opacity.disabled },
-});
+}));

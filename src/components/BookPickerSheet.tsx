@@ -1,7 +1,7 @@
 import { Pressable, ScrollView, StyleSheet, Text } from 'react-native';
 
 import type { UserBookWithId } from '../types/book';
-import { colors } from '../theme/colors';
+import { makeStyles, useTheme } from '../context/ThemeContext';
 import { minTouchSize, opacity, radius, spacing } from '../theme/spacing';
 import { fontFamily, fontSize } from '../theme/typography';
 import { READING_STATUS_LABELS } from '../utils/book';
@@ -18,6 +18,8 @@ interface BookPickerSheetProps {
 
 /** Elegir uno de los libros de la biblioteca: primero los que se están leyendo. Al elegir uno se cierra sola. */
 export function BookPickerSheet({ visible, onClose, books, selectedId, onPick }: BookPickerSheetProps) {
+  const styles = useStyles();
+  const { colors } = useTheme();
   return (
     <Sheet visible={visible} onClose={onClose}>
       <ScrollView contentContainerStyle={styles.list}>
@@ -49,7 +51,7 @@ export function BookPickerSheet({ visible, onClose, books, selectedId, onPick }:
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((colors) => StyleSheet.create({
   list: { gap: spacing.sm, paddingBottom: spacing.md },
   row: {
     minHeight: minTouchSize,
@@ -65,4 +67,4 @@ const styles = StyleSheet.create({
   pressed: { opacity: opacity.pressed },
   title: { fontSize: fontSize.md, fontFamily: fontFamily.semibold },
   status: { fontSize: fontSize.sm , fontFamily: fontFamily.regular},
-});
+}));

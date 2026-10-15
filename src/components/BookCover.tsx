@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Image, StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
 
-import { colors as theme } from '../theme/colors';
+import { makeStyles } from '../context/ThemeContext';
 import { radius } from '../theme/spacing';
 import { fontFamily, fontSize } from '../theme/typography';
 import { getCoverColors, getCoverInitials } from '../utils/bookCover';
@@ -24,6 +24,7 @@ interface BookCoverProps {
  * título sobre un color de la paleta (siempre el mismo para el mismo título).
  */
 export function BookCover({ title, coverUrl, width, style }: BookCoverProps) {
+  const styles = useStyles();
   const [failedUrl, setFailedUrl] = useState<string | null>(null);
   const showImage = Boolean(coverUrl) && failedUrl !== coverUrl;
   const colors = getCoverColors(title);
@@ -56,7 +57,7 @@ export function BookCover({ title, coverUrl, width, style }: BookCoverProps) {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((theme) => StyleSheet.create({
   container: {
     borderRadius: radius.sm,
     // Un filo sutil: la portada de reemplazo en Evergreen no debe confundirse con el fondo en el tema oscuro.
@@ -67,4 +68,4 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   image: { width: '100%', height: '100%' },
-});
+}));

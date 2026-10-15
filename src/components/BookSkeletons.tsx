@@ -1,7 +1,7 @@
 import { StyleSheet, View } from 'react-native';
 
 import { minTouchSize, radius, spacing } from '../theme/spacing';
-import { colors } from '../theme/colors';
+import { makeStyles } from '../context/ThemeContext';
 import { fontSize } from '../theme/typography';
 import { Skeleton, SkeletonPulse } from './Skeleton';
 
@@ -16,6 +16,7 @@ const FORM_FIELDS = 6;
 const SESSION_PLACEHOLDERS = 3;
 
 function ListCardSkeleton() {
+  const styles = useStyles();
   return (
     <View style={[styles.card, styles.cardList]}>
       <Skeleton width={LIST_COVER_WIDTH} height={LIST_COVER_WIDTH / COVER_RATIO} />
@@ -29,6 +30,7 @@ function ListCardSkeleton() {
 }
 
 function GridCardSkeleton() {
+  const styles = useStyles();
   return (
     <View style={[styles.card, styles.gridCell]}>
       <Skeleton height={0} style={{ aspectRatio: COVER_RATIO }} />
@@ -40,6 +42,7 @@ function GridCardSkeleton() {
 
 /** Silueta de la pantalla de Biblioteca: buscador, etiquetas de estado y tarjetas. */
 export function LibrarySkeleton({ grid = false }: { grid?: boolean }) {
+  const styles = useStyles();
   return (
     <SkeletonPulse label="Cargando biblioteca">
       <View style={styles.library}>
@@ -72,6 +75,7 @@ export function LibrarySkeleton({ grid = false }: { grid?: boolean }) {
 
 /** Silueta del formulario de libro: una etiqueta y un campo por fila. */
 export function BookFormSkeleton() {
+  const styles = useStyles();
   return (
     <SkeletonPulse label="Cargando formulario">
       <View style={styles.form}>
@@ -88,6 +92,7 @@ export function BookFormSkeleton() {
 
 /** Silueta del detalle del libro: portada, título, estados y progreso. */
 export function BookDetailSkeleton() {
+  const styles = useStyles();
   return (
     <SkeletonPulse label="Cargando libro">
       <View style={styles.detail}>
@@ -118,6 +123,7 @@ export function BookDetailSkeleton() {
 
 /** Filas de sesiones en silueta (sin el latido): para incrustarlas en otra silueta o en `SessionListSkeleton`. */
 export function SessionRowsSkeleton({ count = SESSION_PLACEHOLDERS }: { count?: number }) {
+  const styles = useStyles();
   return (
     <View>
       {Array.from({ length: count }, (_, i) => (
@@ -132,6 +138,7 @@ export function SessionRowsSkeleton({ count = SESSION_PLACEHOLDERS }: { count?: 
 
 /** Silueta de la sección «Lecturas» del detalle del libro: el resumen y unas filas de sesiones. */
 export function SessionListSkeleton() {
+  const styles = useStyles();
   return (
     <SkeletonPulse label="Cargando lecturas">
       <View style={styles.sessionList}>
@@ -143,7 +150,7 @@ export function SessionListSkeleton() {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((colors) => StyleSheet.create({
   library: { flex: 1, paddingTop: spacing.sm, gap: spacing.sm },
   searchRow: { flexDirection: 'row', gap: spacing.sm, paddingHorizontal: spacing.lg },
   chipRow: { flexDirection: 'row', gap: spacing.sm, paddingHorizontal: spacing.lg },
@@ -171,4 +178,4 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: colors.border,
   },
-});
+}));

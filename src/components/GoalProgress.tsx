@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { colors } from '../theme/colors';
+import { makeStyles, useTheme } from '../context/ThemeContext';
 import { iconSize, opacity, radius, spacing } from '../theme/spacing';
 import { fontFamily, fontSize } from '../theme/typography';
 import { describeGoalProgress, describeGoalSummary, type GoalProgressInfo } from '../utils/dailyGoal';
@@ -20,6 +20,8 @@ interface GoalProgressProps {
  * El estado se comunica con texto e icono, no solo con la barra. Lo usan Inicio (hoy) y el Calendario (cualquier día).
  */
 export function GoalProgress({ progress, past = false, onPress }: GoalProgressProps) {
+  const styles = useStyles();
+  const { colors } = useTheme();
   const summary = describeGoalSummary(progress);
   const status = describeGoalProgress(progress, past);
 
@@ -57,7 +59,7 @@ export function GoalProgress({ progress, past = false, onPress }: GoalProgressPr
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((colors) => StyleSheet.create({
   container: { gap: spacing.sm, padding: spacing.md, borderRadius: radius.lg, backgroundColor: colors.surfaceTint },
   row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.xs },
   statusRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
@@ -65,4 +67,4 @@ const styles = StyleSheet.create({
   status: { fontSize: fontSize.sm, fontFamily: fontFamily.regular, color: colors.textSecondary },
   statusMet: { fontFamily: fontFamily.semibold, color: colors.success },
   pressed: { opacity: opacity.pressed },
-});
+}));

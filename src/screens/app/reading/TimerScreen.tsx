@@ -11,7 +11,7 @@ import { useReadingTimer } from '../../../context/ReadingTimerContext';
 import { useBooks } from '../../../hooks/useBooks';
 import { useNow } from '../../../hooks/useNow';
 import type { AppStackParamList } from '../../../navigation/types';
-import { colors } from '../../../theme/colors';
+import { makeStyles } from '../../../context/ThemeContext';
 import { radius, spacing } from '../../../theme/spacing';
 import { fontFamily, fontSize } from '../../../theme/typography';
 import { describeClock, formatClock, getElapsedMs, isTimerRunning } from '../../../utils/readingTimer';
@@ -29,6 +29,7 @@ const CLOCK_SCALE = 2;
  * «Finalizar» pausa el tiempo y abre «Registrar lectura» con los minutos y el libro ya puestos.
  */
 export function TimerScreen({ navigation }: Props) {
+  const styles = useStyles();
   const { books, loading: booksLoading, error, retry } = useBooks();
   const { timer, loading: timerLoading, start, pause, resume, discard } = useReadingTimer();
   const [chosenId, setChosenId] = useState<string | undefined>();
@@ -137,7 +138,7 @@ export function TimerScreen({ navigation }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((colors) => StyleSheet.create({
   scroll: { flex: 1, backgroundColor: colors.background },
   content: { padding: spacing.lg, gap: spacing.xl },
   clock: { alignItems: 'center', gap: spacing.xs, padding: spacing.xl, borderRadius: radius.lg, backgroundColor: colors.surfaceTint },
@@ -150,4 +151,4 @@ const styles = StyleSheet.create({
   },
   state: { fontSize: fontSize.lg, fontFamily: fontFamily.regular, color: colors.textSecondary },
   actions: { gap: spacing.md },
-});
+}));

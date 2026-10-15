@@ -1,4 +1,4 @@
-import { colors, darkColors, isDark, lightColors, palette, type ColorTokens } from './colors';
+import { darkColors, lightColors, palette, type ColorTokens } from './colors';
 
 // Luminancia y contraste según WCAG 2.x. Los colores pueden venir como #rrggbb, rgb() o rgba(): un color translúcido
 // se compone sobre el fondo del tema antes de medirlo (es lo que realmente ve la persona).
@@ -48,11 +48,6 @@ describe('paleta oficial', () => {
 
   it('los dos temas definen exactamente los mismos tokens', () => {
     expect(Object.keys(darkColors).sort()).toEqual(Object.keys(lightColors).sort());
-  });
-
-  it('el tema activo es el claro cuando el sistema no está en oscuro (en las pruebas)', () => {
-    expect(isDark).toBe(false);
-    expect(colors).toBe(lightColors);
   });
 });
 

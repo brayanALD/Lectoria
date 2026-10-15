@@ -5,7 +5,7 @@ import { GoalProgress } from '../../../components/GoalProgress';
 import { SessionRow } from '../../../components/SessionRow';
 import type { ReadingSessionWithId } from '../../../types/session';
 import type { DailyGoal } from '../../../types/goal';
-import { colors } from '../../../theme/colors';
+import { makeStyles } from '../../../context/ThemeContext';
 import { spacing } from '../../../theme/spacing';
 import { fontFamily, fontSize } from '../../../theme/typography';
 import { formatDayLabel } from '../../../utils/calendar';
@@ -40,6 +40,7 @@ export function DaySessions({
   onEdit,
   onDelete,
 }: DaySessionsProps) {
+  const styles = useStyles();
   return (
     <View style={styles.container}>
       <View style={styles.heading}>
@@ -70,9 +71,9 @@ export function DaySessions({
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((colors) => StyleSheet.create({
   container: { gap: spacing.sm },
   heading: { gap: spacing.xs },
   day: { fontSize: fontSize.lg, fontFamily: fontFamily.display, color: colors.textPrimary },
   totals: { fontSize: fontSize.md, fontFamily: fontFamily.regular, color: colors.textSecondary },
-});
+}));

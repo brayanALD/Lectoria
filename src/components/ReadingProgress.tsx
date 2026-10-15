@@ -3,7 +3,7 @@ import { Animated, Easing, StyleSheet, Text, View } from 'react-native';
 
 import { useReducedMotion } from '../hooks/useReducedMotion';
 
-import { colors } from '../theme/colors';
+import { makeStyles } from '../context/ThemeContext';
 import { spacing } from '../theme/spacing';
 import { fontFamily, fontSize } from '../theme/typography';
 
@@ -22,6 +22,7 @@ const TRACK_HEIGHT = spacing.sm;
 const FILL_MS = 450;
 
 export function ReadingProgress({ percent, showLabel = true, accessibilityLabel = 'Progreso de lectura', valueText }: ReadingProgressProps) {
+  const styles = useStyles();
   const value = Math.min(100, Math.max(0, percent));
   // La barra recorre el camino hasta el nuevo valor (al registrar una lectura se ve avanzar); nace ya en su valor.
   const reduceMotion = useReducedMotion();
@@ -57,7 +58,7 @@ export function ReadingProgress({ percent, showLabel = true, accessibilityLabel 
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((colors) => StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   track: {
     flex: 1,
@@ -68,4 +69,4 @@ const styles = StyleSheet.create({
   },
   fill: { height: '100%', borderRadius: TRACK_HEIGHT / 2, backgroundColor: colors.primary },
   label: { fontSize: fontSize.sm, fontFamily: fontFamily.regular, color: colors.textSecondary, minWidth: spacing.xl + spacing.xs, textAlign: 'right' },
-});
+}));

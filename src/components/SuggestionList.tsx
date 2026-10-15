@@ -1,6 +1,6 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { colors } from '../theme/colors';
+import { makeStyles } from '../context/ThemeContext';
 import { minTouchSize, opacity, radius, spacing } from '../theme/spacing';
 import { fontFamily, fontSize } from '../theme/typography';
 
@@ -14,6 +14,7 @@ interface SuggestionListProps {
 // Opciones bajo un campo de texto mientras se escribe. Va dentro del flujo del formulario (no flota encima), así
 // que nunca tapa otros campos ni depende de la posición del teclado.
 export function SuggestionList({ suggestions, onSelect, accessibilityHint }: SuggestionListProps) {
+  const styles = useStyles();
   return (
     <View style={styles.list}>
       {suggestions.map((suggestion) => (
@@ -34,7 +35,7 @@ export function SuggestionList({ suggestions, onSelect, accessibilityHint }: Sug
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((colors) => StyleSheet.create({
   list: { gap: spacing.xs },
   row: {
     minHeight: minTouchSize,
@@ -47,4 +48,4 @@ const styles = StyleSheet.create({
   },
   pressed: { opacity: opacity.pressed },
   text: { fontSize: fontSize.md, fontFamily: fontFamily.regular, color: colors.textPrimary },
-});
+}));

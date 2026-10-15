@@ -3,7 +3,7 @@ import { KeyboardAvoidingView, ScrollView, StyleSheet, Text, TextInput, View } f
 
 import { useWindowTop } from '../hooks/useWindowTop';
 import type { BookFormErrors, BookFormValues, CatalogBook, NewBookFields } from '../types/book';
-import { colors } from '../theme/colors';
+import { makeStyles } from '../context/ThemeContext';
 import { spacing } from '../theme/spacing';
 import { fontFamily, fontSize } from '../theme/typography';
 import { EMPTY_BOOK_FORM, MAX_PAGE_COUNT, MAX_SERIES_NAME_LENGTH, MAX_TITLE_LENGTH, parseBookForm } from '../utils/book';
@@ -62,6 +62,7 @@ export function BookForm({
   onSubmit,
   onSaved,
 }: BookFormProps) {
+  const styles = useStyles();
   const [values, setValues] = useState<BookFormValues>(initialValues);
   const [errors, setErrors] = useState<BookFormErrors>({});
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -295,10 +296,10 @@ export function BookForm({
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((colors) => StyleSheet.create({
   flex: { flex: 1, backgroundColor: colors.background },
   content: { padding: spacing.lg, gap: spacing.md, paddingBottom: spacing.xl * 3 },
   // El campo y sus sugerencias van juntos (más cerca entre sí que del resto de campos).
   suggestGroup: { gap: spacing.xs },
   error: { fontSize: fontSize.sm, fontFamily: fontFamily.regular, color: colors.error },
-});
+}));

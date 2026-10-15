@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { AccessibilityInfo, Animated, Easing, StyleSheet, View, type DimensionValue, type StyleProp, type ViewStyle } from 'react-native';
 
-import { colors } from '../theme/colors';
+import { makeStyles } from '../context/ThemeContext';
 import { opacity, radius } from '../theme/spacing';
 
 const PULSE_MS = 800;
@@ -15,6 +15,7 @@ interface SkeletonProps {
 
 /** Marcador de posición: una silueta lisa con el tamaño del contenido que va a llegar. */
 export function Skeleton({ width = '100%', height, style }: SkeletonProps) {
+  const styles = useStyles();
   return <View style={[styles.bone, { width, height }, style]} />;
 }
 
@@ -30,6 +31,7 @@ interface SkeletonPulseProps {
  * elemento «cargando»: las siluetas no se leen una a una.
  */
 export function SkeletonPulse({ label, children }: SkeletonPulseProps) {
+  const styles = useStyles();
   const pulse = useRef(new Animated.Value(1)).current;
   const [reduceMotion, setReduceMotion] = useState(false);
 
@@ -73,7 +75,7 @@ export function SkeletonPulse({ label, children }: SkeletonPulseProps) {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((colors) => StyleSheet.create({
   bone: { backgroundColor: colors.border, borderRadius: radius.sm },
   pulse: { flex: 1, backgroundColor: colors.background },
-});
+}));
