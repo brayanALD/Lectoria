@@ -5,7 +5,7 @@ import { useWindowTop } from '../hooks/useWindowTop';
 import type { BookFormErrors, BookFormValues, CatalogBook, NewBookFields } from '../types/book';
 import { colors } from '../theme/colors';
 import { spacing } from '../theme/spacing';
-import { fontSize } from '../theme/typography';
+import { fontFamily, fontSize } from '../theme/typography';
 import { EMPTY_BOOK_FORM, MAX_PAGE_COUNT, MAX_SERIES_NAME_LENGTH, MAX_TITLE_LENGTH, parseBookForm } from '../utils/book';
 import { ISBN_NOT_FOUND_MESSAGE, getCatalogErrorMessage } from '../utils/catalogErrors';
 import { getFirestoreErrorMessage } from '../utils/firestoreErrors';
@@ -300,5 +300,5 @@ const styles = StyleSheet.create({
   content: { padding: spacing.lg, gap: spacing.md, paddingBottom: spacing.xl * 3 },
   // El campo y sus sugerencias van juntos (más cerca entre sí que del resto de campos).
   suggestGroup: { gap: spacing.xs },
-  error: { fontSize: fontSize.sm, color: colors.error },
+  error: { fontSize: fontSize.sm, fontFamily: fontFamily.regular, color: colors.error },
 });

@@ -6,10 +6,16 @@ export const fontSize = {
   xl: 28,
 } as const;
 
-export const fontWeight = {
-  regular: '400',
-  semibold: '600',
-  bold: '700',
+// Familias tipográficas. Cada peso es un archivo distinto (`src/theme/fonts.ts`): en una familia personalizada,
+// `fontWeight` no elige el archivo en Android, así que el peso se expresa SIEMPRE con la familia y no se usa `fontWeight`.
+// Figtree (sans limpia) para la interfaz; Literata (serif pensada para lectura prolongada) para títulos y cifras
+// protagonistas. Si las fuentes no llegan a cargarse, la app sigue con la fuente del sistema.
+export const fontFamily = {
+  regular: 'Figtree_400Regular',
+  semibold: 'Figtree_600SemiBold',
+  bold: 'Figtree_700Bold',
+  display: 'Literata_600SemiBold',
+  displayBold: 'Literata_700Bold',
 } as const;
 
 // Tope del escalado de texto del sistema para elementos de tamaño acotado (etiquetas, insignias);

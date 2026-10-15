@@ -3,8 +3,8 @@ import { Image, KeyboardAvoidingView, ScrollView, StyleSheet, Text, View } from 
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { colors } from '../theme/colors';
-import { spacing } from '../theme/spacing';
-import { fontSize, fontWeight } from '../theme/typography';
+import { radius, spacing } from '../theme/spacing';
+import { fontFamily, fontSize } from '../theme/typography';
 
 const logo = require('../../assets/logo.png');
 const LOGO_SIZE = spacing.xl * 2 + spacing.sm;
@@ -34,7 +34,9 @@ export function AuthLayout({ children, scrollRef }: AuthLayoutProps) {
         keyboardDismissMode="on-drag"
       >
         <View style={styles.brandRow}>
-          <Image source={logo} style={styles.logo} accessible={false} />
+          <View style={styles.logoTile}>
+            <Image source={logo} style={styles.logo} accessible={false} />
+          </View>
           <Text style={styles.brand} accessibilityRole="header">
             Lectoria
           </Text>
@@ -49,6 +51,8 @@ const styles = StyleSheet.create({
   flex: { flex: 1, backgroundColor: colors.background },
   content: { flexGrow: 1, paddingHorizontal: spacing.lg, gap: spacing.md },
   brandRow: { alignItems: 'center', gap: spacing.sm, marginBottom: spacing.lg },
+  // El logo solo se ve bien sobre claro: en el tema oscuro va sobre una losa clara.
+  logoTile: { padding: spacing.sm, borderRadius: radius.lg, backgroundColor: colors.brandSurface },
   logo: { width: LOGO_SIZE, height: LOGO_SIZE },
-  brand: { fontSize: fontSize.xl, fontWeight: fontWeight.bold, color: colors.primary },
+  brand: { fontSize: fontSize.xl, fontFamily: fontFamily.displayBold, color: colors.primary },
 });

@@ -24,6 +24,9 @@ export const iconSize = {
   xl: 56,
 } as const;
 
+// Escala de un botón o card mientras se pulsa (ver `PressableScale`).
+export const pressScale = 0.97;
+
 // Opacidades de estado. `skeleton` es la más baja del latido de los marcadores de carga.
 export const opacity = {
   pressed: 0.85,

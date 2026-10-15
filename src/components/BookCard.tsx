@@ -1,11 +1,13 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 
 import type { ReadingStatus, UserBookWithId } from '../types/book';
 import { colors } from '../theme/colors';
+import { elevation } from '../theme/elevation';
 import { opacity, radius, spacing } from '../theme/spacing';
-import { fontSize, fontWeight, maxFontScale } from '../theme/typography';
+import { fontFamily, fontSize, maxFontScale } from '../theme/typography';
 import { READING_STATUS_LABELS, getProgressPercent } from '../utils/book';
 import { BookCover } from './BookCover';
+import { PressableScale } from './PressableScale';
 import { ReadingProgress } from './ReadingProgress';
 
 interface BookCardProps {
@@ -44,7 +46,7 @@ export function BookCard({ book, variant = 'list', onPress }: BookCardProps) {
     .join(', ');
 
   return (
-    <Pressable
+    <PressableScale
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel}
       accessibilityHint="Abre el detalle del libro"
@@ -76,23 +78,25 @@ export function BookCard({ book, variant = 'list', onPress }: BookCardProps) {
 
         {showProgress ? <ReadingProgress percent={percent} /> : null}
       </View>
-    </Pressable>
+    </PressableScale>
   );
 }
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: colors.surfaceTint,
+    // Opaca (no `surfaceTint`) porque lleva sombra: con un fondo translúcido la sombra se vería a través.
+    backgroundColor: colors.surfaceRaised,
     borderRadius: radius.lg,
     padding: spacing.md,
+    ...elevation.low,
   },
   cardList: { flexDirection: 'row', gap: spacing.md, alignItems: 'flex-start' },
   cardGrid: { gap: spacing.sm },
   pressed: { opacity: opacity.pressed },
   infoList: { flex: 1, gap: spacing.xs },
   infoGrid: { gap: spacing.xs },
-  title: { fontSize: fontSize.md, fontWeight: fontWeight.semibold, color: colors.textPrimary },
-  secondary: { fontSize: fontSize.sm, color: colors.textSecondary },
+  title: { fontSize: fontSize.md, fontFamily: fontFamily.display, color: colors.textPrimary },
+  secondary: { fontSize: fontSize.sm, fontFamily: fontFamily.regular, color: colors.textSecondary },
   badgeRow: { flexDirection: 'row', marginVertical: spacing.xs },
   badge: {
     borderWidth: 1,
@@ -100,5 +104,5 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.sm + spacing.xs,
     paddingVertical: spacing.xs,
   },
-  badgeText: { fontSize: fontSize.sm, fontWeight: fontWeight.semibold },
+  badgeText: { fontSize: fontSize.sm, fontFamily: fontFamily.semibold },
 });

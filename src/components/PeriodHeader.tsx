@@ -3,7 +3,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { colors } from '../theme/colors';
 import { iconSize, minTouchSize, opacity } from '../theme/spacing';
-import { fontSize, fontWeight } from '../theme/typography';
+import { fontFamily, fontSize } from '../theme/typography';
 
 interface PeriodHeaderProps {
   /** Periodo que se muestra («octubre de 2026», «12 – 18 de octubre de 2026», «2026»). */
@@ -52,7 +52,7 @@ const styles = StyleSheet.create({
     flex: 1,
     textAlign: 'center',
     fontSize: fontSize.md,
-    fontWeight: fontWeight.semibold,
+    fontFamily: fontFamily.semibold,
     color: colors.textPrimary,
     textTransform: 'capitalize',
   },

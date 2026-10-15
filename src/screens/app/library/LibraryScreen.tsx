@@ -13,7 +13,7 @@ import { useBooks } from '../../../hooks/useBooks';
 import type { AppStackParamList } from '../../../navigation/types';
 import { colors } from '../../../theme/colors';
 import { iconSize, minTouchSize, opacity, radius, spacing } from '../../../theme/spacing';
-import { fontSize, fontWeight } from '../../../theme/typography';
+import { fontFamily, fontSize } from '../../../theme/typography';
 import { formatFilteredBookCount } from '../../../utils/book';
 import { EMPTY_FILTERS, filterBooks, getFilterOptions, type BookFilterState } from '../../../utils/bookFilters';
 
@@ -147,7 +147,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.error,
   },
-  bannerText: { fontSize: fontSize.sm, color: colors.error },
+  bannerText: { fontSize: fontSize.sm, fontFamily: fontFamily.regular, color: colors.error },
   toolbar: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -155,7 +155,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.sm,
   },
-  count: { fontSize: fontSize.sm, fontWeight: fontWeight.semibold, color: colors.textSecondary },
+  count: { fontSize: fontSize.sm, fontFamily: fontFamily.semibold, color: colors.textSecondary },
   toggle: { width: minTouchSize, height: minTouchSize, alignItems: 'center', justifyContent: 'center' },
   pressed: { opacity: opacity.pressed },
   headerButton: { width: minTouchSize, height: minTouchSize, alignItems: 'center', justifyContent: 'center' },

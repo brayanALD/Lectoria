@@ -6,7 +6,7 @@ import { TextField } from '../../../components/TextField';
 import { useAuth } from '../../../context/AuthContext';
 import { colors } from '../../../theme/colors';
 import { minTouchSize, radius, spacing } from '../../../theme/spacing';
-import { fontSize, fontWeight } from '../../../theme/typography';
+import { fontFamily, fontSize } from '../../../theme/typography';
 import { getAuthErrorMessage } from '../../../utils/authErrors';
 import { MIN_PASSWORD_LENGTH, isValidPassword } from '../../../utils/validation';
 
@@ -153,12 +153,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: colors.accent,
   },
-  avatarInitial: { fontSize: fontSize.lg, fontWeight: fontWeight.bold, color: colors.onAccent },
-  email: { flex: 1, fontSize: fontSize.md, fontWeight: fontWeight.semibold, color: colors.textPrimary },
-  sectionTitle: { fontSize: fontSize.lg, fontWeight: fontWeight.bold, color: colors.textPrimary },
+  avatarInitial: { fontSize: fontSize.lg, fontFamily: fontFamily.displayBold, color: colors.onAccent },
+  email: { flex: 1, fontSize: fontSize.md, fontFamily: fontFamily.semibold, color: colors.textPrimary },
+  sectionTitle: { fontSize: fontSize.lg, fontFamily: fontFamily.display, color: colors.textPrimary },
   method: { gap: spacing.sm, marginTop: spacing.sm },
-  methodName: { fontSize: fontSize.md, fontWeight: fontWeight.semibold, color: colors.textPrimary },
-  linked: { fontSize: fontSize.md, color: colors.success },
+  methodName: { fontSize: fontSize.md, fontFamily: fontFamily.semibold, color: colors.textPrimary },
+  linked: { fontSize: fontSize.md, fontFamily: fontFamily.regular, color: colors.success },
   form: { gap: spacing.md },
-  error: { fontSize: fontSize.sm, color: colors.error },
+  error: { fontSize: fontSize.sm, fontFamily: fontFamily.regular, color: colors.error },
 });

@@ -7,7 +7,7 @@ import { TextField } from '../../../components/TextField';
 import type { UserBookWithId } from '../../../types/book';
 import { colors } from '../../../theme/colors';
 import { spacing } from '../../../theme/spacing';
-import { fontSize } from '../../../theme/typography';
+import { fontFamily, fontSize } from '../../../theme/typography';
 import { getFirestoreErrorMessage } from '../../../utils/firestoreErrors';
 import { parseProgressInput } from '../../../utils/session';
 
@@ -81,5 +81,5 @@ export function ProgressAdjustSheet({ visible, onClose, book, onSave }: Progress
 
 const styles = StyleSheet.create({
   content: { gap: spacing.md },
-  total: { fontSize: fontSize.sm, color: colors.textSecondary },
+  total: { fontSize: fontSize.sm, fontFamily: fontFamily.regular, color: colors.textSecondary },
 });

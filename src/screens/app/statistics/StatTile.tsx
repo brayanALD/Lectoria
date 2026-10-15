@@ -2,7 +2,7 @@ import { StyleSheet, Text, View } from 'react-native';
 
 import { colors } from '../../../theme/colors';
 import { radius, spacing } from '../../../theme/spacing';
-import { fontSize, fontWeight } from '../../../theme/typography';
+import { fontFamily, fontSize } from '../../../theme/typography';
 
 interface StatTileProps {
   label: string;
@@ -27,6 +27,6 @@ const styles = StyleSheet.create({
     borderRadius: radius.lg,
     backgroundColor: colors.surfaceTint,
   },
-  value: { fontSize: fontSize.lg, fontWeight: fontWeight.bold, color: colors.textPrimary },
-  label: { fontSize: fontSize.sm, color: colors.textSecondary },
+  value: { fontSize: fontSize.lg, fontFamily: fontFamily.displayBold, color: colors.textPrimary },
+  label: { fontSize: fontSize.sm, fontFamily: fontFamily.regular, color: colors.textSecondary },
 });

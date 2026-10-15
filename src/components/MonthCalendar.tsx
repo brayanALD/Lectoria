@@ -2,7 +2,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { colors } from '../theme/colors';
 import { minTouchSize, opacity, spacing } from '../theme/spacing';
-import { fontSize, fontWeight, maxFontScale } from '../theme/typography';
+import { fontFamily, fontSize, maxFontScale } from '../theme/typography';
 import {
   WEEKDAY_LABELS,
   addMonths,
@@ -115,14 +115,14 @@ const styles = StyleSheet.create({
     flex: 1,
     textAlign: 'center',
     fontSize: fontSize.sm,
-    fontWeight: fontWeight.semibold,
+    fontFamily: fontFamily.semibold,
     color: colors.textSecondary,
   },
   cell: { flex: 1, minHeight: minTouchSize, alignItems: 'center', justifyContent: 'center', gap: DOT_SIZE },
   day: { width: DAY_SIZE, height: DAY_SIZE, borderRadius: DAY_SIZE / 2, alignItems: 'center', justifyContent: 'center' },
   daySelected: { backgroundColor: colors.primary },
   dayToday: { borderWidth: 1, borderColor: colors.outline },
-  dayText: { fontSize: fontSize.md },
+  dayText: { fontSize: fontSize.md , fontFamily: fontFamily.regular},
   // El punto siempre ocupa su sitio (transparente si no hay lectura) para que las filas no cambien de altura.
   dot: { width: DOT_SIZE, height: DOT_SIZE, borderRadius: DOT_SIZE / 2 },
   disabled: { opacity: opacity.disabled },

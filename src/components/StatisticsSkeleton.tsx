@@ -1,5 +1,6 @@
 import { StyleSheet, View } from 'react-native';
 
+import { colors } from '../theme/colors';
 import { minTouchSize, radius, spacing } from '../theme/spacing';
 import { fontSize } from '../theme/typography';
 import { Skeleton, SkeletonPulse } from './Skeleton';
@@ -26,8 +27,10 @@ export function StatisticsSkeleton() {
           <Skeleton height={TILE_HEIGHT} style={[styles.rounded, styles.flex]} />
           <Skeleton height={TILE_HEIGHT} style={[styles.rounded, styles.flex]} />
         </View>
-        <Skeleton width="40%" height={fontSize.lg} />
-        <Skeleton height={CHART_HEIGHT} style={styles.rounded} />
+        <View style={styles.card}>
+          <Skeleton width="40%" height={fontSize.lg} />
+          <Skeleton height={CHART_HEIGHT} style={styles.rounded} />
+        </View>
       </View>
     </SkeletonPulse>
   );
@@ -40,4 +43,6 @@ const styles = StyleSheet.create({
   rounded: { borderRadius: radius.lg },
   pill: { borderRadius: radius.pill },
   center: { alignSelf: 'center' },
+  // Igual que `section` de StatisticsScreen: tarjeta tonal.
+  card: { gap: spacing.sm, padding: spacing.md, borderRadius: radius.lg, backgroundColor: colors.surfaceTint },
 });

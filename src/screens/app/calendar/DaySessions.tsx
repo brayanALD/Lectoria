@@ -7,7 +7,7 @@ import type { ReadingSessionWithId } from '../../../types/session';
 import type { DailyGoal } from '../../../types/goal';
 import { colors } from '../../../theme/colors';
 import { spacing } from '../../../theme/spacing';
-import { fontSize, fontWeight } from '../../../theme/typography';
+import { fontFamily, fontSize } from '../../../theme/typography';
 import { formatDayLabel } from '../../../utils/calendar';
 import { getGoalProgress } from '../../../utils/dailyGoal';
 import { formatTotals, type PeriodTotals } from '../../../utils/readingStats';
@@ -73,6 +73,6 @@ export function DaySessions({
 const styles = StyleSheet.create({
   container: { gap: spacing.sm },
   heading: { gap: spacing.xs },
-  day: { fontSize: fontSize.lg, fontWeight: fontWeight.bold, color: colors.textPrimary },
-  totals: { fontSize: fontSize.md, color: colors.textSecondary },
+  day: { fontSize: fontSize.lg, fontFamily: fontFamily.display, color: colors.textPrimary },
+  totals: { fontSize: fontSize.md, fontFamily: fontFamily.regular, color: colors.textSecondary },
 });

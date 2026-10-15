@@ -3,7 +3,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { colors } from '../theme/colors';
 import { iconSize, minTouchSize, opacity, radius, spacing } from '../theme/spacing';
-import { fontSize, fontWeight } from '../theme/typography';
+import { fontFamily, fontSize } from '../theme/typography';
 
 interface PickerRowProps {
   label: string;
@@ -54,7 +54,7 @@ export function PickerRow({ label, value, icon, onPress, error }: PickerRowProps
 
 const styles = StyleSheet.create({
   group: { gap: spacing.xs },
-  label: { fontSize: fontSize.sm, fontWeight: fontWeight.semibold, color: colors.textPrimary },
+  label: { fontSize: fontSize.sm, fontFamily: fontFamily.semibold, color: colors.textPrimary },
   field: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -68,7 +68,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
   },
   fieldError: { borderColor: colors.error },
-  fieldValue: { flex: 1, fontSize: fontSize.md, color: colors.textPrimary },
+  fieldValue: { flex: 1, fontSize: fontSize.md, fontFamily: fontFamily.regular, color: colors.textPrimary },
   pressed: { opacity: opacity.pressed },
-  error: { fontSize: fontSize.sm, color: colors.error },
+  error: { fontSize: fontSize.sm, fontFamily: fontFamily.regular, color: colors.error },
 });

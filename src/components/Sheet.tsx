@@ -3,6 +3,7 @@ import { KeyboardAvoidingView, Modal, Pressable, StyleSheet, View } from 'react-
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { colors } from '../theme/colors';
+import { elevation } from '../theme/elevation';
 import { radius, spacing } from '../theme/spacing';
 
 // Asa decorativa de la hoja (indica que es una hoja inferior que se puede cerrar).
@@ -45,6 +46,7 @@ const styles = StyleSheet.create({
     paddingTop: spacing.sm,
     paddingHorizontal: spacing.lg,
     gap: spacing.md,
+    ...elevation.high,
   },
   grabber: {
     alignSelf: 'center',

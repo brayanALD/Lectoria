@@ -4,7 +4,7 @@ import { Pressable, StyleSheet, Text, TextInput, View, type TextInputProps } fro
 
 import { colors } from '../theme/colors';
 import { iconSize, minTouchSize, opacity, radius, spacing } from '../theme/spacing';
-import { fontSize, fontWeight } from '../theme/typography';
+import { fontFamily, fontSize } from '../theme/typography';
 
 interface TextFieldProps extends TextInputProps {
   label: string;
@@ -71,7 +71,7 @@ export function TextField({ label, error, action, style, secureTextEntry, ref, .
 
 const styles = StyleSheet.create({
   container: { gap: spacing.xs },
-  label: { fontSize: fontSize.sm, fontWeight: fontWeight.semibold, color: colors.textPrimary },
+  label: { fontSize: fontSize.sm, fontFamily: fontFamily.semibold, color: colors.textPrimary },
   field: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -87,7 +87,7 @@ const styles = StyleSheet.create({
     flex: 1,
     alignSelf: 'stretch',
     paddingHorizontal: spacing.md,
-    fontSize: fontSize.md,
+    fontSize: fontSize.md, fontFamily: fontFamily.regular,
     color: colors.textPrimary,
   },
   toggle: {
@@ -96,5 +96,5 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  error: { fontSize: fontSize.sm, color: colors.error },
+  error: { fontSize: fontSize.sm, fontFamily: fontFamily.regular, color: colors.error },
 });

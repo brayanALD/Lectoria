@@ -2,7 +2,7 @@ import { Pressable, StyleSheet, Text } from 'react-native';
 
 import { colors } from '../theme/colors';
 import { minTouchSize, opacity, radius, spacing } from '../theme/spacing';
-import { fontSize, fontWeight, maxFontScale } from '../theme/typography';
+import { fontFamily, fontSize, maxFontScale } from '../theme/typography';
 
 interface ChipProps {
   label: string;
@@ -44,5 +44,5 @@ const styles = StyleSheet.create({
   idle: { backgroundColor: colors.surface, borderColor: colors.outline },
   selected: { backgroundColor: colors.primary, borderColor: colors.primary },
   pressed: { opacity: opacity.pressed },
-  label: { fontSize: fontSize.sm, fontWeight: fontWeight.semibold },
+  label: { fontSize: fontSize.sm, fontFamily: fontFamily.semibold },
 });

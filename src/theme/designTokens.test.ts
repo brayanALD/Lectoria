@@ -17,6 +17,7 @@ const RULES: { rule: string; pattern: RegExp }[] = [
     pattern: /[cC]olor['"]?\s*:\s*['"](?:white|black|red|green|blue|gray|grey|yellow|orange|purple|pink)['"]/,
   },
   { rule: 'fontSize numérico (usa fontSize.*)', pattern: /fontSize\s*:\s*\d/ },
+  { rule: 'fontWeight (el peso se expresa con fontFamily.*)', pattern: /\bfontWeight\s*:/ },
   { rule: 'opacity numérica (usa opacity.*)', pattern: /\bopacity\s*:\s*[\d.]/ },
   { rule: 'tamaño de icono numérico (usa iconSize.*)', pattern: /\bsize=\{\s*\d/ },
 ];
@@ -47,6 +48,7 @@ describe('detector de valores quemados', () => {
     ["backgroundColor: 'rgba(0, 0, 0, 0.5)'", 'color rgb/rgba'],
     ["color: 'white'", 'color con nombre'],
     ['fontSize: 14', 'fontSize numérico'],
+    ['fontWeight: \'700\'', 'fontWeight'],
     ['{ opacity: 0.5 }', 'opacity numérica'],
     ['<Ionicons name="add" size={24} />', 'tamaño de icono'],
   ])('detecta %s', (line, expected) => {
@@ -56,6 +58,7 @@ describe('detector de valores quemados', () => {
   it.each([
     'color: colors.textPrimary',
     'fontSize: fontSize.md',
+    'fontFamily: fontFamily.semibold',
     'opacity: opacity.pressed',
     '<Ionicons name="add" size={iconSize.md} />',
     "// el color #14281D es Evergreen",
@@ -78,5 +81,58 @@ describe('código de la aplicación', () => {
       findViolations(readFileSync(file, 'utf8')).map((v) => `${relative(root, file)}: ${v.rule} → ${v.text}`),
     );
     expect(violations).toEqual([]);
+  });
+});
+
+/** Rango del objeto literal `{ ... }` más cercano que contiene `index` (para revisar un estilo completo). */
+function enclosingObject(code: string, index: number): string | undefined {
+  let depth = 0;
+  let start = -1;
+  for (let i = index; i >= 0; i--) {
+    if (code[i] === '}') depth++;
+    else if (code[i] === '{') {
+      if (depth === 0) {
+        start = i;
+        break;
+      }
+      depth--;
+    }
+  }
+  if (start < 0) return undefined;
+  depth = 0;
+  for (let j = start; j < code.length; j++) {
+    if (code[j] === '{') depth++;
+    else if (code[j] === '}' && --depth === 0) return code.slice(start, j + 1);
+  }
+  return undefined;
+}
+
+/** Estilos de texto (los que fijan `fontSize`) que no fijan también `fontFamily`: saldrían con la fuente del sistema. */
+export function findTextStylesWithoutFamily(source: string): string[] {
+  const code = stripComments(source);
+  const found: string[] = [];
+  for (const match of code.matchAll(/fontSize\s*:/g)) {
+    const object = enclosingObject(code, match.index ?? 0);
+    if (object && !/fontFamily\s*:/.test(object)) found.push(object.replace(/\s+/g, ' ').slice(0, 80));
+  }
+  return found;
+}
+
+describe('tipografía: todo estilo de texto lleva su familia', () => {
+  it('detecta un estilo con fontSize y sin fontFamily', () => {
+    expect(findTextStylesWithoutFamily('const a = { fontSize: fontSize.md, color: colors.textPrimary };')).toHaveLength(1);
+  });
+
+  it('acepta un estilo con las dos cosas', () => {
+    expect(findTextStylesWithoutFamily('const a = { fontSize: fontSize.md, fontFamily: fontFamily.regular };')).toEqual([]);
+  });
+
+  it('todo estilo de texto de src/ fija fontFamily (si no, saldría con la fuente del sistema)', () => {
+    const root = join(__dirname, '..');
+    const files = sourceFiles(root).filter((file) => relative(root, file).replace(/\\/g, '/') !== 'theme/colors.ts');
+    const missing = files.flatMap((file) =>
+      findTextStylesWithoutFamily(readFileSync(file, 'utf8')).map((text) => `${relative(root, file)}: ${text}`),
+    );
+    expect(missing).toEqual([]);
   });
 });

@@ -2,7 +2,7 @@ import { StyleSheet, Text, View } from 'react-native';
 
 import { colors } from '../../../theme/colors';
 import { minTouchSize, spacing } from '../../../theme/spacing';
-import { fontSize } from '../../../theme/typography';
+import { fontFamily, fontSize } from '../../../theme/typography';
 import type { DayPoint } from '../../../utils/statistics';
 
 interface DailyBarsProps {
@@ -91,10 +91,10 @@ const styles = StyleSheet.create({
   barUnmet: { backgroundColor: colors.background, borderWidth: 1, borderColor: colors.primary },
   goalLine: { position: 'absolute', left: 0, right: 0, height: GOAL_LINE_HEIGHT, backgroundColor: colors.textSecondary },
   axis: { flexDirection: 'row', justifyContent: 'space-between' },
-  axisLabel: { fontSize: fontSize.xs, color: colors.textSecondary },
+  axisLabel: { fontSize: fontSize.xs, fontFamily: fontFamily.regular, color: colors.textSecondary },
   legend: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md },
   legendItem: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
   swatch: { width: SWATCH_SIZE, height: SWATCH_SIZE, borderRadius: GOAL_LINE_HEIGHT * 2 },
   swatchLine: { width: SWATCH_SIZE, height: GOAL_LINE_HEIGHT, backgroundColor: colors.textSecondary },
-  legendLabel: { fontSize: fontSize.xs, color: colors.textSecondary },
+  legendLabel: { fontSize: fontSize.xs, fontFamily: fontFamily.regular, color: colors.textSecondary },
 });

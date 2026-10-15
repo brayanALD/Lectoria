@@ -5,7 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { colors } from '../theme/colors';
 import { iconSize, minTouchSize, opacity, radius, spacing } from '../theme/spacing';
-import { fontSize, fontWeight, maxFontScale } from '../theme/typography';
+import { fontFamily, fontSize, maxFontScale } from '../theme/typography';
 import { READING_STATUSES, READING_STATUS_LABELS } from '../utils/book';
 import { countActiveFilters, type BookFilterOptions, type BookFilterState } from '../utils/bookFilters';
 import { Button } from './Button';
@@ -169,10 +169,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     borderWidth: 1,
     borderColor: colors.outline,
-    borderRadius: radius.md,
+    borderRadius: radius.pill,
     backgroundColor: colors.surface,
   },
-  searchInput: { flex: 1, fontSize: fontSize.md, color: colors.textPrimary, paddingVertical: 0 },
+  searchInput: { flex: 1, fontSize: fontSize.md, fontFamily: fontFamily.regular, color: colors.textPrimary, paddingVertical: 0 },
   filterButton: { width: minTouchSize, height: minTouchSize, alignItems: 'center', justifyContent: 'center' },
   pressed: { opacity: opacity.pressed },
   badge: {
@@ -187,7 +187,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  badgeText: { fontSize: fontSize.xs, fontWeight: fontWeight.bold, color: colors.onAccent },
+  badgeText: { fontSize: fontSize.xs, fontFamily: fontFamily.bold, color: colors.onAccent },
   chipRow: { gap: spacing.sm, paddingHorizontal: spacing.lg },
   overlay: { flex: 1, backgroundColor: colors.overlay },
   sheet: {
@@ -199,7 +199,7 @@ const styles = StyleSheet.create({
   },
   sheetContent: { padding: spacing.lg, paddingTop: 0, gap: spacing.lg },
   section: { gap: spacing.sm },
-  sectionTitle: { fontSize: fontSize.md, fontWeight: fontWeight.semibold, color: colors.textPrimary },
+  sectionTitle: { fontSize: fontSize.md, fontFamily: fontFamily.semibold, color: colors.textPrimary },
   wrap: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   sheetActions: { gap: spacing.sm, paddingHorizontal: spacing.lg },
 });

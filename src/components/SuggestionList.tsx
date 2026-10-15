@@ -2,7 +2,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { colors } from '../theme/colors';
 import { minTouchSize, opacity, radius, spacing } from '../theme/spacing';
-import { fontSize } from '../theme/typography';
+import { fontFamily, fontSize } from '../theme/typography';
 
 interface SuggestionListProps {
   suggestions: readonly string[];
@@ -46,5 +46,5 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
   },
   pressed: { opacity: opacity.pressed },
-  text: { fontSize: fontSize.md, color: colors.textPrimary },
+  text: { fontSize: fontSize.md, fontFamily: fontFamily.regular, color: colors.textPrimary },
 });

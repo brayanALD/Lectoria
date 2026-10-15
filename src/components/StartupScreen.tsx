@@ -16,6 +16,6 @@ export function StartupScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.background },
+  container: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.brandSurface },
   logo: { width: LOGO_WIDTH, height: LOGO_WIDTH },
 });

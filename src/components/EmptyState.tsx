@@ -3,7 +3,7 @@ import { StyleSheet, Text, View } from 'react-native';
 
 import { colors } from '../theme/colors';
 import { iconSize, minTouchSize, radius, spacing } from '../theme/spacing';
-import { fontSize, fontWeight } from '../theme/typography';
+import { fontFamily, fontSize } from '../theme/typography';
 import { Button } from './Button';
 
 interface EmptyStateProps {
@@ -52,7 +52,7 @@ const styles = StyleSheet.create({
     marginBottom: spacing.sm,
     backgroundColor: colors.accentSoft,
   },
-  title: { fontSize: fontSize.lg, fontWeight: fontWeight.bold, color: colors.textPrimary, textAlign: 'center' },
-  description: { fontSize: fontSize.md, color: colors.textSecondary, textAlign: 'center' },
+  title: { fontSize: fontSize.lg, fontFamily: fontFamily.display, color: colors.textPrimary, textAlign: 'center' },
+  description: { fontSize: fontSize.md, fontFamily: fontFamily.regular, color: colors.textSecondary, textAlign: 'center' },
   action: { alignSelf: 'stretch', marginTop: spacing.md },
 });

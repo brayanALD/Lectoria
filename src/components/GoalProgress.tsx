@@ -3,7 +3,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { colors } from '../theme/colors';
 import { iconSize, opacity, radius, spacing } from '../theme/spacing';
-import { fontSize, fontWeight } from '../theme/typography';
+import { fontFamily, fontSize } from '../theme/typography';
 import { describeGoalProgress, describeGoalSummary, type GoalProgressInfo } from '../utils/dailyGoal';
 import { ReadingProgress } from './ReadingProgress';
 
@@ -61,8 +61,8 @@ const styles = StyleSheet.create({
   container: { gap: spacing.sm, padding: spacing.md, borderRadius: radius.lg, backgroundColor: colors.surfaceTint },
   row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.xs },
   statusRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
-  summary: { fontSize: fontSize.md, color: colors.textPrimary },
-  status: { fontSize: fontSize.sm, color: colors.textSecondary },
-  statusMet: { fontWeight: fontWeight.semibold, color: colors.success },
+  summary: { fontSize: fontSize.md, fontFamily: fontFamily.regular, color: colors.textPrimary },
+  status: { fontSize: fontSize.sm, fontFamily: fontFamily.regular, color: colors.textSecondary },
+  statusMet: { fontFamily: fontFamily.semibold, color: colors.success },
   pressed: { opacity: opacity.pressed },
 });

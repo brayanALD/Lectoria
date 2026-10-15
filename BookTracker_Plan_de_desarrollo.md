@@ -138,7 +138,7 @@ Paleta oficial (archivo original copiado a `docs/palette-original.txt`). **No se
 3. **Design tokens estrictos:** ningún color ni valor de diseño escrito fuera de `src/theme/`; una prueba automática lo vigila.
 4. **Accesibilidad:** contraste de texto ≥ 4,5:1 y de controles ≥ 3:1, zonas táctiles ≥ 48 pt, roles y nombres accesibles, «reducir movimiento» y escalado de texto.
 
-**Tema oscuro** [Pendiente: decidir si entra en 1.0]: `background` = Evergreen, `textPrimary` = Porcelain, `accent` = Soft Fawn, `primary` sería un tono más claro que Hunter Green (no definido en la paleta; Hunter Green sobre Evergreen tiene contraste 1,92:1 y no sirve como texto/botón). `error` oscuro propuesto: `#F0A19B`.
+**Tema oscuro** [Confirmado e implementado, 2026-10-14]: sigue al tema del sistema al abrir la app. `background` = Evergreen, `textPrimary` = Porcelain, `textSecondary` = Soft Fawn (6,78:1), `accent` = Soft Fawn, `primary` = Hunter Green aclarado hacia Porcelain (mezcla derivada de la paleta; Hunter Green puro sobre Evergreen solo da 1,92:1) y error `#F0A19B`. El logo y el botón de Google conservan un fondo claro. Contrastes verificados en `colors.test.ts`. Pendiente: conmutador dentro de la app y cambio en vivo; requiere un build nuevo de EAS (`userInterfaceStyle`).
 
 ### Colores complementarios (únicamente indispensables)
 
@@ -414,7 +414,7 @@ Orden de la Fase 1 (plantilla): theme → AuthContext → AppNavigator → Login
 
 1. ~~Versión exacta de Expo/SDK~~ — resuelto: SDK 57 (sección 2).
 2. ~~Proveedor bibliográfico~~ — resuelto: Open Library (sección 8).
-3. Tema oscuro: ¿en 1.0 o después? (y su `primary`).
+3. ~~Tema oscuro~~ — resuelto (2026-10-14): implementado siguiendo al sistema; faltan el conmutador interno y el cambio en vivo.
 4. Comportamiento sin conexión: la sesión se persiste con AsyncStorage (`getReactNativePersistence`, implementado en la Fase 1 pero **aún no probado en un dispositivo**). La caché sin conexión de Firestore en React Native sigue **por verificar**; 1.0 solo exige recuperar datos al reabrir con conexión.
 5. Objetivos anuales y unidades para el objetivo mensual. (El objetivo diario en páginas ya está resuelto, 2026-10-13.)
 6. Entidades propias de autores y sagas (1.2); caché compartida de catálogo.

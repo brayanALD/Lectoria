@@ -6,6 +6,7 @@ import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { DailyGoalSheet } from '../../../components/DailyGoalSheet';
 import { EmptyState } from '../../../components/EmptyState';
+import { FadeIn } from '../../../components/FadeIn';
 import { GoalProgress } from '../../../components/GoalProgress';
 import { HomeSkeleton } from '../../../components/HomeSkeleton';
 import { SessionRow } from '../../../components/SessionRow';
@@ -18,7 +19,7 @@ import { useSessions } from '../../../hooks/useSessions';
 import type { AppStackParamList } from '../../../navigation/types';
 import { colors } from '../../../theme/colors';
 import { iconSize, minTouchSize, radius, spacing } from '../../../theme/spacing';
-import { fontSize, fontWeight } from '../../../theme/typography';
+import { fontFamily, fontSize } from '../../../theme/typography';
 import { formatDayLabel } from '../../../utils/calendar';
 import { formatTotals } from '../../../utils/readingStats';
 import { ReadingActions } from './ReadingActions';
@@ -27,6 +28,8 @@ import { ReadingActions } from './ReadingActions';
 const STREAK_NUMBER_SCALE = 2;
 // Cuántas lecturas se muestran en «Actividad reciente».
 const RECENT_ACTIVITY_COUNT = 5;
+// Retraso entre una sección de Inicio y la siguiente en la entrada escalonada.
+const STAGGER_MS = 70;
 
 export function HomeScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<AppStackParamList>>();
@@ -75,32 +78,40 @@ export function HomeScreen() {
   return (
     <>
       <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
-        <View style={styles.streak} accessible accessibilityLabel={describeStreak(streaks.current, streaks.longest)}>
-          <View style={styles.streakText}>
-            <Text style={styles.number}>{streaks.current}</Text>
-            <Text style={styles.caption}>{streaks.current === 1 ? 'día seguido' : 'días seguidos'}</Text>
-            {streaks.longest > streaks.current ? <Text style={styles.record}>Récord: {streaks.longest}</Text> : null}
+        <FadeIn>
+          <View style={styles.streak} accessible accessibilityLabel={describeStreak(streaks.current, streaks.longest)}>
+            <View style={styles.streakText}>
+              <Text style={styles.number}>{streaks.current}</Text>
+              <Text style={styles.caption}>{streaks.current === 1 ? 'día seguido' : 'días seguidos'}</Text>
+              {streaks.longest > streaks.current ? <Text style={styles.record}>Récord: {streaks.longest}</Text> : null}
+            </View>
+            <View style={styles.streakBadge}>
+              <Ionicons name="flame" size={iconSize.lg} color={colors.onAccent} accessible={false} />
+            </View>
           </View>
-          <View style={styles.streakBadge}>
-            <Ionicons name="flame" size={iconSize.lg} color={colors.onAccent} accessible={false} />
-          </View>
-        </View>
+        </FadeIn>
 
-        {goal.progress ? (
-          <GoalProgress progress={goal.progress} onPress={() => setEditingGoal(true)} />
-        ) : (
-          <SetGoalLink onPress={() => setEditingGoal(true)} />
-        )}
+        <FadeIn delay={STAGGER_MS}>
+          {goal.progress ? (
+            <GoalProgress progress={goal.progress} onPress={() => setEditingGoal(true)} />
+          ) : (
+            <SetGoalLink onPress={() => setEditingGoal(true)} />
+          )}
+        </FadeIn>
 
-        <ReadingActions onRegister={() => navigation.navigate('AddSession')} onOpenTimer={() => navigation.navigate('Timer')} />
+        <FadeIn delay={STAGGER_MS * 2}>
+          <ReadingActions onRegister={() => navigation.navigate('AddSession')} onOpenTimer={() => navigation.navigate('Timer')} />
+        </FadeIn>
 
-        <View style={styles.activity}>
+        <FadeIn delay={STAGGER_MS * 3} style={styles.activity}>
           <Text style={styles.heading} accessibilityRole="header">
             Actividad reciente
           </Text>
           {recent.length === 0 ? (
             <View style={styles.empty}>
-              <Ionicons name="book-outline" size={iconSize.xl} color={colors.textSecondary} accessible={false} />
+              <View style={styles.emptyBadge}>
+                <Ionicons name="book-outline" size={iconSize.lg} color={colors.primary} accessible={false} />
+              </View>
               <Text style={styles.emptyTitle}>Aún no has registrado lecturas</Text>
             </View>
           ) : (
@@ -117,7 +128,7 @@ export function HomeScreen() {
               );
             })
           )}
-        </View>
+        </FadeIn>
 
         {error ? (
           <Text style={styles.error} accessibilityRole="alert">
@@ -159,12 +170,20 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: colors.accent,
   },
-  number: { fontSize: fontSize.xl * STREAK_NUMBER_SCALE, fontWeight: fontWeight.bold, color: colors.primary },
-  caption: { fontSize: fontSize.lg, color: colors.textPrimary },
-  record: { fontSize: fontSize.sm, color: colors.textSecondary },
+  number: { fontSize: fontSize.xl * STREAK_NUMBER_SCALE, fontFamily: fontFamily.displayBold, color: colors.primary },
+  caption: { fontSize: fontSize.lg, fontFamily: fontFamily.regular, color: colors.textPrimary },
+  record: { fontSize: fontSize.sm, fontFamily: fontFamily.regular, color: colors.textSecondary },
   activity: { gap: spacing.sm },
-  heading: { fontSize: fontSize.lg, fontWeight: fontWeight.bold, color: colors.textPrimary },
+  heading: { fontSize: fontSize.lg, fontFamily: fontFamily.display, color: colors.textPrimary },
   empty: { alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.lg },
-  emptyTitle: { fontSize: fontSize.md, color: colors.textSecondary, textAlign: 'center' },
-  error: { fontSize: fontSize.sm, color: colors.error },
+  emptyBadge: {
+    width: minTouchSize + spacing.lg,
+    height: minTouchSize + spacing.lg,
+    borderRadius: radius.pill,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.accentSoft,
+  },
+  emptyTitle: { fontSize: fontSize.md, fontFamily: fontFamily.regular, color: colors.textSecondary, textAlign: 'center' },
+  error: { fontSize: fontSize.sm, fontFamily: fontFamily.regular, color: colors.error },
 });

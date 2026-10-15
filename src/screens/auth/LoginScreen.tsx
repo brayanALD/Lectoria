@@ -9,7 +9,7 @@ import { TextField } from '../../components/TextField';
 import { useAuth } from '../../context/AuthContext';
 import type { AuthStackParamList } from '../../navigation/types';
 import { colors } from '../../theme/colors';
-import { fontSize } from '../../theme/typography';
+import { fontFamily, fontSize } from '../../theme/typography';
 import { getAuthErrorMessage } from '../../utils/authErrors';
 import { isValidEmail } from '../../utils/validation';
 
@@ -77,5 +77,5 @@ export function LoginScreen({ navigation }: Props) {
 }
 
 const styles = StyleSheet.create({
-  error: { fontSize: fontSize.sm, color: colors.error },
+  error: { fontSize: fontSize.sm, fontFamily: fontFamily.regular, color: colors.error },
 });

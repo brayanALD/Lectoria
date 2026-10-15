@@ -15,7 +15,7 @@ import { useSessions } from '../../../hooks/useSessions';
 import type { AppStackParamList } from '../../../navigation/types';
 import { colors } from '../../../theme/colors';
 import { spacing } from '../../../theme/spacing';
-import { fontSize } from '../../../theme/typography';
+import { fontFamily, fontSize } from '../../../theme/typography';
 import { compareMonths, cursorForMonth, monthOf, startOfWeek } from '../../../utils/calendar';
 import { DaySessions } from './DaySessions';
 import { WeekView } from './WeekView';
@@ -173,5 +173,5 @@ const styles = StyleSheet.create({
   content: { padding: spacing.lg, gap: spacing.lg, paddingBottom: spacing.xl * 2 },
   switch: { flexDirection: 'row', gap: spacing.sm },
   switchItem: { flex: 1 },
-  error: { fontSize: fontSize.sm, color: colors.error },
+  error: { fontSize: fontSize.sm, fontFamily: fontFamily.regular, color: colors.error },
 });

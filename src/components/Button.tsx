@@ -1,9 +1,10 @@
 import type { ReactNode } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 
 import { colors } from '../theme/colors';
 import { minTouchSize, opacity, radius, spacing } from '../theme/spacing';
-import { fontSize, fontWeight } from '../theme/typography';
+import { fontFamily, fontSize } from '../theme/typography';
+import { PressableScale } from './PressableScale';
 
 interface ButtonProps {
   title: string;
@@ -32,13 +33,13 @@ export function Button({
   const contentColor = isPrimary
     ? colors.onPrimary
     : isGoogle
-      ? colors.textPrimary
+      ? colors.onBrandSurface
       : isDanger
         ? colors.error
         : colors.primary;
 
   return (
-    <Pressable
+    <PressableScale
       accessibilityRole="button"
       accessibilityLabel={title}
       accessibilityState={{ disabled: inactive, busy: loading }}
@@ -59,7 +60,7 @@ export function Button({
           <Text style={[styles.label, { color: contentColor }]}>{title}</Text>
         </View>
       )}
-    </Pressable>
+    </PressableScale>
   );
 }
 
@@ -74,9 +75,9 @@ const styles = StyleSheet.create({
   primary: { backgroundColor: colors.primary },
   secondary: { backgroundColor: 'transparent', borderWidth: 1, borderColor: colors.primary },
   danger: { backgroundColor: 'transparent', borderWidth: 1, borderColor: colors.error },
-  google: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.outline },
+  google: { backgroundColor: colors.brandSurface, borderWidth: 1, borderColor: colors.brandOutline },
   pressed: { opacity: opacity.pressed },
   disabled: { opacity: opacity.disabled },
   content: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  label: { fontSize: fontSize.md, fontWeight: fontWeight.semibold },
+  label: { fontSize: fontSize.md, fontFamily: fontFamily.semibold },
 });

@@ -3,7 +3,7 @@ import { Pressable, ScrollView, StyleSheet, Text } from 'react-native';
 import type { UserBookWithId } from '../types/book';
 import { colors } from '../theme/colors';
 import { minTouchSize, opacity, radius, spacing } from '../theme/spacing';
-import { fontSize, fontWeight } from '../theme/typography';
+import { fontFamily, fontSize } from '../theme/typography';
 import { READING_STATUS_LABELS } from '../utils/book';
 import { sortBooksForSession } from '../utils/sessionBooks';
 import { Sheet } from './Sheet';
@@ -63,6 +63,6 @@ const styles = StyleSheet.create({
   },
   rowSelected: { backgroundColor: colors.primary, borderColor: colors.primary },
   pressed: { opacity: opacity.pressed },
-  title: { fontSize: fontSize.md, fontWeight: fontWeight.semibold },
-  status: { fontSize: fontSize.sm },
+  title: { fontSize: fontSize.md, fontFamily: fontFamily.semibold },
+  status: { fontSize: fontSize.sm , fontFamily: fontFamily.regular},
 });

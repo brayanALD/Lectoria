@@ -3,7 +3,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import type { ReadingStatus } from '../types/book';
 import { colors } from '../theme/colors';
 import { minTouchSize, opacity, radius, spacing } from '../theme/spacing';
-import { fontSize, fontWeight, maxFontScale } from '../theme/typography';
+import { fontFamily, fontSize, maxFontScale } from '../theme/typography';
 import { READING_STATUSES, READING_STATUS_LABELS } from '../utils/book';
 
 interface StatusSelectorProps {
@@ -60,7 +60,7 @@ export function StatusSelector({
 
 const styles = StyleSheet.create({
   container: { gap: spacing.xs },
-  label: { fontSize: fontSize.sm, fontWeight: fontWeight.semibold, color: colors.textPrimary },
+  label: { fontSize: fontSize.sm, fontFamily: fontFamily.semibold, color: colors.textPrimary },
   options: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   chip: {
     minHeight: minTouchSize,
@@ -73,6 +73,6 @@ const styles = StyleSheet.create({
   chipIdle: { backgroundColor: colors.surface, borderColor: colors.outline },
   chipSelected: { backgroundColor: colors.primary, borderColor: colors.primary },
   pressed: { opacity: opacity.pressed },
-  chipText: { fontSize: fontSize.md, fontWeight: fontWeight.semibold },
-  error: { fontSize: fontSize.sm, color: colors.error },
+  chipText: { fontSize: fontSize.md, fontFamily: fontFamily.semibold },
+  error: { fontSize: fontSize.sm, fontFamily: fontFamily.regular, color: colors.error },
 });

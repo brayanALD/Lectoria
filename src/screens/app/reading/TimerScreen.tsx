@@ -13,7 +13,7 @@ import { useNow } from '../../../hooks/useNow';
 import type { AppStackParamList } from '../../../navigation/types';
 import { colors } from '../../../theme/colors';
 import { radius, spacing } from '../../../theme/spacing';
-import { fontSize, fontWeight } from '../../../theme/typography';
+import { fontFamily, fontSize } from '../../../theme/typography';
 import { describeClock, formatClock, getElapsedMs, isTimerRunning } from '../../../utils/readingTimer';
 import { pickDefaultBook } from '../../../utils/sessionBooks';
 
@@ -143,11 +143,11 @@ const styles = StyleSheet.create({
   clock: { alignItems: 'center', gap: spacing.xs, padding: spacing.xl, borderRadius: radius.lg, backgroundColor: colors.surfaceTint },
   time: {
     fontSize: fontSize.xl * CLOCK_SCALE,
-    fontWeight: fontWeight.bold,
+    fontFamily: fontFamily.displayBold,
     color: colors.primary,
     // Cifras de ancho fijo: el reloj no «baila» al cambiar de segundo.
     fontVariant: ['tabular-nums'],
   },
-  state: { fontSize: fontSize.lg, color: colors.textSecondary },
+  state: { fontSize: fontSize.lg, fontFamily: fontFamily.regular, color: colors.textSecondary },
   actions: { gap: spacing.md },
 });

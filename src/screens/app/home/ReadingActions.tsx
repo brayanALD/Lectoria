@@ -1,11 +1,13 @@
 import { Ionicons } from '@expo/vector-icons';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 
+import { PressableScale } from '../../../components/PressableScale';
 import { useReadingTimer } from '../../../context/ReadingTimerContext';
 import { useNow } from '../../../hooks/useNow';
 import { colors } from '../../../theme/colors';
+import { elevation } from '../../../theme/elevation';
 import { iconSize, minTouchSize, opacity, radius, spacing } from '../../../theme/spacing';
-import { fontSize, fontWeight } from '../../../theme/typography';
+import { fontFamily, fontSize } from '../../../theme/typography';
 import { describeClock, formatClock, getElapsedMs, isTimerRunning } from '../../../utils/readingTimer';
 
 interface ReadingActionsProps {
@@ -43,7 +45,8 @@ function CardBadge({ icon }: { icon: keyof typeof Ionicons.glyphMap }) {
 
 function RegisterCard({ onPress }: { onPress: () => void }) {
   return (
-    <Pressable
+    <PressableScale
+      containerStyle={styles.cell}
       accessibilityRole="button"
       accessibilityLabel="Registrar lectura"
       onPress={onPress}
@@ -51,7 +54,7 @@ function RegisterCard({ onPress }: { onPress: () => void }) {
     >
       <CardBadge icon="add" />
       <Text style={[styles.label, { color: colors.onPrimary }]}>Registrar lectura</Text>
-    </Pressable>
+    </PressableScale>
   );
 }
 
@@ -70,7 +73,8 @@ function TimerCard({ onPress }: { onPress: () => void }) {
     : 'Cronómetro';
 
   return (
-    <Pressable
+    <PressableScale
+      containerStyle={styles.cell}
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel}
       onPress={onPress}
@@ -85,13 +89,15 @@ function TimerCard({ onPress }: { onPress: () => void }) {
       ) : (
         <Text style={[styles.label, { color: colors.textPrimary }]}>Cronómetro</Text>
       )}
-    </Pressable>
+    </PressableScale>
   );
 }
 
 const styles = StyleSheet.create({
   // Solo reparte el ancho entre las dos cards: sin borde ni fondo, para que no parezcan un solo módulo.
   row: { flexDirection: 'row', gap: spacing.md },
+  // Contenedor animado de cada card: reparte la fila a partes iguales (la card lo rellena).
+  cell: { flex: 1 },
   card: {
     flex: 1,
     alignItems: 'center',
@@ -101,6 +107,7 @@ const styles = StyleSheet.create({
     minHeight: CARD_MIN_HEIGHT,
     borderWidth: 1,
     borderRadius: radius.lg,
+    ...elevation.low,
   },
   registerCard: { backgroundColor: colors.primary, borderColor: colors.primary },
   registerCardPressed: { backgroundColor: colors.pressed, borderColor: colors.pressed },
@@ -117,9 +124,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: colors.accent,
   },
-  label: { fontSize: fontSize.md, fontWeight: fontWeight.semibold, textAlign: 'center' },
+  label: { fontSize: fontSize.md, fontFamily: fontFamily.semibold, textAlign: 'center' },
   // Cifras de ancho fijo: el reloj no «baila» al cambiar de segundo.
-  time: { fontSize: fontSize.lg, fontWeight: fontWeight.bold, fontVariant: ['tabular-nums'] },
+  time: { fontSize: fontSize.lg, fontFamily: fontFamily.bold, fontVariant: ['tabular-nums'] },
   status: { alignItems: 'center', gap: spacing.xs },
-  caption: { fontSize: fontSize.sm, color: colors.textSecondary },
+  caption: { fontSize: fontSize.sm, fontFamily: fontFamily.regular, color: colors.textSecondary },
 });

@@ -21,7 +21,7 @@ import { adjustBookProgress } from '../../../services/sessionsService';
 import type { ReadingStatus } from '../../../types/book';
 import { colors } from '../../../theme/colors';
 import { iconSize, opacity, radius, spacing } from '../../../theme/spacing';
-import { fontSize, fontWeight } from '../../../theme/typography';
+import { fontFamily, fontSize } from '../../../theme/typography';
 import { getProgressPercent } from '../../../utils/book';
 import { formatDayLabel } from '../../../utils/calendar';
 import { formatLongDate } from '../../../utils/dateUtils';
@@ -233,18 +233,18 @@ const styles = StyleSheet.create({
   content: { padding: spacing.lg, gap: spacing.lg, paddingBottom: spacing.xl * 2 },
   header: { flexDirection: 'row', gap: spacing.md, alignItems: 'flex-start' },
   headerText: { flex: 1, gap: spacing.xs },
-  title: { fontSize: fontSize.xl, fontWeight: fontWeight.bold, color: colors.textPrimary },
-  authors: { fontSize: fontSize.md, color: colors.textSecondary },
+  title: { fontSize: fontSize.xl, fontFamily: fontFamily.displayBold, color: colors.textPrimary },
+  authors: { fontSize: fontSize.md, fontFamily: fontFamily.regular, color: colors.textSecondary },
   section: { gap: spacing.sm, padding: spacing.md, borderRadius: radius.lg, backgroundColor: colors.surfaceTint },
   progressRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  progressText: { fontSize: fontSize.md, color: colors.textPrimary },
+  progressText: { fontSize: fontSize.md, fontFamily: fontFamily.regular, color: colors.textPrimary },
   pressed: { opacity: opacity.pressed },
   row: { flexDirection: 'row', justifyContent: 'space-between', gap: spacing.md },
-  rowLabel: { fontSize: fontSize.md, color: colors.textSecondary },
-  rowValue: { flex: 1, fontSize: fontSize.md, color: colors.textPrimary, textAlign: 'right' },
-  error: { fontSize: fontSize.sm, color: colors.error },
+  rowLabel: { fontSize: fontSize.md, fontFamily: fontFamily.regular, color: colors.textSecondary },
+  rowValue: { flex: 1, fontSize: fontSize.md, fontFamily: fontFamily.regular, color: colors.textPrimary, textAlign: 'right' },
+  error: { fontSize: fontSize.sm, fontFamily: fontFamily.regular, color: colors.error },
   sessions: { gap: spacing.sm },
-  heading: { fontSize: fontSize.lg, fontWeight: fontWeight.bold, color: colors.textPrimary },
-  sessionsSummary: { fontSize: fontSize.md, color: colors.textSecondary },
+  heading: { fontSize: fontSize.lg, fontFamily: fontFamily.display, color: colors.textPrimary },
+  sessionsSummary: { fontSize: fontSize.md, fontFamily: fontFamily.regular, color: colors.textSecondary },
   actions: { gap: spacing.md },
 });

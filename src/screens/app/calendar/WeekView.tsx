@@ -4,7 +4,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { PeriodHeader } from '../../../components/PeriodHeader';
 import { colors } from '../../../theme/colors';
 import { iconSize, minTouchSize, opacity, radius, spacing } from '../../../theme/spacing';
-import { fontSize, fontWeight, maxFontScale } from '../../../theme/typography';
+import { fontFamily, fontSize, maxFontScale } from '../../../theme/typography';
 import { addDays } from '../../../utils/readingDays';
 import { formatDateKeyLong, formatWeekLabel, formatWeekdayAndDay, getWeekDays, startOfWeek } from '../../../utils/calendar';
 import type { DailyGoal } from '../../../types/goal';
@@ -88,7 +88,7 @@ export function WeekView({ cursor, onCursorChange, todayKey, selectedKey, days, 
 
 const styles = StyleSheet.create({
   container: { gap: spacing.xs },
-  totals: { fontSize: fontSize.md, color: colors.textSecondary, textAlign: 'center', marginBottom: spacing.xs },
+  totals: { fontSize: fontSize.md, fontFamily: fontFamily.regular, color: colors.textSecondary, textAlign: 'center', marginBottom: spacing.xs },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -104,9 +104,9 @@ const styles = StyleSheet.create({
   rowSelected: { borderColor: colors.primary },
   future: { opacity: opacity.disabled },
   pressed: { opacity: opacity.pressed },
-  dayLabel: { width: minTouchSize + spacing.sm, fontSize: fontSize.sm, fontWeight: fontWeight.semibold, color: colors.textPrimary },
+  dayLabel: { width: minTouchSize + spacing.sm, fontSize: fontSize.sm, fontFamily: fontFamily.semibold, color: colors.textPrimary },
   barArea: { flex: 1, gap: spacing.xs },
   track: { height: BAR_HEIGHT, borderRadius: BAR_HEIGHT / 2, backgroundColor: colors.border, overflow: 'hidden' },
   bar: { height: '100%', borderRadius: BAR_HEIGHT / 2, backgroundColor: colors.primary },
-  summary: { fontSize: fontSize.sm, color: colors.textSecondary },
+  summary: { fontSize: fontSize.sm, fontFamily: fontFamily.regular, color: colors.textSecondary },
 });

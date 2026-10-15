@@ -7,7 +7,7 @@ import { EmptyState } from '../../../components/EmptyState';
 import type { AppStackParamList } from '../../../navigation/types';
 import { colors } from '../../../theme/colors';
 import { radius, spacing } from '../../../theme/spacing';
-import { fontSize, fontWeight } from '../../../theme/typography';
+import { fontFamily, fontSize } from '../../../theme/typography';
 import { getScanFeedback, parseIsbn } from '../../../utils/isbn';
 
 type Props = NativeStackScreenProps<AppStackParamList, 'ScanBook'>;
@@ -97,7 +97,7 @@ const styles = StyleSheet.create({
   panelText: {
     textAlign: 'center',
     fontSize: fontSize.md,
-    fontWeight: fontWeight.semibold,
+    fontFamily: fontFamily.semibold,
     color: colors.background,
   },
 });

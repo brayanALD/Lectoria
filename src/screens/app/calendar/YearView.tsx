@@ -3,7 +3,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { PeriodHeader } from '../../../components/PeriodHeader';
 import { colors } from '../../../theme/colors';
 import { minTouchSize, opacity, radius, spacing } from '../../../theme/spacing';
-import { fontSize, fontWeight, maxFontScale } from '../../../theme/typography';
+import { fontFamily, fontSize, maxFontScale } from '../../../theme/typography';
 import { formatMonthLabel, formatMonthShort } from '../../../utils/calendar';
 import type { DaySummary } from '../../../utils/readingDays';
 import { formatTotals, summarizeYear } from '../../../utils/readingStats';
@@ -82,7 +82,7 @@ export function YearView({ year, onYearChange, today, days, onSelectMonth }: Yea
 
 const styles = StyleSheet.create({
   container: { gap: spacing.xs },
-  totals: { fontSize: fontSize.md, color: colors.textSecondary, textAlign: 'center', marginBottom: spacing.xs },
+  totals: { fontSize: fontSize.md, fontFamily: fontFamily.regular, color: colors.textSecondary, textAlign: 'center', marginBottom: spacing.xs },
   grid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', rowGap: spacing.sm },
   tile: {
     width: TILE_WIDTH,
@@ -100,8 +100,8 @@ const styles = StyleSheet.create({
   tileCurrent: { borderColor: colors.primary },
   future: { opacity: opacity.disabled },
   pressed: { opacity: opacity.pressed },
-  month: { fontSize: fontSize.sm, fontWeight: fontWeight.semibold, color: colors.textSecondary, textTransform: 'capitalize' },
-  days: { fontSize: fontSize.lg, fontWeight: fontWeight.bold, color: colors.textPrimary },
+  month: { fontSize: fontSize.sm, fontFamily: fontFamily.semibold, color: colors.textSecondary, textTransform: 'capitalize' },
+  days: { fontSize: fontSize.lg, fontFamily: fontFamily.bold, color: colors.textPrimary },
   track: { alignSelf: 'stretch', height: BAR_HEIGHT, borderRadius: BAR_HEIGHT / 2, backgroundColor: colors.border, overflow: 'hidden' },
   bar: { height: '100%', borderRadius: BAR_HEIGHT / 2, backgroundColor: colors.primary },
 });

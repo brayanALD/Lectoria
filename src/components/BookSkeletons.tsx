@@ -44,7 +44,7 @@ export function LibrarySkeleton({ grid = false }: { grid?: boolean }) {
     <SkeletonPulse label="Cargando biblioteca">
       <View style={styles.library}>
         <View style={styles.searchRow}>
-          <Skeleton width="85%" height={minTouchSize} style={styles.rounded} />
+          <Skeleton width="85%" height={minTouchSize} style={styles.pill} />
           <Skeleton width={minTouchSize} height={minTouchSize} style={styles.rounded} />
         </View>
         <View style={styles.chipRow}>

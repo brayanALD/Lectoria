@@ -19,8 +19,8 @@ import { useSaveDailyGoal } from '../../../hooks/useSaveDailyGoal';
 import { useSessions } from '../../../hooks/useSessions';
 import type { AppStackParamList } from '../../../navigation/types';
 import { colors } from '../../../theme/colors';
-import { iconSize, opacity, spacing } from '../../../theme/spacing';
-import { fontSize, fontWeight } from '../../../theme/typography';
+import { iconSize, opacity, radius, spacing } from '../../../theme/spacing';
+import { fontFamily, fontSize } from '../../../theme/typography';
 import {
   addMonths,
   compareMonths,
@@ -220,11 +220,11 @@ const styles = StyleSheet.create({
   switch: { flexDirection: 'row', gap: spacing.sm },
   switchItem: { flex: 1 },
   tiles: { flexDirection: 'row', gap: spacing.sm },
-  section: { gap: spacing.sm },
-  heading: { fontSize: fontSize.lg, fontWeight: fontWeight.bold, color: colors.textPrimary },
+  section: { gap: spacing.sm, padding: spacing.md, borderRadius: radius.lg, backgroundColor: colors.surfaceTint },
+  heading: { fontSize: fontSize.lg, fontFamily: fontFamily.display, color: colors.textPrimary },
   goalRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.xs },
-  goalTitle: { flex: 1, fontSize: fontSize.md, color: colors.textPrimary },
-  goalTarget: { fontSize: fontSize.sm, color: colors.textSecondary },
-  streak: { fontSize: fontSize.md, color: colors.textSecondary, textAlign: 'center' },
+  goalTitle: { flex: 1, fontSize: fontSize.md, fontFamily: fontFamily.regular, color: colors.textPrimary },
+  goalTarget: { fontSize: fontSize.sm, fontFamily: fontFamily.regular, color: colors.textSecondary },
+  streak: { fontSize: fontSize.md, fontFamily: fontFamily.regular, color: colors.textSecondary, textAlign: 'center' },
   pressed: { opacity: opacity.pressed },
 });

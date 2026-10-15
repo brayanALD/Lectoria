@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { Image, StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
 
+import { colors as theme } from '../theme/colors';
 import { radius } from '../theme/spacing';
-import { fontSize, fontWeight } from '../theme/typography';
+import { fontFamily, fontSize } from '../theme/typography';
 import { getCoverColors, getCoverInitials } from '../utils/bookCover';
 
 // Proporción habitual de una portada (ancho : alto = 2 : 3).
@@ -44,7 +45,7 @@ export function BookCover({ title, coverUrl, width, style }: BookCoverProps) {
         />
       ) : (
         <Text
-          style={[styles.initials, { color: colors.foreground, fontSize: width ? width * INITIALS_SCALE : fontSize.xl }]}
+          style={[{ color: colors.foreground, fontSize: width ? width * INITIALS_SCALE : fontSize.xl, fontFamily: fontFamily.displayBold }]}
           adjustsFontSizeToFit
           numberOfLines={1}
         >
@@ -58,10 +59,12 @@ export function BookCover({ title, coverUrl, width, style }: BookCoverProps) {
 const styles = StyleSheet.create({
   container: {
     borderRadius: radius.sm,
+    // Un filo sutil: la portada de reemplazo en Evergreen no debe confundirse con el fondo en el tema oscuro.
+    borderWidth: 1,
+    borderColor: theme.border,
     overflow: 'hidden',
     alignItems: 'center',
     justifyContent: 'center',
   },
   image: { width: '100%', height: '100%' },
-  initials: { fontWeight: fontWeight.bold },
 });

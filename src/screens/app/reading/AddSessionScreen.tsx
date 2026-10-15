@@ -21,7 +21,7 @@ import type { UserBookWithId } from '../../../types/book';
 import type { ReadingSessionWithId, SessionFormErrors } from '../../../types/session';
 import { colors } from '../../../theme/colors';
 import { minTouchSize, spacing } from '../../../theme/spacing';
-import { fontSize } from '../../../theme/typography';
+import { fontFamily, fontSize } from '../../../theme/typography';
 import { dateForDay, formatDayLabel, resolveDayKey } from '../../../utils/calendar';
 import { getFirestoreErrorMessage } from '../../../utils/firestoreErrors';
 import { buildTimerDraft, type TimerDraft } from '../../../utils/readingTimer';
@@ -334,5 +334,5 @@ const styles = StyleSheet.create({
   flex: { flex: 1, backgroundColor: colors.background },
   content: { padding: spacing.lg, gap: spacing.md, paddingBottom: spacing.xl * 3 },
   notes: { minHeight: minTouchSize * 2, textAlignVertical: 'top', paddingTop: spacing.sm },
-  error: { fontSize: fontSize.sm, color: colors.error },
+  error: { fontSize: fontSize.sm, fontFamily: fontFamily.regular, color: colors.error },
 });

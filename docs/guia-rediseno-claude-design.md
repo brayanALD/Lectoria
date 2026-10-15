@@ -116,13 +116,13 @@ Tokens semánticos que **existen hoy** (los únicos que debes usar o ampliar):
 
 Contrastes verificados (WCAG): Evergreen/Porcelain 14,13:1 · Hunter Green/Porcelain 7,35:1 · Olive Bark/Porcelain 5,43:1 · Evergreen/Soft Fawn 6,78:1 · Error/Porcelain 5,94:1 · **Soft Fawn/Porcelain 2,08:1 (no usar para texto/iconos)** · Hunter Green/Evergreen 1,92:1 (no combinar).
 
-**Tema oscuro:** **no existe** (`userInterfaceStyle: "light"`, `StatusBar style="dark"`). Está como decisión pendiente del plan. Si lo propones, sería: fondo Evergreen, texto Porcelain, acento Soft Fawn y un `primary` más claro que Hunter Green (no definido en la paleta). No lo implementes sin aprobación.
+**Tema oscuro (2026-10-14):** **existe y sigue al tema del sistema al abrir la app.** `colors.ts` define `lightColors` y `darkColors`, ambos derivados de la misma paleta: fondo Evergreen, texto Porcelain, texto secundario Soft Fawn (6,78:1), `primary` = Hunter Green aclarado hacia Porcelain (Hunter Green puro sobre Evergreen solo da 1,92:1), error `#F0A19B`. El tema se decide **una vez al cargar** (`Appearance.getColorScheme()`): un cambio de tema del sistema con la app abierta se aplica al reabrirla, y no hay conmutador dentro de la app. `userInterfaceStyle: "automatic"` exige un build nuevo de EAS. La marca clara es fija en ambos temas (`brandSurface`, `onBrandSurface`, `brandOutline`): el logo va sobre una losa clara, y la pantalla de arranque y el botón de Google conservan su fondo claro. Los contrastes de los dos temas los verifica `colors.test.ts`.
 
 ### 3.2 Tipografía (`src/theme/typography.ts`)
 
-- **Familia:** **fuente del sistema** (no hay `fontFamily` en ningún sitio; el plugin `expo-font` está en `app.json` pero no se carga ninguna fuente). Una tipografía propia es una **decisión abierta**: requiere añadir archivos de fuente y cargarlos → proponla, no la asumas.
+- **Familia (2026-10-14):** **Figtree** (sans, interfaz) y **Literata** (serif pensada para lectura, títulos y cifras protagonistas: racha, reloj, cifras de estadísticas, encabezados de sección y de navegación, títulos de libro). Vienen de `@expo-google-fonts/*`, importando cada peso por separado (`src/theme/fonts.ts`; solo 5 archivos, ≈640 KB) y se cargan en `App.tsx` con `useFonts`. Tokens: `fontFamily.regular | semibold | bold | display | displayBold`.
 - **Tamaños:** `xs` 12 · `sm` 13 · `md` 16 · `lg` 20 · `xl` 28.
-- **Pesos:** `regular` 400 · `semibold` 600 · `bold` 700.
+- **Pesos:** se expresan **solo con la familia** (`fontFamily.*`): `fontWeight` está **prohibido** porque en Android no elige el archivo de una familia personalizada, y todo estilo que fije `fontSize` debe fijar también `fontFamily` (lo vigila `designTokens.test.ts`). Si las fuentes no cargan, la app sigue con la del sistema.
 - **Escalas locales ya en uso:** la cifra de la racha (`fontSize.xl × 2` = 56) y el reloj del cronómetro (`fontSize.xl × 2`, cifras tabulares `tabular-nums`).
 - **Escalado del sistema:** el texto escala con la preferencia del usuario; `maxFontScale = 1.4` se aplica con `maxFontSizeMultiplier` **solo** a etiquetas de tamaño fijo (chips, días del calendario). **Sin alturas fijas en contenedores de texto.**
 - No hay `lineHeight` ni `letterSpacing` definidos (valores por defecto del sistema).
@@ -141,7 +141,7 @@ Patrón de maquetación dominante: pantallas con `padding: spacing.lg` (24), `ga
 
 ### 3.4 Superficies, bordes y profundidad
 
-- **No hay sombras ni elevación** en el código. Desde el 2026-10-14 la jerarquía se logra con **superficies tonales** (`surfaceTint`, sin borde) en cards y bloques de datos, **rellenos** (`primary`, `accent`) y **espacio**; los **controles** conservan el borde `outline` 1 px.
+- **Sombras (2026-10-14):** tokens `elevation.low` (cards pulsables: `BookCard`, las dos cards de Inicio) y `elevation.high` (hojas, hacia arriba) en `src/theme/elevation.ts`, con `colors.shadow`. Lo que lleva sombra necesita un fondo **opaco** (`surfaceRaised`, no `surfaceTint`): en Android la sombra se vería a través de un fondo translúcido. El resto de la jerarquía sigue siendo **superficies tonales** (`surfaceTint`, sin borde), **rellenos** (`primary`, `accent`) y **espacio**; los **controles** conservan el borde `outline` 1 px.
 - Cards decorativas: fondo `surfaceTint`, radio `lg`, sin borde. Campos: fondo `surface`, borde `outline`, radio `md`.
 - Hojas modales: `Sheet` desde abajo, `overlay`, esquinas superiores de 24, `maxHeight 85 %`, `accessibilityViewIsModal`.
 
@@ -153,9 +153,9 @@ Patrón de maquetación dominante: pantallas con `padding: spacing.lg` (24), `ga
 
 ### 3.6 Movimiento
 
-- Único movimiento actual: el **latido de los skeletons** (opacidad 1 ↔ 0,5, 800 ms) y transiciones nativas de navegación y de las hojas (`slide`).
+- **Movimiento (2026-10-14), solo con `Animated` de React Native y sin librerías:** latido de los skeletons; `PressableScale` (resorte corto al pulsar botones y cards, `pressScale` 0,97); `FadeIn` (entrada escalonada de las secciones de Inicio: la **única coreografía**); `ReadingProgress` anima su relleno al cambiar; y las transiciones nativas de navegación y de las hojas.
 - **Respetar «reducir movimiento»** (`AccessibilityInfo.isReduceMotionEnabled`): sin animación cuando está activo (ya lo hace `SkeletonPulse`; cualquier animación nueva debe hacerlo).
-- No hay librería de animación; no se añade sin consultar.
+- **Toda animación consulta `useReducedMotion`** y, si está activo, muestra el estado final sin movimiento. No se añade una librería de animación sin consultar.
 
 ### 3.7 Navegación y cromo
 
@@ -497,3 +497,19 @@ Primer pase de rediseño hecho siguiendo esta guía (§11). **Verificado:** tipo
 | Skeletons | Igualados a los componentes nuevos (chips en píldora, bloques tonales, racha con círculo, reloj tonal, tiles con esquinas `lg`) |
 
 **Pendiente de este pase (no hecho):** tipografía propia (requiere fuente y aprobación), sombras o `elevation`, microinteracciones nuevas, tema oscuro, y la reordenación de contenidos de Biblioteca y Estadísticas más allá de las superficies.
+
+---
+
+## 17. Registro del segundo pase (2026-10-14)
+
+Con permiso expreso para tipografía propia, sombras, tema oscuro y animaciones nuevas. **Verificado:** tipos, 599 pruebas unitarias (incluidas las de tokens, tipografía y contraste de **ambos temas**), compilación del bundle de Android con las 5 fuentes empaquetadas y `expo-doctor` 21/21 tras actualizar Expo a 57.0.29. **No verificado:** el aspecto y el movimiento en dispositivo, el tema oscuro (necesita un build nuevo de EAS por `userInterfaceStyle`) y la carga real de las fuentes.
+
+| Tema | Qué se hizo |
+|---|---|
+| Tipografía | Figtree + Literata; el peso se expresa con `fontFamily.*` (38 archivos migrados) y dos guardas en `designTokens.test.ts` |
+| Sombras | `elevation.low` en `BookCard` y las cards de Inicio; `elevation.high` en `Sheet`; `surfaceRaised` opaca para lo que lleva sombra |
+| Tema oscuro | `lightColors` / `darkColors` derivados de la paleta, activo según el sistema al abrir la app; marca clara fija (logo sobre losa, arranque y botón de Google) |
+| Movimiento | `PressableScale`, `FadeIn` (Inicio), relleno animado de `ReadingProgress`; todo con `useReducedMotion` |
+| Pulido | Buscador de Biblioteca en píldora, gráfico y cumplimiento de la meta de Estadísticas en tarjetas tonales, vacío de «Actividad reciente» con círculo de marca, filo en la portada de reemplazo |
+
+**Pendiente:** conmutador de tema dentro de la app y cambio en vivo con la app abierta (exigiría pasar los estilos a una fábrica dependiente del tema); pantalla de arranque nativa oscura (necesita una variante del logo); reordenación de contenidos de Biblioteca y Estadísticas más allá de las superficies.

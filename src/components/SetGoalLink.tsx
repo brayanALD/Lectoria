@@ -3,7 +3,7 @@ import { Pressable, StyleSheet, Text } from 'react-native';
 
 import { colors } from '../theme/colors';
 import { iconSize, minTouchSize, opacity, spacing } from '../theme/spacing';
-import { fontSize, fontWeight } from '../theme/typography';
+import { fontFamily, fontSize } from '../theme/typography';
 
 /** «Fijar meta diaria»: lo que se ofrece donde iría el progreso de la meta cuando todavía no hay ninguna. */
 export function SetGoalLink({ onPress }: { onPress: () => void }) {
@@ -28,6 +28,6 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
     minHeight: minTouchSize,
   },
-  label: { fontSize: fontSize.md, fontWeight: fontWeight.semibold, color: colors.primary },
+  label: { fontSize: fontSize.md, fontFamily: fontFamily.semibold, color: colors.primary },
   pressed: { opacity: opacity.pressed },
 });

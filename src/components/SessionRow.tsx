@@ -3,7 +3,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { colors } from '../theme/colors';
 import { iconSize, minTouchSize, opacity, spacing } from '../theme/spacing';
-import { fontSize, fontWeight } from '../theme/typography';
+import { fontFamily, fontSize } from '../theme/typography';
 
 interface SessionRowProps {
   /** Lo que identifica la sesión en esa pantalla: el libro (Calendario, Inicio) o el día (detalle del libro). */
@@ -79,9 +79,9 @@ const styles = StyleSheet.create({
   },
   main: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   text: { flex: 1, gap: spacing.xs, justifyContent: 'center', minHeight: minTouchSize },
-  title: { fontSize: fontSize.md, fontWeight: fontWeight.semibold, color: colors.textPrimary },
-  detail: { fontSize: fontSize.sm, color: colors.textSecondary },
-  notes: { fontSize: fontSize.sm, color: colors.textPrimary },
+  title: { fontSize: fontSize.md, fontFamily: fontFamily.semibold, color: colors.textPrimary },
+  detail: { fontSize: fontSize.sm, fontFamily: fontFamily.regular, color: colors.textSecondary },
+  notes: { fontSize: fontSize.sm, fontFamily: fontFamily.regular, color: colors.textPrimary },
   action: { width: minTouchSize, height: minTouchSize, alignItems: 'center', justifyContent: 'center' },
   pressed: { opacity: opacity.pressed },
 });
