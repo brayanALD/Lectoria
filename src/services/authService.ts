@@ -125,6 +125,8 @@ export async function signOutUser(): Promise<void> {
   // Cierra también la sesión de Google para que la próxima vez se pueda elegir otra cuenta.
   try {
     const { GoogleSignin } = await import('@react-native-google-signin/google-signin');
+    // Tras reabrir la app la sesión se restaura sin pasar por el inicio de sesión, así que el cliente no está configurado.
+    GoogleSignin.configure({ webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID });
     await GoogleSignin.signOut();
   } catch (error) {
     console.warn('No se pudo cerrar la sesión de Google', error);
