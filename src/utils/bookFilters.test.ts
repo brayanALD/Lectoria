@@ -4,9 +4,11 @@ import {
   countActiveFilters,
   filterBooks,
   filterByAcquisition,
+  getActiveFilters,
   getFilterOptions,
   hasActiveFilters,
   normalizeText,
+  removeFilter,
 } from './bookFilters';
 import type { Acquisition, ReadingStatus } from '../types/book';
 
@@ -200,5 +202,42 @@ describe('lista de deseos', () => {
   it('cambiar de lista no cuenta como filtro activo', () => {
     expect(countActiveFilters({ ...EMPTY_FILTERS, acquisition: 'wishlist' })).toBe(0);
     expect(hasActiveFilters({ ...EMPTY_FILTERS, acquisition: 'wishlist' })).toBe(false);
+  });
+});
+
+describe('getActiveFilters / removeFilter', () => {
+  const all = { ...EMPTY_FILTERS, status: 'reading' as const, genre: 'Novela', author: 'Frank Herbert', series: 'Dune' };
+
+  it('sin filtros no hay nada que resumir', () => {
+    expect(getActiveFilters(EMPTY_FILTERS)).toEqual([]);
+  });
+
+  it('devuelve los filtros activos en el orden de la hoja, con el estado en español y la saga rotulada', () => {
+    expect(getActiveFilters(all)).toEqual([
+      { key: 'status', label: 'Leyendo' },
+      { key: 'genre', label: 'Novela' },
+      { key: 'author', label: 'Frank Herbert' },
+      { key: 'series', label: 'Saga Dune' },
+    ]);
+  });
+
+  it('la búsqueda de texto no es un filtro del resumen', () => {
+    expect(getActiveFilters({ ...EMPTY_FILTERS, query: 'dune' })).toEqual([]);
+  });
+
+  it('en deseos no hay estado de lectura que mostrar', () => {
+    const wished = getActiveFilters({ ...all, acquisition: 'wishlist' });
+    expect(wished.map((filter) => filter.key)).toEqual(['genre', 'author', 'series']);
+  });
+
+  it('coincide con el recuento del botón de filtros', () => {
+    expect(getActiveFilters(all)).toHaveLength(countActiveFilters(all));
+  });
+
+  it('quitar un filtro deja los demás, la búsqueda y la lista elegida', () => {
+    const state = { ...all, query: 'dune', acquisition: 'owned' as const };
+    expect(removeFilter(state, 'author')).toEqual({ ...state, author: null });
+    expect(removeFilter(state, 'status')).toEqual({ ...state, status: null });
+    expect(getActiveFilters(removeFilter(state, 'genre')).map((filter) => filter.key)).toEqual(['status', 'author', 'series']);
   });
 });

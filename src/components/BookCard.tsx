@@ -1,10 +1,11 @@
+import { Ionicons } from '@expo/vector-icons';
 import { StyleSheet, Text, View } from 'react-native';
 
 import type { ReadingStatus, UserBookWithId } from '../types/book';
 import { makeStyles, useTheme } from '../context/ThemeContext';
 import type { ColorTokens } from '../theme/colors';
 import { elevation } from '../theme/elevation';
-import { opacity, radius, spacing } from '../theme/spacing';
+import { iconSize, opacity, radius, spacing } from '../theme/spacing';
 import { fontFamily, fontSize, maxFontScale } from '../theme/typography';
 import { READING_STATUS_LABELS, getProgressPercent } from '../utils/book';
 import { BookCover } from './BookCover';
@@ -18,16 +19,22 @@ interface BookCardProps {
   onPress?: (book: UserBookWithId) => void;
 }
 
-// Colores de la paleta; todos cumplen contraste AA entre texto y fondo (ver sección 5 del plan).
-const badgeStyles = (colors: ColorTokens): Record<ReadingStatus, { background: string; foreground: string; border: string }> => ({
-  want_to_read: { background: 'transparent', foreground: colors.primary, border: colors.primary },
-  reading: { background: colors.primary, foreground: colors.onPrimary, border: colors.primary },
-  paused: { background: colors.accent, foreground: colors.onAccent, border: colors.accent },
-  finished: { background: colors.textPrimary, foreground: colors.background, border: colors.textPrimary },
-  abandoned: { background: 'transparent', foreground: colors.textSecondary, border: colors.textSecondary },
+// El estado se comunica con un punto y su nombre (nunca solo con el color): lleno = en curso o hecho, hueco = por empezar.
+// Todos los colores son de la paleta y su texto va en `textPrimary`.
+const dotStyles = (colors: ColorTokens): Record<ReadingStatus, { background: string; border: string }> => ({
+  want_to_read: { background: 'transparent', border: colors.primary },
+  reading: { background: colors.primary, border: colors.primary },
+  paused: { background: colors.accent, border: colors.accent },
+  finished: { background: colors.textPrimary, border: colors.textPrimary },
+  abandoned: { background: 'transparent', border: colors.textSecondary },
 });
 
-const LIST_COVER_WIDTH = 64;
+// Geometría local: el punto del estado, el relleno de la tarjeta y la separación entre portada y datos.
+const DOT_SIZE = spacing.sm;
+const CARD_PADDING = spacing.sm + spacing.xs;
+const WISHLIST_ICON_SIZE = iconSize.sm - spacing.xs;
+
+const LIST_COVER_WIDTH = 60;
 
 export function BookCard({ book, variant = 'list', onPress }: BookCardProps) {
   const styles = useStyles();
@@ -35,10 +42,11 @@ export function BookCard({ book, variant = 'list', onPress }: BookCardProps) {
   const isGrid = variant === 'grid';
   const authors = book.authors.join(', ');
   // Un deseo aún no se ha empezado: en lugar del estado de lectura se rotula como «Deseo».
-  const statusLabel = book.acquisition === 'wishlist' ? 'Deseo' : READING_STATUS_LABELS[book.status];
+  const isWish = book.acquisition === 'wishlist';
+  const statusLabel = isWish ? 'Deseo' : READING_STATUS_LABELS[book.status];
   const percent = getProgressPercent(book);
   const showProgress = (book.status === 'reading' || book.status === 'paused') && percent !== undefined;
-  const badge = badgeStyles(colors)[book.status];
+  const dot = dotStyles(colors)[book.status];
 
   const accessibilityLabel = [
     book.title,
@@ -72,12 +80,15 @@ export function BookCard({ book, variant = 'list', onPress }: BookCardProps) {
             {authors}
           </Text>
         ) : null}
-        <View style={styles.badgeRow}>
-          <View style={[styles.badge, { backgroundColor: badge.background, borderColor: badge.border }]}>
-            <Text style={[styles.badgeText, { color: badge.foreground }]} maxFontSizeMultiplier={maxFontScale}>
-              {statusLabel}
-            </Text>
-          </View>
+        <View style={styles.statusRow}>
+          {isWish ? (
+            <Ionicons name="bookmark-outline" size={WISHLIST_ICON_SIZE} color={colors.primary} accessible={false} />
+          ) : (
+            <View style={[styles.dot, { backgroundColor: dot.background, borderColor: dot.border }]} accessible={false} />
+          )}
+          <Text style={styles.statusText} maxFontSizeMultiplier={maxFontScale}>
+            {statusLabel}
+          </Text>
         </View>
 
         {showProgress ? <ReadingProgress percent={percent} /> : null}
@@ -91,22 +102,17 @@ const useStyles = makeStyles((colors) => StyleSheet.create({
     // Opaca (no `surfaceTint`) porque lleva sombra: con un fondo translúcido la sombra se vería a través.
     backgroundColor: colors.surfaceRaised,
     borderRadius: radius.lg,
-    padding: spacing.md,
+    padding: CARD_PADDING,
     ...elevation.low,
   },
-  cardList: { flexDirection: 'row', gap: spacing.md, alignItems: 'flex-start' },
+  cardList: { flexDirection: 'row', gap: CARD_PADDING, alignItems: 'flex-start' },
   cardGrid: { gap: spacing.sm },
   pressed: { opacity: opacity.pressed },
   infoList: { flex: 1, gap: spacing.xs },
   infoGrid: { gap: spacing.xs },
   title: { fontSize: fontSize.md, fontFamily: fontFamily.display, color: colors.textPrimary },
   secondary: { fontSize: fontSize.sm, fontFamily: fontFamily.regular, color: colors.textSecondary },
-  badgeRow: { flexDirection: 'row', marginVertical: spacing.xs },
-  badge: {
-    borderWidth: 1,
-    borderRadius: radius.pill,
-    paddingHorizontal: spacing.sm + spacing.xs,
-    paddingVertical: spacing.xs,
-  },
-  badgeText: { fontSize: fontSize.sm, fontFamily: fontFamily.semibold },
+  statusRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginVertical: spacing.xs },
+  dot: { width: DOT_SIZE, height: DOT_SIZE, borderRadius: DOT_SIZE / 2, borderWidth: 1.5 },
+  statusText: { fontSize: fontSize.sm, fontFamily: fontFamily.semibold, color: colors.textPrimary },
 }));

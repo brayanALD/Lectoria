@@ -531,3 +531,19 @@ Petición: tuerca arriba a la derecha que abre un panel lateral (mitad de la pan
 **Decisión de contraste:** el panel usa `background` y no `surfaceRaised` porque, en el oscuro, el borde `outline` sobre `surfaceRaised` daba 2,86:1 (<3:1); se separa del contenido con un filo decorativo y la sombra.
 
 **No verificado en dispositivo:** el desenfoque, las animaciones, el cambio en vivo y el panel en pantallas pequeñas. `expo-blur` y `userInterfaceStyle` exigen un build nuevo de EAS; sin el módulo nativo el panel funciona con una capa oscura sin desenfoque.
+
+---
+
+## 19. Registro del rediseño de Biblioteca (2026-10-16)
+
+Petición: simplificar la presentación de los filtros de Biblioteca, que sobrecargaban la pantalla (buscador, selector de lista, chips de estado y recuento antes de ver un solo libro), sin perder funciones. La propuesta se exploró en un lienzo de Claude Design (diez pantallas: la actual, la propuesta en lista clara y oscura y en cuadrícula, filtros activos, hoja de filtros, deseos, vacío, cargando y una variante) y se eligió la **variante A**.
+
+| Tema | Qué se hizo |
+|---|---|
+| Controles | De cuatro filas a dos: una cápsula con el buscador y, dentro, el botón de filtros; y las pestañas «Mis libros N / Deseos N» con el cambio de vista a la derecha |
+| Filtros | El estado de lectura pasó a la hoja, junto a género, autor y saga; el botón muestra cuántos hay activos y el pie de la hoja dice «Ver N libros» |
+| Resumen | Solo con búsqueda o filtros: el recuento («2 de 6 libros»), un chip por filtro que lo quita y «Limpiar». Sin filtros no ocupa nada |
+| Tarjetas | El estado se rotula con un punto y su nombre (en lugar de una insignia con borde), relleno de 12 y portada de 60×90; en deseos, un marcador |
+| Cargando | El skeleton replica la cápsula, las pestañas y las tarjetas nuevas |
+
+**Decisión consciente:** filtrar por estado cuesta ahora un toque más (abrir la hoja). La variante descartada (B) mantenía el estado en una línea discreta bajo las pestañas, a costa de una fila más. **Accesibilidad:** todas las zonas táctiles siguen en 48 pt (los chips del resumen se ven de 32 pt dentro de un toque de 48), el estado se comunica con punto **y** texto, y los dos temas usan los mismos tokens. **No cambia:** la lógica de búsqueda y filtrado, los servicios ni las reglas. **No verificado en dispositivo.**

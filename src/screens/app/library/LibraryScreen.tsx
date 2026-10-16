@@ -15,7 +15,6 @@ import type { AppStackParamList } from '../../../navigation/types';
 import { makeStyles, useTheme } from '../../../context/ThemeContext';
 import { iconSize, minTouchSize, opacity, radius, spacing } from '../../../theme/spacing';
 import { fontFamily, fontSize } from '../../../theme/typography';
-import { formatFilteredBookCount } from '../../../utils/book';
 import {
   EMPTY_FILTERS,
   clearFilters,
@@ -28,6 +27,8 @@ import {
 type ViewMode = 'list' | 'grid';
 
 const GRID_COLUMNS = 2;
+// Separación entre tarjetas (la misma que su relleno).
+const CARD_GAP = spacing.sm + spacing.xs;
 
 export function LibraryScreen() {
   const styles = useStyles();
@@ -40,6 +41,11 @@ export function LibraryScreen() {
   const scopedBooks = useMemo(() => filterByAcquisition(books, filters.acquisition), [books, filters.acquisition]);
   const visibleBooks = useMemo(() => filterBooks(books, filters), [books, filters]);
   const filterOptions = useMemo(() => getFilterOptions(scopedBooks), [scopedBooks]);
+  // Los números de las pestañas: cuántos libros tiene cada lista.
+  const counts = useMemo(
+    () => ({ owned: filterByAcquisition(books, 'owned').length, wishlist: filterByAcquisition(books, 'wishlist').length }),
+    [books],
+  );
   // Desde una pestaña, navigate sube hasta el stack que contiene «AddBook». «Añadir» sigue a la lista que se ve.
   const navigation = useNavigation<NativeStackNavigationProp<AppStackParamList>>();
   const openAddBook = () => navigation.navigate('AddBook', { acquisition: filters.acquisition });
@@ -90,20 +96,14 @@ export function LibraryScreen() {
         </View>
       ) : null}
 
-      <BookFilters filters={filters} onChange={setFilters} options={filterOptions} />
-
-      {scopedBooks.length === 0 ? (
-        <EmptyState
-          icon={wishlistMode ? 'bookmark-outline' : 'library-outline'}
-          title={wishlistMode ? 'Tu lista de deseos está vacía' : 'Tu biblioteca está vacía'}
-          action={{ label: wishlistMode ? 'Añadir a deseos' : 'Añadir libro', onPress: openAddBook }}
-        />
-      ) : (
-        <>
-          <View style={styles.toolbar}>
-            <Text style={styles.count} accessibilityLiveRegion="polite">
-              {formatFilteredBookCount(visibleBooks.length, scopedBooks.length)}
-            </Text>
+      <BookFilters
+        filters={filters}
+        onChange={setFilters}
+        options={filterOptions}
+        counts={counts}
+        resultCount={visibleBooks.length}
+        accessory={
+          scopedBooks.length > 0 ? (
             <Pressable
               accessibilityRole="button"
               accessibilityLabel={isGrid ? 'Cambiar a vista de lista' : 'Cambiar a vista de cuadrícula'}
@@ -112,37 +112,45 @@ export function LibraryScreen() {
             >
               <Ionicons name={isGrid ? 'list-outline' : 'grid-outline'} size={iconSize.md} color={colors.primary} />
             </Pressable>
-          </View>
+          ) : null
+        }
+      />
 
-          {/* Cambiar numColumns en caliente no está soportado por FlatList: se remonta al cambiar de vista. */}
-          <FlatList
-            key={mode}
-            data={visibleBooks}
-            keyExtractor={(book) => book.id}
-            numColumns={isGrid ? GRID_COLUMNS : 1}
-            columnWrapperStyle={isGrid ? styles.gridRow : undefined}
-            contentContainerStyle={[styles.listContent, visibleBooks.length === 0 && styles.growContent]}
-            keyboardShouldPersistTaps="handled"
-            keyboardDismissMode="on-drag"
-            ItemSeparatorComponent={isGrid ? undefined : ListSeparator}
-            ListEmptyComponent={
-              <EmptyState
-                icon="search-outline"
-                title="Ningún libro coincide"
-                action={{ label: 'Limpiar búsqueda y filtros', onPress: () => setFilters(clearFilters(filters)) }}
+      {/* Cambiar numColumns en caliente no está soportado por FlatList: la lista se remonta al cambiar de vista. */}
+      {scopedBooks.length === 0 ? (
+        <EmptyState
+          icon={wishlistMode ? 'bookmark-outline' : 'library-outline'}
+          title={wishlistMode ? 'Tu lista de deseos está vacía' : 'Tu biblioteca está vacía'}
+          action={{ label: wishlistMode ? 'Añadir a deseos' : 'Añadir libro', onPress: openAddBook }}
+        />
+      ) : (
+        <FlatList
+          key={mode}
+          data={visibleBooks}
+          keyExtractor={(book) => book.id}
+          numColumns={isGrid ? GRID_COLUMNS : 1}
+          columnWrapperStyle={isGrid ? styles.gridRow : undefined}
+          contentContainerStyle={[styles.listContent, visibleBooks.length === 0 && styles.growContent]}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
+          ItemSeparatorComponent={isGrid ? undefined : ListSeparator}
+          ListEmptyComponent={
+            <EmptyState
+              icon="search-outline"
+              title="Ningún libro coincide"
+              action={{ label: 'Limpiar búsqueda y filtros', onPress: () => setFilters(clearFilters(filters)) }}
+            />
+          }
+          renderItem={({ item }) => (
+            <View style={isGrid ? styles.gridCell : undefined}>
+              <BookCard
+                book={item}
+                variant={isGrid ? 'grid' : 'list'}
+                onPress={(book) => navigation.navigate('BookDetail', { bookId: book.id })}
               />
-            }
-            renderItem={({ item }) => (
-              <View style={isGrid ? styles.gridCell : undefined}>
-                <BookCard
-                  book={item}
-                  variant={isGrid ? 'grid' : 'list'}
-                  onPress={(book) => navigation.navigate('BookDetail', { bookId: book.id })}
-                />
-              </View>
-            )}
-          />
-        </>
+            </View>
+          )}
+        />
       )}
     </View>
   );
@@ -165,22 +173,14 @@ const useStyles = makeStyles((colors) => StyleSheet.create({
     borderColor: colors.error,
   },
   bannerText: { fontSize: fontSize.sm, fontFamily: fontFamily.regular, color: colors.error },
-  toolbar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: spacing.lg,
-    paddingTop: spacing.sm,
-  },
-  count: { fontSize: fontSize.sm, fontFamily: fontFamily.semibold, color: colors.textSecondary },
   toggle: { width: minTouchSize, height: minTouchSize, alignItems: 'center', justifyContent: 'center' },
   pressed: { opacity: opacity.pressed },
   headerActions: { flexDirection: 'row', alignItems: 'center' },
   headerButton: { width: minTouchSize, height: minTouchSize, alignItems: 'center', justifyContent: 'center' },
   listContent: { padding: spacing.lg, paddingTop: spacing.sm, paddingBottom: spacing.xl * 2 },
   growContent: { flexGrow: 1 },
-  separator: { height: spacing.md },
-  gridRow: { gap: spacing.md, marginBottom: spacing.md },
+  separator: { height: CARD_GAP },
+  gridRow: { gap: CARD_GAP, marginBottom: CARD_GAP },
   // maxWidth evita que una última fila con un solo libro lo estire a todo el ancho.
   gridCell: { flex: 1, maxWidth: `${100 / GRID_COLUMNS}%` },
 }));

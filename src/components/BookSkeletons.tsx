@@ -1,12 +1,14 @@
 import { StyleSheet, View } from 'react-native';
 
-import { minTouchSize, radius, spacing } from '../theme/spacing';
+import { iconSize, minTouchSize, radius, spacing } from '../theme/spacing';
 import { makeStyles } from '../context/ThemeContext';
 import { fontSize } from '../theme/typography';
 import { Skeleton, SkeletonPulse } from './Skeleton';
 
 // Medidas que coinciden con las de los componentes reales, para que al llegar los datos nada «salte».
-const LIST_COVER_WIDTH = 64;
+const LIST_COVER_WIDTH = 60;
+// Relleno de la tarjeta real (`BookCard`).
+const CARD_PADDING = spacing.sm + spacing.xs;
 const DETAIL_COVER_WIDTH = 112;
 const COVER_RATIO = 2 / 3;
 // Dos columnas con el espacio entre ellas.
@@ -23,7 +25,7 @@ function ListCardSkeleton() {
       <View style={styles.cardInfo}>
         <Skeleton width="80%" height={fontSize.md} />
         <Skeleton width="50%" height={fontSize.sm} />
-        <Skeleton width="35%" height={fontSize.md + spacing.xs} />
+        <Skeleton width="35%" height={fontSize.sm} style={styles.statusLine} />
       </View>
     </View>
   );
@@ -36,28 +38,26 @@ function GridCardSkeleton() {
       <Skeleton height={0} style={{ aspectRatio: COVER_RATIO }} />
       <Skeleton width="80%" height={fontSize.md} />
       <Skeleton width="50%" height={fontSize.sm} />
+      <Skeleton width="35%" height={fontSize.sm} style={styles.statusLine} />
     </View>
   );
 }
 
-/** Silueta de la pantalla de Biblioteca: buscador, selector de lista (libros o deseos), etiquetas de estado y tarjetas. */
+/** Silueta de la pantalla de Biblioteca: la cápsula del buscador, las pestañas (libros y deseos) y las tarjetas. */
 export function LibrarySkeleton({ grid = false }: { grid?: boolean }) {
   const styles = useStyles();
   return (
     <SkeletonPulse label="Cargando biblioteca">
       <View style={styles.library}>
         <View style={styles.searchRow}>
-          <Skeleton width="85%" height={minTouchSize} style={styles.pill} />
-          <Skeleton width={minTouchSize} height={minTouchSize} style={styles.rounded} />
+          <Skeleton height={minTouchSize} style={styles.pill} />
         </View>
-        <View style={styles.chipRow}>
-          <Skeleton height={minTouchSize} style={[styles.pill, styles.half]} />
-          <Skeleton height={minTouchSize} style={[styles.pill, styles.half]} />
-        </View>
-        <View style={styles.chipRow}>
-          <Skeleton width={72} height={minTouchSize} style={styles.pill} />
-          <Skeleton width={120} height={minTouchSize} style={styles.pill} />
-          <Skeleton width={96} height={minTouchSize} style={styles.pill} />
+        <View style={styles.tabRow}>
+          <View style={styles.tabs}>
+            <Skeleton width={96} height={fontSize.md} />
+            <Skeleton width={64} height={fontSize.md} />
+          </View>
+          <Skeleton width={iconSize.md} height={iconSize.md} />
         </View>
         {grid ? (
           <View style={styles.grid}>
@@ -155,16 +155,26 @@ export function SessionListSkeleton() {
 }
 
 const useStyles = makeStyles((colors) => StyleSheet.create({
-  library: { flex: 1, paddingTop: spacing.sm, gap: spacing.sm },
-  searchRow: { flexDirection: 'row', gap: spacing.sm, paddingHorizontal: spacing.lg },
+  library: { flex: 1, paddingTop: spacing.sm, gap: spacing.xs },
+  searchRow: { paddingHorizontal: spacing.lg },
   chipRow: { flexDirection: 'row', gap: spacing.sm, paddingHorizontal: spacing.lg },
-  half: { flex: 1 },
+  // Igual que las pestañas reales: alto táctil de 48 y el cambio de vista a la derecha.
+  tabRow: {
+    minHeight: minTouchSize,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingLeft: spacing.lg,
+    paddingRight: spacing.lg + spacing.xs,
+  },
+  tabs: { flexDirection: 'row', alignItems: 'center', gap: spacing.lg },
+  statusLine: { marginVertical: spacing.xs },
   rounded: { borderRadius: radius.md },
   pill: { borderRadius: radius.pill },
-  list: { padding: spacing.lg, gap: spacing.md },
-  grid: { flexDirection: 'row', flexWrap: 'wrap', padding: spacing.lg, gap: spacing.md },
-  card: { backgroundColor: colors.surfaceTint, borderRadius: radius.lg, padding: spacing.md },
-  cardList: { flexDirection: 'row', gap: spacing.md },
+  list: { padding: spacing.lg, paddingTop: spacing.sm, gap: CARD_PADDING },
+  grid: { flexDirection: 'row', flexWrap: 'wrap', padding: spacing.lg, paddingTop: spacing.sm, gap: CARD_PADDING },
+  card: { backgroundColor: colors.surfaceTint, borderRadius: radius.lg, padding: CARD_PADDING },
+  cardList: { flexDirection: 'row', gap: CARD_PADDING },
   cardInfo: { flex: 1, gap: spacing.sm },
   gridCell: { width: GRID_CELL_WIDTH, gap: spacing.sm },
   form: { padding: spacing.lg, gap: spacing.md },

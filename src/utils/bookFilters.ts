@@ -1,4 +1,5 @@
 import type { Acquisition, ReadingStatus, UserBook } from '../types/book';
+import { READING_STATUS_LABELS } from './book';
 
 /** Estado de búsqueda y filtros de la Biblioteca. `null` = sin filtrar por ese criterio. */
 export interface BookFilterState {
@@ -101,4 +102,30 @@ export function countActiveFilters(filters: BookFilterState): number {
 /** ¿Hay búsqueda o algún filtro activo? */
 export function hasActiveFilters(filters: BookFilterState): boolean {
   return normalizeText(filters.query) !== '' || countActiveFilters(filters) > 0;
+}
+
+export type ActiveFilterKey = 'status' | 'genre' | 'author' | 'series';
+
+/** Un filtro activo tal como se muestra en el resumen de la Biblioteca (un chip que se puede quitar). */
+export interface ActiveFilter {
+  key: ActiveFilterKey;
+  label: string;
+}
+
+/**
+ * Los filtros activos (sin la búsqueda de texto) en el orden de la hoja de filtros. El estado de lectura solo cuenta en
+ * «Mis libros»: un deseo aún no se ha empezado y no tiene estado que filtrar.
+ */
+export function getActiveFilters(filters: BookFilterState): ActiveFilter[] {
+  const active: ActiveFilter[] = [];
+  if (filters.status && filters.acquisition === 'owned') active.push({ key: 'status', label: READING_STATUS_LABELS[filters.status] });
+  if (filters.genre) active.push({ key: 'genre', label: filters.genre });
+  if (filters.author) active.push({ key: 'author', label: filters.author });
+  if (filters.series) active.push({ key: 'series', label: `Saga ${filters.series}` });
+  return active;
+}
+
+/** Quita un solo filtro, sin tocar los demás ni la búsqueda. */
+export function removeFilter(filters: BookFilterState, key: ActiveFilterKey): BookFilterState {
+  return { ...filters, [key]: null };
 }
