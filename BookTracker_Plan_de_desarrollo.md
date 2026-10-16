@@ -42,7 +42,7 @@ Basado en la plantilla reutilizable para apps móviles.
 | Layout seguro | `react-native-safe-area-context` | [Confirmado] |
 | Cámara / ISBN | `expo-camera` (verificar compatibilidad con la versión de Expo elegida) | [Recomendado] |
 | Notificaciones locales | `expo-notifications` (versión 1.4; verificar limitaciones) | [Recomendado] |
-| Proveedor bibliográfico | **Open Library** (API `api/books`, sin clave), detrás de `bookCatalogService` | [Confirmado] (2026-10-13, Fase 3) |
+| Proveedor bibliográfico | **Open Library** (API `api/books`, sin clave), detrás de `bookCatalogService`; **respaldo: Google Books** (clave restringida, solo si Open Library no lo encuentra) | [Confirmado] (2026-10-13, Fase 3; respaldo 2026-10-15) |
 | Pruebas | Jest (`jest-expo`) para `utils`; emulador de Firestore + `@firebase/rules-unit-testing` para reglas | [Confirmado] (2026-10-12, Fase 1) |
 | Versión de Expo / SDK | **SDK 57** (`expo ~57.0.28`, React Native 0.86.3, React 19.2.3, TypeScript ~6.0). `firebase` 13 (Expo exige ≥ 12). React Navigation 7. Siempre instalar con `npx expo install` | [Confirmado] (2026-10-12, Fase 1) |
 
@@ -272,6 +272,8 @@ Arquitectura:
 - Datos del catálogo: se aprovechan título (con subtítulo), autores, páginas y portada. **No se importan los géneros**: los «temas» de Open Library son ruidosos (comprobado con un libro real devuelto con temas ajenos). La calidad de los datos es irregular, por eso siempre se pueden corregir en el formulario antes de guardar.
 - Un ISBN no encontrado llega como `{}` con HTTP 200 (comprobado); el formulario lo indica y deja rellenar a mano.
 - Duplicados: antes de guardar, si ya existe un libro con el mismo ISBN, o con el mismo título y algún autor en común, se pregunta si añadirlo de todos modos.
+
+**Diagnóstico de la búsqueda (2026-10-15, sin cambios de código):** el servicio actual funciona con la red real para los ISBN que Open Library conoce; falta determinar por qué falla en el dispositivo (mensaje exacto e ISBN probados). Google Books sin clave responde 429 con cuota 0 y con clave no se ha medido. **Decisión del usuario (2026-10-15): Google Books como respaldo de Open Library** (implementado: solo se consulta si Open Library no lo conoce o falla, con clave restringida a Books API y a la app Android, sin facturación). Medición desfavorable: con una muestra de 60 ISBN en español, Open Library resolvió 18 y Google Books por ISBN 0 desde el entorno de pruebas; el respaldo se deja para comprobarlo en el dispositivo y retirarlo si no aporta. Detalle, datos y límites en `docs/diagnostico-busqueda-isbn.md`.
 
 Casos a cubrir: ISBN-10/13, códigos inválidos, sin resultados, resultados incompletos, duplicados (mismo `isbn13` en la biblioteca del usuario), permiso de cámara denegado, fallos de red.
 
