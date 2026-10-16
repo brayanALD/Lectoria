@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { KeyboardAvoidingView, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { useWindowTop } from '../hooks/useWindowTop';
-import type { BookFormErrors, BookFormValues, CatalogBook, NewBookFields } from '../types/book';
+import type { Acquisition, BookFormErrors, BookFormValues, CatalogBook, NewBookFields } from '../types/book';
 import { makeStyles } from '../context/ThemeContext';
 import { spacing } from '../theme/spacing';
 import { fontFamily, fontSize } from '../theme/typography';
@@ -28,6 +28,8 @@ interface BookFormProps {
   /** Valores iniciales: vacíos para añadir, los del libro para editar. */
   initialValues?: BookFormValues;
   submitLabel: string;
+  /** `wishlist`: el libro se guarda como deseo («Quiero leerlo», sin selector de estado). Por defecto, `owned`. */
+  acquisition?: Acquisition;
   /** El estado se elige al añadir; al editar se cambia desde el detalle del libro. */
   showStatus?: boolean;
   /** Sagas ya registradas en la biblioteca; el campo «Saga» sugiere las que coinciden mientras se escribe. */
@@ -53,6 +55,7 @@ interface BookFormProps {
 export function BookForm({
   initialValues = EMPTY_BOOK_FORM,
   submitLabel,
+  acquisition = 'owned',
   showStatus = true,
   seriesSuggestions = NO_SERIES,
   onLookup,
@@ -140,7 +143,7 @@ export function BookForm({
   const handleSubmit = async () => {
     if (saving) return;
 
-    const result = parseBookForm(values);
+    const result = parseBookForm(values, acquisition);
     if (!result.ok) {
       setErrors(result.errors);
       setSubmitError(null);
@@ -279,7 +282,7 @@ export function BookForm({
             returnKeyType="done"
           />
 
-          {showStatus ? (
+          {showStatus && acquisition === 'owned' ? (
             <StatusSelector value={values.status} onChange={setField('status')} error={errors.status} />
           ) : null}
 

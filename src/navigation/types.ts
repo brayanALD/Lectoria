@@ -1,3 +1,5 @@
+import type { Acquisition } from '../types/book';
+
 export type AuthStackParamList = {
   Login: undefined;
   Register: undefined;
@@ -6,8 +8,11 @@ export type AuthStackParamList = {
 // Las pantallas secundarias (detalle de libro, formularios, ajustes) se añadirán aquí.
 export type AppStackParamList = {
   Tabs: undefined;
-  /** `scannedIsbn`: ISBN-13 devuelto por el escáner; el formulario lo busca al recibirlo. */
-  AddBook: { scannedIsbn?: string } | undefined;
+  /**
+   * `scannedIsbn`: ISBN-13 devuelto por el escáner; el formulario lo busca al recibirlo.
+   * `acquisition`: `wishlist` añade el libro a la lista de deseos (sin estado de lectura); por defecto, `owned`.
+   */
+  AddBook: { scannedIsbn?: string; acquisition?: Acquisition } | undefined;
   ScanBook: undefined;
   /**
    * `bookId`: libro fijo (desde su detalle). Sin él (desde Inicio) se preselecciona uno y se puede cambiar.

@@ -34,7 +34,8 @@ export function BookCard({ book, variant = 'list', onPress }: BookCardProps) {
   const { colors } = useTheme();
   const isGrid = variant === 'grid';
   const authors = book.authors.join(', ');
-  const statusLabel = READING_STATUS_LABELS[book.status];
+  // Un deseo aún no se ha empezado: en lugar del estado de lectura se rotula como «Deseo».
+  const statusLabel = book.acquisition === 'wishlist' ? 'Deseo' : READING_STATUS_LABELS[book.status];
   const percent = getProgressPercent(book);
   const showProgress = (book.status === 'reading' || book.status === 'paused') && percent !== undefined;
   const badge = badgeStyles(colors)[book.status];

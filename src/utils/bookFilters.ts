@@ -1,7 +1,9 @@
-import type { ReadingStatus, UserBook } from '../types/book';
+import type { Acquisition, ReadingStatus, UserBook } from '../types/book';
 
 /** Estado de búsqueda y filtros de la Biblioteca. `null` = sin filtrar por ese criterio. */
 export interface BookFilterState {
+  /** Qué lista se ve: los libros propios o los deseos. No se puede dejar sin elegir. */
+  acquisition: Acquisition;
   query: string;
   status: ReadingStatus | null;
   genre: string | null;
@@ -9,11 +11,28 @@ export interface BookFilterState {
   series: string | null;
 }
 
-export const EMPTY_FILTERS: BookFilterState = { query: '', status: null, genre: null, author: null, series: null };
+export const EMPTY_FILTERS: BookFilterState = {
+  acquisition: 'owned',
+  query: '',
+  status: null,
+  genre: null,
+  author: null,
+  series: null,
+};
+
+/** Quita la búsqueda y los filtros pero se queda en la misma lista (propios o deseos). */
+export function clearFilters(filters: BookFilterState): BookFilterState {
+  return { ...EMPTY_FILTERS, acquisition: filters.acquisition };
+}
 
 /** Lo que necesitan los filtros de un libro (sin depender de Firebase ni del id). */
 type FilterableBook = Pick<UserBook, 'title' | 'authors' | 'status'> &
-  Partial<Pick<UserBook, 'genres' | 'seriesName'>>;
+  Partial<Pick<UserBook, 'genres' | 'seriesName' | 'acquisition'>>;
+
+/** Los libros de una lista: los propios o los deseos. Un libro sin el dato cuenta como propio. */
+export function filterByAcquisition<T extends { acquisition?: Acquisition }>(books: readonly T[], acquisition: Acquisition): T[] {
+  return books.filter((book) => (book.acquisition ?? 'owned') === acquisition);
+}
 
 /** Sin tildes ni mayúsculas, con espacios colapsados: «  Cien AÑOS » → «cien anos». */
 export function normalizeText(text: string): string {
@@ -36,6 +55,7 @@ export function filterBooks<T extends FilterableBook>(books: readonly T[], filte
   const tokens = normalizeText(filters.query).split(' ').filter(Boolean);
 
   return books.filter((book) => {
+    if ((book.acquisition ?? 'owned') !== filters.acquisition) return false;
     if (filters.status && book.status !== filters.status) return false;
     if (filters.genre && !(book.genres ?? []).some((genre) => sameText(genre, filters.genre!))) return false;
     if (filters.author && !book.authors.some((author) => sameText(author, filters.author!))) return false;

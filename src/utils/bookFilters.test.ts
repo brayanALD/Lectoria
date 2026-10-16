@@ -1,12 +1,14 @@
 import {
   EMPTY_FILTERS,
+  clearFilters,
   countActiveFilters,
   filterBooks,
+  filterByAcquisition,
   getFilterOptions,
   hasActiveFilters,
   normalizeText,
 } from './bookFilters';
-import type { ReadingStatus } from '../types/book';
+import type { Acquisition, ReadingStatus } from '../types/book';
 
 interface TestBook {
   title: string;
@@ -14,6 +16,7 @@ interface TestBook {
   status: ReadingStatus;
   genres?: string[];
   seriesName?: string;
+  acquisition?: Acquisition;
 }
 
 const dune: TestBook = {
@@ -158,5 +161,44 @@ describe('countActiveFilters / hasActiveFilters', () => {
     expect(hasActiveFilters({ ...EMPTY_FILTERS, query: '  ' })).toBe(false);
     expect(hasActiveFilters({ ...EMPTY_FILTERS, query: 'dune' })).toBe(true);
     expect(hasActiveFilters({ ...EMPTY_FILTERS, series: 'Saga' })).toBe(true);
+  });
+});
+
+describe('lista de deseos', () => {
+  const deseo: TestBook = { title: 'Dune Mesías', authors: ['Frank Herbert'], status: 'want_to_read', acquisition: 'wishlist' };
+  const all = [dune, mesias, cien, deseo];
+
+  it('por defecto se ve la biblioteca: los deseos no aparecen y los libros sin el dato cuentan como propios', () => {
+    expect(EMPTY_FILTERS.acquisition).toBe('owned');
+    expect(titles(filterBooks(all, EMPTY_FILTERS))).toEqual(['Dune', 'El mesías de Dune', 'Cien años de soledad']);
+  });
+
+  it('con «deseos» solo se ven los deseos', () => {
+    expect(titles(filterBooks(all, { ...EMPTY_FILTERS, acquisition: 'wishlist' }))).toEqual(['Dune Mesías']);
+  });
+
+  it('la búsqueda y los filtros se aplican dentro de la lista elegida', () => {
+    expect(titles(filterBooks(all, { ...EMPTY_FILTERS, query: 'dune' }))).toEqual(['Dune', 'El mesías de Dune']);
+    expect(titles(filterBooks(all, { ...EMPTY_FILTERS, acquisition: 'wishlist', query: 'dune' }))).toEqual(['Dune Mesías']);
+    expect(filterBooks(all, { ...EMPTY_FILTERS, acquisition: 'wishlist', query: 'soledad' })).toEqual([]);
+  });
+
+  it('filterByAcquisition separa las dos listas sin perder ni repetir libros', () => {
+    const owned = filterByAcquisition(all, 'owned');
+    const wished = filterByAcquisition(all, 'wishlist');
+    expect(owned).toHaveLength(3);
+    expect(wished).toEqual([deseo]);
+    expect(owned.length + wished.length).toBe(all.length);
+  });
+
+  it('limpiar la búsqueda y los filtros no cambia de lista', () => {
+    const state = { ...EMPTY_FILTERS, acquisition: 'wishlist' as const, query: 'dune', genre: 'Novela' };
+    expect(clearFilters(state)).toEqual({ ...EMPTY_FILTERS, acquisition: 'wishlist' });
+    expect(clearFilters(EMPTY_FILTERS)).toEqual(EMPTY_FILTERS);
+  });
+
+  it('cambiar de lista no cuenta como filtro activo', () => {
+    expect(countActiveFilters({ ...EMPTY_FILTERS, acquisition: 'wishlist' })).toBe(0);
+    expect(hasActiveFilters({ ...EMPTY_FILTERS, acquisition: 'wishlist' })).toBe(false);
   });
 });

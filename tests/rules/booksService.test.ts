@@ -20,6 +20,7 @@ import type { BookFormValues, UserBook, UserBookWithId } from '../../src/types/b
 import { EMPTY_BOOK_FORM, parseBookForm } from '../../src/utils/book';
 import {
   changeBookStatus,
+  savePurchase,
   createBook,
   deleteBook,
   subscribeToBooks,
@@ -236,6 +237,76 @@ describe('changeBookStatus', () => {
   it('un usuario no puede cambiar el estado de un libro ajeno', async () => {
     const id = await create();
     await assertFails(changeBookStatus('alice', await read(id), 'reading', bob()));
+  });
+});
+
+describe('lista de deseos', () => {
+  /** Añade un deseo a través del formulario, como lo hará la app. */
+  async function createWish(values: Partial<BookFormValues> = {}): Promise<string> {
+    const result = parseBookForm({ ...EMPTY_BOOK_FORM, title: 'Dune', authors: 'Frank Herbert', ...values }, 'wishlist');
+    if (!result.ok) throw new Error(`formulario inválido: ${JSON.stringify(result.errors)}`);
+    return createBook('alice', result.data, alice());
+  }
+  const booksCount = async () => (await getDocs(collection(alice(), 'users/alice/books'))).size;
+
+  it('crea un deseo: acquisition wishlist, «Quiero leerlo», página 0 y sin fechas de lectura ni de compra', async () => {
+    const book = await read(await createWish({ pageCount: '300' }));
+    expect(book).toMatchObject({ acquisition: 'wishlist', status: 'want_to_read', currentPage: 0, pageCount: 300 });
+    expect(book.startedAt).toBeUndefined();
+    expect(book.finishedAt).toBeUndefined();
+    expect(book.purchasedAt).toBeUndefined();
+    expect(book.price).toBeUndefined();
+  });
+
+  it('comprar lo pasa a la biblioteca en el mismo documento, con fecha y precio, sin duplicarlo ni empezarlo', async () => {
+    const id = await createWish();
+    const purchasedAt = new Date(2026, 9, 1, 12, 0, 0);
+    await savePurchase('alice', await read(id), { purchasedAt, price: 45000 }, alice());
+
+    const book = await read(id);
+    expect(book).toMatchObject({ acquisition: 'owned', status: 'want_to_read', currentPage: 0, price: 45000 });
+    expect(book.purchasedAt?.toDate().getTime()).toBe(purchasedAt.getTime());
+    expect(book.startedAt).toBeUndefined();
+    expect(await booksCount()).toBe(1);
+  });
+
+  it('comprar sin precio guarda solo la fecha', async () => {
+    const id = await createWish();
+    await savePurchase('alice', await read(id), { purchasedAt: new Date() }, alice());
+    const book = await read(id);
+    expect(book.acquisition).toBe('owned');
+    expect(book.purchasedAt).toBeInstanceOf(Timestamp);
+    expect(book).not.toHaveProperty('price');
+  });
+
+  it('corregir la compra cambia la fecha y el precio, y quitar el precio lo elimina', async () => {
+    const id = await createWish();
+    await savePurchase('alice', await read(id), { purchasedAt: new Date(2026, 9, 1, 12), price: 100 }, alice());
+    await savePurchase('alice', await read(id), { purchasedAt: new Date(2026, 8, 20, 12), price: 80.5 }, alice());
+    expect((await read(id)).price).toBe(80.5);
+
+    await savePurchase('alice', await read(id), { purchasedAt: new Date(2026, 8, 20, 12) }, alice());
+    const book = await read(id);
+    expect(book).not.toHaveProperty('price');
+    expect(book.acquisition).toBe('owned');
+  });
+
+  it('las reglas rechazan un precio inválido y no se escribe nada', async () => {
+    const id = await createWish();
+    await assertFails(savePurchase('alice', await read(id), { purchasedAt: new Date(), price: -5 }, alice()));
+    expect(await read(id)).toMatchObject({ acquisition: 'wishlist' });
+  });
+
+  it('un usuario no puede comprar un deseo ajeno', async () => {
+    const id = await createWish();
+    await assertFails(savePurchase('alice', await read(id), { purchasedAt: new Date() }, bob()));
+    expect((await read(id)).acquisition).toBe('wishlist');
+  });
+
+  it('los deseos se pueden eliminar como cualquier libro', async () => {
+    const id = await createWish();
+    await deleteBook('alice', id, alice());
+    expect(await booksCount()).toBe(0);
   });
 });
 

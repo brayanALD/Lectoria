@@ -32,6 +32,8 @@ export function AddBookScreen({ navigation, route }: Props) {
   const { user } = useAuth();
   const { books } = useBooks();
   const seriesNames = useMemo(() => getFilterOptions(books).series, [books]);
+  // «Deseos» añade el libro a la lista de deseos; por defecto, a la biblioteca.
+  const acquisition = route.params?.acquisition ?? 'owned';
 
   // El escáner devuelve el ISBN como parámetro. Se convierte en una petición con identificador y se borra el
   // parámetro, para que escanear el mismo libro otra vez vuelva a disparar la búsqueda.
@@ -45,7 +47,8 @@ export function AddBookScreen({ navigation, route }: Props) {
 
   return (
     <BookForm
-      submitLabel="Guardar libro"
+      submitLabel={acquisition === 'wishlist' ? 'Guardar en deseos' : 'Guardar libro'}
+      acquisition={acquisition}
       seriesSuggestions={seriesNames}
       onLookup={(isbn13) => findBookByIsbn(isbn13)}
       onScan={() => navigation.navigate('ScanBook')}

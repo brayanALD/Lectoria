@@ -1,4 +1,5 @@
 import type {
+  Acquisition,
   BookFormErrors,
   BookFormResult,
   BookFormValues,
@@ -71,9 +72,10 @@ const INTEGER = /^\d+$/;
 /**
  * Valida el formulario de «Añadir libro» y lo convierte en los campos que se guardan.
  * No devuelve claves con valor undefined (Firestore las rechaza) ni fechas: esas las añade el servicio.
- * Un libro nuevo siempre entra a la biblioteca (`owned`); la lista de deseos llega en la versión 1.1.
+ * Un libro nuevo entra a la biblioteca (`owned`) salvo que se añada a la lista de deseos (`wishlist`): un deseo
+ * todavía no se ha empezado, así que se guarda como «Quiero leerlo» y en la página 0, sea cual sea el estado del formulario.
  */
-export function parseBookForm(values: BookFormValues): BookFormResult {
+export function parseBookForm(values: BookFormValues, acquisition: Acquisition = 'owned'): BookFormResult {
   const errors: BookFormErrors = {};
 
   const title = values.title.trim().replace(/\s+/g, ' ');
@@ -120,7 +122,8 @@ export function parseBookForm(values: BookFormValues): BookFormResult {
     }
   }
 
-  if (!READING_STATUSES.includes(values.status)) errors.status = 'Elige un estado de lectura válido.';
+  const status: ReadingStatus = acquisition === 'wishlist' ? DEFAULT_READING_STATUS : values.status;
+  if (!READING_STATUSES.includes(status)) errors.status = 'Elige un estado de lectura válido.';
 
   // El ISBN es opcional; si se escribe, debe ser válido y se guarda normalizado a ISBN-13.
   let isbn13: string | undefined;
@@ -139,10 +142,10 @@ export function parseBookForm(values: BookFormValues): BookFormResult {
   const data: NewBookFields = {
     title,
     authors,
-    status: values.status,
-    acquisition: 'owned',
+    status,
+    acquisition,
     // «Terminado» se define como leído al 100 %: con total de páginas conocido, la página actual es la última.
-    currentPage: values.status === 'finished' && pageCount ? pageCount : 0,
+    currentPage: status === 'finished' && pageCount ? pageCount : 0,
   };
   if (pageCount !== undefined) data.pageCount = pageCount;
   if (genres.length > 0) data.genres = genres;
@@ -152,6 +155,11 @@ export function parseBookForm(values: BookFormValues): BookFormResult {
   if (validCover) data.coverUrl = coverUrl;
 
   return { ok: true, data };
+}
+
+/** ¿Está en la lista de deseos (aún sin tenerlo)? Un libro sin el dato cuenta como propio. */
+export function isWishlistBook(book: { acquisition?: Acquisition }): boolean {
+  return book.acquisition === 'wishlist';
 }
 
 /** Lo mínimo que hay que saber de un libro para decidir qué cambia al mover su estado (sin depender de Firebase). */

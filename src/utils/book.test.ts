@@ -9,6 +9,7 @@ import {
   formatFilteredBookCount,
   getProgressAfterPageCountChange,
   getProgressPercent,
+  isWishlistBook,
   planStatusChange,
   READING_STATUSES,
   READING_STATUS_LABELS,
@@ -349,5 +350,48 @@ describe('parseBookForm — ISBN y portada', () => {
       const result = parseBookForm(form({ coverUrl }));
       expect(result.ok && 'coverUrl' in result.data).toBe(false);
     }
+  });
+});
+
+describe('parseBookForm — lista de deseos', () => {
+  it('un deseo se guarda como «Quiero leerlo», en la página 0 y con acquisition wishlist', () => {
+    expect(parseBookForm(form(), 'wishlist')).toEqual({
+      ok: true,
+      data: { title: 'Dune', authors: ['Frank Herbert'], status: 'want_to_read', acquisition: 'wishlist', currentPage: 0 },
+    });
+  });
+
+  it('ignora el estado del formulario: un deseo no puede nacer leyéndose ni terminado', () => {
+    for (const status of ['reading', 'paused', 'finished', 'abandoned'] as const) {
+      const result = parseBookForm(form({ status, pageCount: '300' }), 'wishlist');
+      expect(result).toMatchObject({ ok: true, data: { status: 'want_to_read', currentPage: 0, pageCount: 300 } });
+    }
+  });
+
+  it('conserva los demás datos (ISBN, portada, páginas, géneros, saga)', () => {
+    const result = parseBookForm(
+      form({ isbn13: '9780441172719', coverUrl: 'https://covers.example/x.jpg', pageCount: '896', genres: 'Ciencia ficción', seriesName: 'Dune', seriesOrder: '1' }),
+      'wishlist',
+    );
+    expect(result).toMatchObject({
+      ok: true,
+      data: { isbn13: '9780441172719', coverUrl: 'https://covers.example/x.jpg', pageCount: 896, genres: ['Ciencia ficción'], seriesName: 'Dune', seriesOrder: 1 },
+    });
+  });
+
+  it('sigue exigiendo título y autor', () => {
+    expect(parseBookForm(form({ title: '', authors: '' }), 'wishlist')).toMatchObject({ ok: false });
+  });
+
+  it('sin indicar nada, un libro entra a la biblioteca', () => {
+    expect(parseBookForm(form())).toMatchObject({ ok: true, data: { acquisition: 'owned' } });
+  });
+});
+
+describe('isWishlistBook', () => {
+  it('solo los deseos lo son; un libro sin el dato cuenta como propio', () => {
+    expect(isWishlistBook({ acquisition: 'wishlist' })).toBe(true);
+    expect(isWishlistBook({ acquisition: 'owned' })).toBe(false);
+    expect(isWishlistBook({})).toBe(false);
   });
 });

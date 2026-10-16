@@ -28,7 +28,14 @@ export function AppNavigator() {
     <Stack.Navigator screenOptions={{ ...getHeaderOptions(colors), headerShown: false }}>
       <Stack.Screen name="Tabs" component={TabNavigator} />
       {/* Pantallas secundarias: se abren encima de las pestañas, con encabezado y botón de volver. */}
-      <Stack.Screen name="AddBook" component={AddBookScreen} options={{ headerShown: true, title: 'Añadir libro' }} />
+      <Stack.Screen
+        name="AddBook"
+        component={AddBookScreen}
+        options={({ route }) => ({
+          headerShown: true,
+          title: route.params?.acquisition === 'wishlist' ? 'Añadir a deseos' : 'Añadir libro',
+        })}
+      />
       <Stack.Screen name="ScanBook" component={ScanBookScreen} options={{ headerShown: true, title: 'Escanear' }} />
       <Stack.Screen
         name="AddSession"

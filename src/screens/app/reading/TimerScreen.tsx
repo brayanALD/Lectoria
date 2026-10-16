@@ -8,7 +8,7 @@ import { EmptyState } from '../../../components/EmptyState';
 import { PickerRow } from '../../../components/PickerRow';
 import { TimerSkeleton } from '../../../components/TimerSkeleton';
 import { useReadingTimer } from '../../../context/ReadingTimerContext';
-import { useBooks } from '../../../hooks/useBooks';
+import { useOwnedBooks } from '../../../hooks/useOwnedBooks';
 import { useNow } from '../../../hooks/useNow';
 import type { AppStackParamList } from '../../../navigation/types';
 import { makeStyles } from '../../../context/ThemeContext';
@@ -30,7 +30,7 @@ const CLOCK_SCALE = 2;
  */
 export function TimerScreen({ navigation }: Props) {
   const styles = useStyles();
-  const { books, loading: booksLoading, error, retry } = useBooks();
+  const { books, loading: booksLoading, error, retry } = useOwnedBooks();
   const { timer, loading: timerLoading, start, pause, resume, discard } = useReadingTimer();
   const [chosenId, setChosenId] = useState<string | undefined>();
   const [bookSheet, setBookSheet] = useState(false);

@@ -6,7 +6,7 @@ import { doc, serverTimestamp, setDoc, setLogLevel, type Firestore } from 'fireb
 import { readFileSync } from 'fs';
 import { join } from 'path';
 
-import { changeBookStatus, createBook, deleteBook, subscribeToBooks } from '../../src/services/booksService';
+import { changeBookStatus, createBook, deleteBook, savePurchase, subscribeToBooks } from '../../src/services/booksService';
 import {
   adjustBookProgress,
   createSession,
@@ -28,6 +28,7 @@ import { EMPTY_BOOK_FORM, parseBookForm } from '../../src/utils/book';
 import { dateForDay, monthOf } from '../../src/utils/calendar';
 import { getGoalProgress } from '../../src/utils/dailyGoal';
 import { initialListState, listReducer, type ListState } from '../../src/utils/listState';
+import { filterByAcquisition } from '../../src/utils/bookFilters';
 import { getMonthlyGoalProgress } from '../../src/utils/monthlyGoal';
 import { addDays, computeStreaks, getReadingDays, summarizeByDay } from '../../src/utils/readingDays';
 import { totalsForSessions } from '../../src/utils/readingStats';
@@ -651,6 +652,44 @@ describe('cronómetro', () => {
     await createSession('alice', book, sessionFields(book, { minutes: second.minutes }), database, second.sessionId);
     const view = await live.until((current) => current.sessions.length === 2);
     expect(new Set(view.sessions.map((session) => session.id)).size).toBe(2);
+  });
+});
+
+describe('lista de deseos', () => {
+  async function addWish(title: string): Promise<string> {
+    const result = parseBookForm({ ...EMPTY_BOOK_FORM, title, authors: 'Frank Herbert', pageCount: '300' }, 'wishlist');
+    if (!result.ok) throw new Error('libro inválido');
+    return createBook('alice', result.data, database);
+  }
+
+  it('un deseo no cuenta como libro propio ni aparece donde se lee; al comprarlo pasa a la biblioteca una sola vez', async () => {
+    const owned = await addBook('Dune');
+    const wishId = await addWish('Emma');
+
+    const both = await live.until((current) => current.books.length === 2);
+    expect(filterByAcquisition(both.books, 'owned').map((book) => book.title)).toEqual(['Dune']);
+    expect(filterByAcquisition(both.books, 'wishlist').map((book) => book.title)).toEqual(['Emma']);
+    expect(countFinishedBooks(both.books, monthOf(TODAY))).toBe(0);
+
+    await savePurchase('alice', both.books.find((book) => book.id === wishId) as UserBookWithId, { purchasedAt: new Date(), price: 30000 }, database);
+    const bought = await live.until((current) => current.books.every((book) => (book.acquisition ?? 'owned') === 'owned'));
+    expect(bought.books).toHaveLength(2);
+    expect(filterByAcquisition(bought.books, 'wishlist')).toHaveLength(0);
+    expect(bought.books.find((book) => book.id === wishId)).toMatchObject({ status: 'want_to_read', currentPage: 0, price: 30000 });
+    expect(bought.books.find((book) => book.id === owned.id)).toBeDefined();
+  });
+
+  it('un libro comprado se puede leer y terminar como cualquier otro, y cuenta en las estadísticas', async () => {
+    const wishId = await addWish('Emma');
+    const wished = await live.until((current) => current.books.some((book) => book.id === wishId));
+    await savePurchase('alice', wished.books[0], { purchasedAt: new Date() }, database);
+    const bought = await live.until((current) => current.books[0]?.acquisition === 'owned');
+
+    await finishBook('alice', bought.books[0], new Date(), database);
+    const finished = await live.until((current) => current.books[0].status === 'finished' && current.sessions.length === 1);
+    expect(countFinishedBooks(finished.books, monthOf(TODAY))).toBe(1);
+    expect(summarizeMonth(finished.days, monthOf(TODAY), TODAY).totals).toMatchObject({ pages: 300, sessions: 1 });
+    expectBooksMatchSessions(finished);
   });
 });
 

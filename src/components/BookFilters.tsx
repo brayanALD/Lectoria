@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import type { Acquisition } from '../types/book';
 import { makeStyles, useTheme } from '../context/ThemeContext';
 import { iconSize, minTouchSize, opacity, radius, spacing } from '../theme/spacing';
 import { fontFamily, fontSize, maxFontScale } from '../theme/typography';
@@ -27,6 +28,12 @@ const SHEET_SECTIONS: { key: SheetFilter; title: string; options: keyof BookFilt
 ];
 
 const BADGE_SIZE = spacing.md + spacing.xs;
+
+// Qué lista se ve: los libros propios o los deseos (siempre hay una elegida).
+const ACQUISITIONS: { value: Acquisition; label: string }[] = [
+  { value: 'owned', label: 'Mis libros' },
+  { value: 'wishlist', label: 'Deseos' },
+];
 
 /** Búsqueda de texto, filtro por estado (siempre visible) y hoja con los filtros de género, autor y saga. */
 export function BookFilters({ filters, onChange, options }: BookFiltersProps) {
@@ -92,22 +99,37 @@ export function BookFilters({ filters, onChange, options }: BookFiltersProps) {
         </Pressable>
       </View>
 
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        keyboardShouldPersistTaps="handled"
-        contentContainerStyle={styles.chipRow}
-      >
-        <Chip label="Todos" selected={filters.status === null} onPress={() => set({ status: null })} />
-        {READING_STATUSES.map((status) => (
-          <Chip
-            key={status}
-            label={READING_STATUS_LABELS[status]}
-            selected={filters.status === status}
-            onPress={() => set({ status: filters.status === status ? null : status })}
-          />
+      <View style={styles.acquisitionRow}>
+        {ACQUISITIONS.map((option) => (
+          <View key={option.value} style={styles.acquisitionItem}>
+            {/* El estado de lectura no aplica a los deseos (aún no se han empezado): al cambiar de lista se quita. */}
+            <Chip
+              label={option.label}
+              selected={filters.acquisition === option.value}
+              onPress={() => set({ acquisition: option.value, status: null })}
+            />
+          </View>
         ))}
-      </ScrollView>
+      </View>
+
+      {filters.acquisition === 'owned' ? (
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+          contentContainerStyle={styles.chipRow}
+        >
+          <Chip label="Todos" selected={filters.status === null} onPress={() => set({ status: null })} />
+          {READING_STATUSES.map((status) => (
+            <Chip
+              key={status}
+              label={READING_STATUS_LABELS[status]}
+              selected={filters.status === status}
+              onPress={() => set({ status: filters.status === status ? null : status })}
+            />
+          ))}
+        </ScrollView>
+      ) : null}
 
       <Modal
         visible={sheetOpen}
@@ -191,6 +213,8 @@ const useStyles = makeStyles((colors) => StyleSheet.create({
   },
   badgeText: { fontSize: fontSize.xs, fontFamily: fontFamily.bold, color: colors.onAccent },
   chipRow: { gap: spacing.sm, paddingHorizontal: spacing.lg },
+  acquisitionRow: { flexDirection: 'row', gap: spacing.sm, paddingHorizontal: spacing.lg },
+  acquisitionItem: { flex: 1 },
   overlay: { flex: 1, backgroundColor: colors.overlay },
   sheet: {
     maxHeight: '80%',

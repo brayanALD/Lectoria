@@ -9,6 +9,7 @@ import {
   orderBy,
   query,
   serverTimestamp,
+  Timestamp,
   updateDoc,
   where,
   writeBatch,
@@ -17,7 +18,7 @@ import {
 } from 'firebase/firestore';
 
 import { db } from '../../firebaseConfig';
-import type { NewBookFields, ReadingStatus, UserBook, UserBookWithId } from '../types/book';
+import type { NewBookFields, PurchaseFields, ReadingStatus, UserBook, UserBookWithId } from '../types/book';
 import { getProgressAfterPageCountChange, planStatusChange, type StatusChange } from '../utils/book';
 
 // Firestore permite 500 operaciones por lote; se deja margen.
@@ -120,6 +121,25 @@ export async function changeBookStatus(
   if (book.status === next) return;
 
   await updateDoc(bookDoc(uid, book.id, database), statusChangeToUpdate(plan));
+}
+
+/**
+ * Registra la compra de un libro: lo pasa de la lista de deseos a la biblioteca (`acquisition: 'owned'`, el mismo
+ * documento, sin duplicarlo) y guarda la fecha y, si se indica, el precio. También sirve para corregir esos datos en un
+ * libro ya comprado (sin precio, lo borra). Comprar no cambia el estado de lectura: no implica empezarlo.
+ */
+export async function savePurchase(
+  uid: string,
+  book: Pick<UserBookWithId, 'id'>,
+  purchase: PurchaseFields,
+  database: Firestore = db,
+): Promise<void> {
+  await updateDoc(bookDoc(uid, book.id, database), {
+    acquisition: 'owned',
+    purchasedAt: Timestamp.fromDate(purchase.purchasedAt),
+    price: purchase.price ?? deleteField(),
+    updatedAt: serverTimestamp(),
+  });
 }
 
 /**

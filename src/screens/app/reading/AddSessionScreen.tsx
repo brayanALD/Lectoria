@@ -11,7 +11,7 @@ import { PickerRow } from '../../../components/PickerRow';
 import { TextField } from '../../../components/TextField';
 import { useAuth } from '../../../context/AuthContext';
 import { useReadingTimer } from '../../../context/ReadingTimerContext';
-import { useBooks } from '../../../hooks/useBooks';
+import { useOwnedBooks } from '../../../hooks/useOwnedBooks';
 import { useReadingStats } from '../../../hooks/useReadingStats';
 import { useSessions } from '../../../hooks/useSessions';
 import { useWindowTop } from '../../../hooks/useWindowTop';
@@ -41,7 +41,7 @@ const MAX_DIGITS = 6;
  * sesiones y cronómetro vienen de sus fuentes únicas); el formulario es `SessionForm`.
  */
 export function AddSessionScreen({ navigation, route }: Props) {
-  const { books, loading: booksLoading } = useBooks();
+  const { books, loading: booksLoading } = useOwnedBooks();
   const { sessions, loading: sessionsLoading } = useSessions();
   const { timer, loading: timerLoading } = useReadingTimer();
 

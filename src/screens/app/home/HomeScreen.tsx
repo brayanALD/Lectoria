@@ -11,7 +11,7 @@ import { GoalProgress } from '../../../components/GoalProgress';
 import { HomeSkeleton } from '../../../components/HomeSkeleton';
 import { SessionRow } from '../../../components/SessionRow';
 import { SetGoalLink } from '../../../components/SetGoalLink';
-import { useBooks } from '../../../hooks/useBooks';
+import { useOwnedBooks } from '../../../hooks/useOwnedBooks';
 import { useDailyGoal } from '../../../hooks/useDailyGoal';
 import { useReadingStats } from '../../../hooks/useReadingStats';
 import { useSaveDailyGoal } from '../../../hooks/useSaveDailyGoal';
@@ -35,7 +35,7 @@ export function HomeScreen() {
   const styles = useStyles();
   const { colors } = useTheme();
   const navigation = useNavigation<NativeStackNavigationProp<AppStackParamList>>();
-  const books = useBooks();
+  const books = useOwnedBooks();
   const sessions = useSessions();
   const goal = useDailyGoal();
   const { streaks, todayKey } = useReadingStats();

@@ -16,20 +16,23 @@ import { useBookSessions } from '../../../hooks/useBookSessions';
 import { useDeleteSession } from '../../../hooks/useDeleteSession';
 import { useReadingStats } from '../../../hooks/useReadingStats';
 import type { AppStackParamList } from '../../../navigation/types';
-import { changeBookStatus, deleteBook } from '../../../services/booksService';
+import { changeBookStatus, deleteBook, savePurchase } from '../../../services/booksService';
 import { finishBook } from '../../../services/sessionsService';
 import { adjustBookProgress } from '../../../services/sessionsService';
 import type { ReadingStatus } from '../../../types/book';
 import { makeStyles, useTheme } from '../../../context/ThemeContext';
 import { iconSize, opacity, radius, spacing } from '../../../theme/spacing';
 import { fontFamily, fontSize } from '../../../theme/typography';
-import { getProgressPercent } from '../../../utils/book';
+import { getProgressPercent, isWishlistBook } from '../../../utils/book';
 import { formatDayLabel } from '../../../utils/calendar';
 import { formatLongDate } from '../../../utils/dateUtils';
 import { getFirestoreErrorMessage } from '../../../utils/firestoreErrors';
+import { describePurchase } from '../../../utils/purchase';
 import { formatTotals } from '../../../utils/readingStats';
+import { toDateKey } from '../../../utils/session';
 import { withTimeout } from '../../../utils/withTimeout';
 import { ProgressAdjustSheet } from './ProgressAdjustSheet';
+import { PurchaseSheet } from './PurchaseSheet';
 
 type Props = NativeStackScreenProps<AppStackParamList, 'BookDetail'>;
 
@@ -54,6 +57,7 @@ export function BookDetailScreen({ navigation, route }: Props) {
   const [deleting, setDeleting] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
   const [adjusting, setAdjusting] = useState(false);
+  const [buying, setBuying] = useState(false);
 
   // Mientras se elimina, el libro desaparece de la lista antes de que termine la operación:
   // se mantiene la silueta de carga para no mostrar «el libro no existe» un instante.
@@ -97,7 +101,9 @@ export function BookDetailScreen({ navigation, route }: Props) {
   const confirmDelete = () => {
     Alert.alert(
       `¿Eliminar «${book.title}»?`,
-      'Se eliminarán también todas sus sesiones de lectura. Esta acción no se puede deshacer.',
+      isWishlistBook(book)
+        ? 'Esta acción no se puede deshacer.'
+        : 'Se eliminarán también todas sus sesiones de lectura. Esta acción no se puede deshacer.',
       [
         { text: 'Cancelar', style: 'cancel' },
         { text: 'Eliminar', style: 'destructive', onPress: handleDelete },
@@ -119,6 +125,9 @@ export function BookDetailScreen({ navigation, route }: Props) {
   };
 
   const percent = getProgressPercent(book);
+  // Un deseo aún no se tiene: no se lee, no tiene estado ni progreso; lo que se hace con él es comprarlo.
+  const wishlist = isWishlistBook(book);
+  const purchaseText = describePurchase(book);
   const details: { label: string; value: string }[] = [
     book.genres?.length ? { label: 'Géneros', value: book.genres.join(', ') } : undefined,
     book.seriesName
@@ -141,26 +150,30 @@ export function BookDetailScreen({ navigation, route }: Props) {
         </View>
       </View>
 
-      {/* Las etiquetas de estado se explican solas; el nombre del grupo se conserva para el lector de pantalla. */}
-      <StatusSelector showLabel={false} value={book.status} onChange={handleStatusChange} />
+      {wishlist ? null : (
+        <>
+          {/* Las etiquetas de estado se explican solas; el nombre del grupo se conserva para el lector de pantalla. */}
+          <StatusSelector showLabel={false} value={book.status} onChange={handleStatusChange} />
 
-      {/* Tocar el progreso permite ajustar la página a mano. */}
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={`Página ${book.currentPage}${book.pageCount ? ` de ${book.pageCount}` : ''}`}
-        accessibilityHint="Toca para cambiar la página actual"
-        onPress={() => setAdjusting(true)}
-        style={({ pressed }) => [styles.section, pressed && styles.pressed]}
-      >
-        <View style={styles.progressRow}>
-          <Text style={styles.progressText}>
-            Página {book.currentPage}
-            {book.pageCount ? ` de ${book.pageCount}` : ''}
-          </Text>
-          <Ionicons name="create-outline" size={iconSize.md} color={colors.primary} />
-        </View>
-        {percent !== undefined ? <ReadingProgress percent={percent} /> : null}
-      </Pressable>
+          {/* Tocar el progreso permite ajustar la página a mano. */}
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={`Página ${book.currentPage}${book.pageCount ? ` de ${book.pageCount}` : ''}`}
+            accessibilityHint="Toca para cambiar la página actual"
+            onPress={() => setAdjusting(true)}
+            style={({ pressed }) => [styles.section, pressed && styles.pressed]}
+          >
+            <View style={styles.progressRow}>
+              <Text style={styles.progressText}>
+                Página {book.currentPage}
+                {book.pageCount ? ` de ${book.pageCount}` : ''}
+              </Text>
+              <Ionicons name="create-outline" size={iconSize.md} color={colors.primary} />
+            </View>
+            {percent !== undefined ? <ReadingProgress percent={percent} /> : null}
+          </Pressable>
+        </>
+      )}
 
       {details.length > 0 ? (
         <View style={styles.section}>
@@ -173,16 +186,36 @@ export function BookDetailScreen({ navigation, route }: Props) {
         </View>
       ) : null}
 
+      {/* Los datos de la compra, si los hay; tocarlos permite corregirlos. */}
+      {!wishlist && purchaseText ? (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`Compra: ${purchaseText}`}
+          accessibilityHint="Toca para cambiar los datos de la compra"
+          onPress={() => setBuying(true)}
+          style={({ pressed }) => [styles.section, pressed && styles.pressed]}
+        >
+          <View style={styles.progressRow}>
+            <Text style={styles.progressText}>Compra: {purchaseText}</Text>
+            <Ionicons name="create-outline" size={iconSize.md} color={colors.primary} />
+          </View>
+        </Pressable>
+      ) : null}
+
       {(actionError ?? sessionError) ? (
         <Text style={styles.error} accessibilityRole="alert">
           {actionError ?? sessionError}
         </Text>
       ) : null}
 
-      <Button title="Registrar lectura" onPress={() => navigation.navigate('AddSession', { bookId: book.id })} />
+      {wishlist ? (
+        <Button title="Marcar como comprado" onPress={() => setBuying(true)} />
+      ) : (
+        <Button title="Registrar lectura" onPress={() => navigation.navigate('AddSession', { bookId: book.id })} />
+      )}
 
       {/* Las lecturas de este libro, derivadas de la misma lista de sesiones que usan Inicio y el Calendario. */}
-      {bookSessions.loading ? (
+      {wishlist ? null : bookSessions.loading ? (
         <SessionListSkeleton />
       ) : bookSessions.sessions.length > 0 ? (
         <View style={styles.sessions}>
@@ -218,6 +251,19 @@ export function BookDetailScreen({ navigation, route }: Props) {
         <Button title="Eliminar" variant="danger" onPress={confirmDelete} />
       </View>
     </ScrollView>
+
+    <PurchaseSheet
+      visible={buying}
+      onClose={() => setBuying(false)}
+      mode={wishlist ? 'buy' : 'edit'}
+      initialDateKey={book.purchasedAt ? toDateKey(book.purchasedAt.toDate()) : todayKey}
+      initialPrice={book.price !== undefined ? String(book.price).replace('.', ',') : ''}
+      todayKey={todayKey}
+      onSave={async (purchase) => {
+        if (!user) throw new Error('No hay sesión iniciada');
+        await withTimeout(savePurchase(user.uid, book, purchase), WRITE_TIMEOUT_MS);
+      }}
+    />
 
     <ProgressAdjustSheet
       visible={adjusting}

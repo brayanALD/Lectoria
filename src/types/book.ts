@@ -22,6 +22,9 @@ export interface UserBook {
   rating?: 1 | 2 | 3 | 4 | 5;
   review?: string;
   notes?: string;
+  /** Datos de la compra (solo en libros propios): se guardan al marcar un deseo como comprado. Sin moneda. */
+  price?: number;
+  purchasedAt?: Timestamp;
 
   startedAt?: Timestamp;
   finishedAt?: Timestamp;
@@ -36,6 +39,12 @@ export type UserBookWithId = UserBook & { id: string };
 /** Campos que se escriben al crear un libro desde el formulario (sin fechas de control). */
 export type NewBookFields = Pick<UserBook, 'title' | 'authors' | 'status' | 'acquisition' | 'currentPage'> &
   Partial<Pick<UserBook, 'genres' | 'seriesName' | 'seriesOrder' | 'pageCount' | 'isbn13' | 'coverUrl'>>;
+
+/** Datos de una compra, tal como se guardan: la fecha es obligatoria y el precio, opcional. */
+export interface PurchaseFields {
+  purchasedAt: Date;
+  price?: number;
+}
 
 /** Datos de un libro obtenidos de un catálogo externo (Open Library) a partir de su ISBN. */
 export interface CatalogBook {

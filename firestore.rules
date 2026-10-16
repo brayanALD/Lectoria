@@ -18,6 +18,10 @@ service cloud.firestore {
       return !(field in d) || (d[field] is int && d[field] >= min && d[field] <= max);
     }
 
+    function optionalNumber(d, field, min, max) {
+      return !(field in d) || (d[field] is number && d[field] >= min && d[field] <= max);
+    }
+
     function optionalTimestamp(d, field) {
       return !(field in d) || d[field] is timestamp;
     }
@@ -45,7 +49,7 @@ service cloud.firestore {
     function validBook(d) {
       return d.keys().hasOnly([
           'title', 'authors', 'genres', 'seriesName', 'seriesOrder', 'isbn13', 'coverUrl', 'pageCount',
-          'status', 'acquisition', 'currentPage', 'rating', 'review', 'notes',
+          'status', 'acquisition', 'currentPage', 'rating', 'review', 'notes', 'price', 'purchasedAt',
           'startedAt', 'finishedAt', 'createdAt', 'updatedAt'
         ])
         && d.keys().hasAll(['title', 'authors', 'status', 'acquisition', 'currentPage', 'createdAt', 'updatedAt'])
@@ -63,6 +67,10 @@ service cloud.firestore {
         && optionalInt(d, 'rating', 1, 5)
         && optionalString(d, 'review', 10000)
         && optionalString(d, 'notes', 10000)
+        && optionalNumber(d, 'price', 0, 999999999)
+        && optionalTimestamp(d, 'purchasedAt')
+        // Un deseo aún no se ha comprado: los datos de compra solo existen en los libros propios.
+        && (d.acquisition == 'owned' || !('price' in d || 'purchasedAt' in d))
         && optionalTimestamp(d, 'startedAt')
         && optionalTimestamp(d, 'finishedAt')
         && d.updatedAt == request.time;

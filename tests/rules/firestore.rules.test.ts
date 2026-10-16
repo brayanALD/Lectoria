@@ -261,6 +261,49 @@ describe('libros generados por parseBookForm (el formulario y las reglas deben c
   });
 });
 
+describe('lista de deseos y compra (versión 1.1)', () => {
+  const ref = () => doc(alice(), 'users/alice/books/b1');
+  const wished = () => ({ ...validBook(), status: 'want_to_read', acquisition: 'wishlist' });
+
+  it('permite crear un deseo y comprarlo: pasa a propio con fecha y precio en el mismo documento', async () => {
+    await assertSucceeds(setDoc(ref(), wished()));
+    await assertSucceeds(
+      updateDoc(ref(), { acquisition: 'owned', purchasedAt: Timestamp.now(), price: 45000, updatedAt: serverTimestamp() }),
+    );
+  });
+
+  it('un libro propio puede llevar precio y fecha de compra; el precio puede ser 0 o decimal', async () => {
+    await assertSucceeds(setDoc(ref(), { ...validBook(), price: 0, purchasedAt: Timestamp.now() }));
+    await assertSucceeds(updateDoc(ref(), { price: 45.5, updatedAt: serverTimestamp() }));
+    await assertSucceeds(updateDoc(ref(), { price: 999999999, updatedAt: serverTimestamp() }));
+  });
+
+  it('rechaza precios negativos, fuera de rango o que no son números, y fechas que no son fechas', async () => {
+    await assertFails(setDoc(ref(), { ...validBook(), price: -1 }));
+    await assertFails(setDoc(ref(), { ...validBook(), price: 1000000000 }));
+    await assertFails(setDoc(ref(), { ...validBook(), price: '45' }));
+    await assertFails(setDoc(ref(), { ...validBook(), purchasedAt: '2026-10-15' }));
+  });
+
+  it('un deseo no puede llevar datos de compra: aún no se ha comprado', async () => {
+    await assertFails(setDoc(ref(), { ...wished(), price: 100 }));
+    await assertFails(setDoc(ref(), { ...wished(), purchasedAt: Timestamp.now() }));
+    await assertSucceeds(setDoc(ref(), wished()));
+    await assertFails(updateDoc(ref(), { price: 100, updatedAt: serverTimestamp() }));
+  });
+
+  it('se puede quitar el precio de un libro comprado sin tocar el resto', async () => {
+    await assertSucceeds(setDoc(ref(), { ...validBook(), price: 10, purchasedAt: Timestamp.now() }));
+    await assertSucceeds(updateDoc(ref(), { price: deleteField(), updatedAt: serverTimestamp() }));
+  });
+
+  it('otro usuario no puede comprar ni leer los deseos ajenos', async () => {
+    await assertSucceeds(setDoc(ref(), wished()));
+    await assertFails(updateDoc(doc(bob(), 'users/alice/books/b1'), { acquisition: 'owned', updatedAt: serverTimestamp() }));
+    await assertFails(getDoc(doc(bob(), 'users/alice/books/b1')));
+  });
+});
+
 describe('sesiones users/{uid}/sessions', () => {
   it('permite crear una sesión válida, con o sin páginas inicial y final', async () => {
     await assertSucceeds(setDoc(doc(alice(), 'users/alice/sessions/s1'), validSession()));

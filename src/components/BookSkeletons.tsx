@@ -40,7 +40,7 @@ function GridCardSkeleton() {
   );
 }
 
-/** Silueta de la pantalla de Biblioteca: buscador, etiquetas de estado y tarjetas. */
+/** Silueta de la pantalla de Biblioteca: buscador, selector de lista (libros o deseos), etiquetas de estado y tarjetas. */
 export function LibrarySkeleton({ grid = false }: { grid?: boolean }) {
   const styles = useStyles();
   return (
@@ -49,6 +49,10 @@ export function LibrarySkeleton({ grid = false }: { grid?: boolean }) {
         <View style={styles.searchRow}>
           <Skeleton width="85%" height={minTouchSize} style={styles.pill} />
           <Skeleton width={minTouchSize} height={minTouchSize} style={styles.rounded} />
+        </View>
+        <View style={styles.chipRow}>
+          <Skeleton height={minTouchSize} style={[styles.pill, styles.half]} />
+          <Skeleton height={minTouchSize} style={[styles.pill, styles.half]} />
         </View>
         <View style={styles.chipRow}>
           <Skeleton width={72} height={minTouchSize} style={styles.pill} />
@@ -154,6 +158,7 @@ const useStyles = makeStyles((colors) => StyleSheet.create({
   library: { flex: 1, paddingTop: spacing.sm, gap: spacing.sm },
   searchRow: { flexDirection: 'row', gap: spacing.sm, paddingHorizontal: spacing.lg },
   chipRow: { flexDirection: 'row', gap: spacing.sm, paddingHorizontal: spacing.lg },
+  half: { flex: 1 },
   rounded: { borderRadius: radius.md },
   pill: { borderRadius: radius.pill },
   list: { padding: spacing.lg, gap: spacing.md },

@@ -1,6 +1,6 @@
 # Lectoria — Plan de desarrollo de la aplicación móvil
 
-> Estado: **Versión 1.1 en curso (desde 2026-10-15): hechos el objetivo mensual de libros y el registro automático de lectura al terminar un libro** (§9); siguen lista de deseos y compras, y notas y reseñas. **Versión 1.0 cerrada el 2026-10-13** (Fases 1 a 5). **Fase 5 (estadísticas) cerrada el 2026-10-13** (pestaña Estadísticas con vistas Día y Mes y meta diaria integrada). **Fase 4 (sesiones) cerrada el 2026-10-13** (registro de lecturas manual y con cronómetro, progreso sincronizado, calendario, rachas y meta diaria; probada en Android por el usuario). Siguiente: versión 1.1 (Fase 6). **Fase 3 (ISBN) cerrada el 2026-10-13** (búsqueda por ISBN con Open Library, escáner con `expo-camera`, duplicados). **Fase 2 (biblioteca) cerrada el 2026-10-13.** **Fase 1 cerrada para Android (2026-10-12)**: Expo SDK 57 + TypeScript, autenticación con correo y Google (con nombre, apodo y vinculación de métodos), navegación condicional, tema, logo e iconos, Firestore en `us-east1` con reglas desplegadas. Verificado en dispositivo: registro, login, sesión persistente, cierre de sesión, perfil `users/{uid}` y vinculación. Siguiente: Fase 2 (biblioteca). Fuera del cierre: iOS (requiere cuenta de Apple Developer), ESLint y tema oscuro.
+> Estado: **Versión 1.1 en curso (desde 2026-10-15): hechos el objetivo mensual de libros, el registro automático de lectura al terminar un libro y la lista de deseos con compra** (§6 y §9); sigue notas y reseñas. **Versión 1.0 cerrada el 2026-10-13** (Fases 1 a 5). **Fase 5 (estadísticas) cerrada el 2026-10-13** (pestaña Estadísticas con vistas Día y Mes y meta diaria integrada). **Fase 4 (sesiones) cerrada el 2026-10-13** (registro de lecturas manual y con cronómetro, progreso sincronizado, calendario, rachas y meta diaria; probada en Android por el usuario). Siguiente: versión 1.1 (Fase 6). **Fase 3 (ISBN) cerrada el 2026-10-13** (búsqueda por ISBN con Open Library, escáner con `expo-camera`, duplicados). **Fase 2 (biblioteca) cerrada el 2026-10-13.** **Fase 1 cerrada para Android (2026-10-12)**: Expo SDK 57 + TypeScript, autenticación con correo y Google (con nombre, apodo y vinculación de métodos), navegación condicional, tema, logo e iconos, Firestore en `us-east1` con reglas desplegadas. Verificado en dispositivo: registro, login, sesión persistente, cierre de sesión, perfil `users/{uid}` y vinculación. Siguiente: Fase 2 (biblioteca). Fuera del cierre: iOS (requiere cuenta de Apple Developer), ESLint y tema oscuro.
 > Nota de nombre: este archivo conserva el nombre `BookTracker_Plan_de_desarrollo.md` por compatibilidad con referencias existentes. «BookTracker» es el tipo de app; el nombre del producto es **Lectoria**.
 
 Leyenda de estado usada en todo el documento:
@@ -70,7 +70,7 @@ Debe permitir registrar libros, leer, medir el progreso y consultar la bibliotec
 
 | Versión | Funciones | Depende de |
 |---|---|---|
-| 1.1 | Lista de deseos, libros comprados, notas y reseñas | Biblioteca (1.0) |
+| 1.1 | Lista de deseos, libros comprados, notas y reseñas (lista de deseos y compra hechas el 2026-10-15; faltan notas y reseñas) | Biblioteca (1.0) |
 | 1.2 | Autores, sagas, colecciones personalizadas, estanterías filtradas | Biblioteca con campos de género y saga (1.0) |
 | 1.3 | Ruleta de no leídos, logros, estantería realista | Libros terminados, sesiones, rachas (1.0); sagas (1.2) para el logro de saga |
 | 1.4 | Recordatorios locales, calendario avanzado, estimaciones de lectura | Sesiones (1.0) |
@@ -193,6 +193,8 @@ interface UserBook {
   rating?: 1 | 2 | 3 | 4 | 5;
   review?: string;
   notes?: string;
+  price?: number;            // solo libros propios (1.1); sin moneda
+  purchasedAt?: Timestamp;    // solo libros propios (1.1)
 
   startedAt?: Timestamp;
   finishedAt?: Timestamp;
@@ -231,7 +233,13 @@ interface ReadingSession {
 
 - **Catálogo compartido `catalogBooks` aplazado.** Exigía un backend confiable para escribirlo (Cloud Functions), contradiciendo «sin servidor propio» de la plantilla. En 1.0 los metadatos se guardan en el libro personal. [Pendiente] reconsiderarlo solo si hay una necesidad medida.
 - **Autores y sagas** en 1.0–1.1: campos del libro (`authors`, `seriesName`, `seriesOrder`) y vistas derivadas. Entidades propias (`authors/`, `series/`) quedan [Pendiente] hasta 1.2.
-- **Lista de deseos y compras**: integradas en `books` con `acquisition`; se eliminan las colecciones `wishlist` y `purchases`. Precio y fecha de compra son [Pendiente].
+- **Lista de deseos y compras** [Confirmado e implementado, 2026-10-15; versión 1.1]: integradas en `books` con `acquisition`; se eliminan las colecciones `wishlist` y `purchases`. Decisiones del usuario: la lista de deseos es un **filtro dentro de Biblioteca**, se añade con el **mismo formulario** (ISBN, escáner y portada) y se guardan **precio y fecha de compra**.
+  - **Biblioteca:** un selector «Mis libros / Deseos» (siempre hay uno elegido; por defecto, «Mis libros») decide qué lista se ve; la búsqueda, el recuento y los filtros de género, autor y saga se aplican dentro de ella, y el filtro por estado de lectura solo existe en «Mis libros» (un deseo aún no se ha empezado). El «+» del encabezado añade a la lista que se está viendo («Añadir a deseos»); el formulario de un deseo no tiene selector de estado y se guarda como «Quiero leerlo», página 0 (`parseBookForm(values, 'wishlist')`). Un deseo se rotula «Deseo» en su tarjeta.
+  - **Dónde no aparecen:** Inicio, el registro de lecturas y el cronómetro solo usan libros **propios** (`useOwnedBooks`); en el detalle de un deseo no hay estado, progreso, «Registrar lectura» ni lecturas: su acción principal es **«Marcar como comprado»**.
+  - **Comprar:** abre una hoja con la **fecha de compra** (hoy por defecto, cualquier día pasado; un día pasado se guarda al mediodía) y el **precio** opcional (`savePurchase`): cambia `acquisition` a `owned` **en el mismo documento** (no se duplica), guarda `purchasedAt` y `price`, y **no cambia el estado de lectura** (comprar no implica empezar). Si el libro propio tiene datos de compra, el detalle muestra «Compra: 13 de octubre de 2026 · 45.000» y tocarlo permite corregirlos o quitar el precio.
+  - **Precio:** número ≥ 0 y ≤ 999 999 999, **sin moneda** (no está definida en el plan; se muestra con el formato del español, sin símbolo). Al escribirlo, un separador seguido de 1 o 2 cifras es decimal («45,5») y de 3 cifras separa miles («45.000»); las combinaciones ambiguas se rechazan (`utils/purchase.parsePriceInput`).
+  - **Reglas de Firestore:** `price` y `purchasedAt` son opcionales y **solo los admite un libro propio** (un deseo con ellos se rechaza). **Hay que desplegarlas** (`npx firebase-tools deploy --only firestore`): hasta entonces, guardar una compra con precio o fecha falla con permiso denegado (añadir un deseo no necesita el despliegue).
+  - **No incluido (no documentado):** registrar precio y fecha al añadir directamente un libro propio (solo existen tras comprar un deseo; para libros que ya tenía no hay entrada) y moneda.
 - **Objetivos**: dentro de `users/{uid}`. Mínimo: objetivo mensual en **número de libros** (`monthlyBooksGoal`, entero de 1 a 1000; implementado el 2026-10-15) y objetivo diario, que se mide en **minutos o en páginas** a elección de la persona [Confirmado, 2026-10-13]: `dailyGoalMinutes` (1–1440) o `dailyGoalPages` (1–10000), nunca los dos a la vez (lo exigen las reglas). Otras unidades y objetivos anuales [Pendiente].
 - **Resúmenes `statsMonthly`**: no en 1.0; se calculan en el cliente desde las sesiones. Se evaluará una caché cuando el volumen lo justifique.
 - **Logros**: se derivan de los datos del usuario y se calculan en el cliente. Como la biblioteca es privada, no hay motivo para validarlos en un backend; se descarta la colección `achievements` como fuente de verdad (puede guardarse solo la fecha de desbloqueo).
