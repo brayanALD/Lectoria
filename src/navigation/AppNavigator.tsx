@@ -5,6 +5,8 @@ import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { AddBookScreen } from '../screens/app/library/AddBookScreen';
 import { BookDetailScreen } from '../screens/app/library/BookDetailScreen';
+import { BookNotesScreen } from '../screens/app/library/BookNotesScreen';
+import { BookReviewScreen } from '../screens/app/library/BookReviewScreen';
 import { EditBookScreen } from '../screens/app/library/EditBookScreen';
 import { ScanBookScreen } from '../screens/app/library/ScanBookScreen';
 import { AddSessionScreen } from '../screens/app/reading/AddSessionScreen';
@@ -49,6 +51,8 @@ export function AppNavigator() {
       {/* Sin título: la propia pantalla ya muestra el nombre del libro. */}
       <Stack.Screen name="BookDetail" component={BookDetailScreen} options={{ headerShown: true, title: '' }} />
       <Stack.Screen name="EditBook" component={EditBookScreen} options={{ headerShown: true, title: 'Editar libro' }} />
+      <Stack.Screen name="BookNotes" component={BookNotesScreen} options={{ headerShown: true, title: 'Notas' }} />
+      <Stack.Screen name="BookReview" component={BookReviewScreen} options={{ headerShown: true, title: 'Reseña' }} />
     </Stack.Navigator>
   );
 }

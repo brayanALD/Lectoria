@@ -23,6 +23,9 @@ export type AppStackParamList = {
   AddSession: { bookId?: string; sessionId?: string; day?: string; fromTimer?: boolean } | undefined;
   Timer: undefined;
   BookDetail: { bookId: string };
+  /** Las notas del libro (durante la lectura) y su reseña (calificación y opiniones): dos pantallas independientes. */
+  BookNotes: { bookId: string };
+  BookReview: { bookId: string };
   EditBook: { bookId: string };
 };
 

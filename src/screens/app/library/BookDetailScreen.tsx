@@ -9,6 +9,7 @@ import { EmptyState } from '../../../components/EmptyState';
 import { BookDetailSkeleton, SessionListSkeleton } from '../../../components/BookSkeletons';
 import { ReadingProgress } from '../../../components/ReadingProgress';
 import { SessionRow } from '../../../components/SessionRow';
+import { StarRating } from '../../../components/StarRating';
 import { StatusSelector } from '../../../components/StatusSelector';
 import { useAuth } from '../../../context/AuthContext';
 import { useBook } from '../../../hooks/useBook';
@@ -29,6 +30,13 @@ import { formatLongDate } from '../../../utils/dateUtils';
 import { getFirestoreErrorMessage } from '../../../utils/firestoreErrors';
 import { describePurchase } from '../../../utils/purchase';
 import { formatTotals } from '../../../utils/readingStats';
+import {
+  describeRating,
+  formatRating,
+  getSpecificTopics,
+  hasReview,
+  isValidRating,
+} from '../../../utils/review';
 import { toDateKey } from '../../../utils/session';
 import { withTimeout } from '../../../utils/withTimeout';
 import { ProgressAdjustSheet } from './ProgressAdjustSheet';
@@ -43,6 +51,9 @@ const WRITE_TIMEOUT_MS = 10000;
 const DELETE_TIMEOUT_MS = 20000;
 // Cuántas lecturas se muestran de golpe en la lista de sesiones del libro.
 const SESSIONS_PAGE_SIZE = 10;
+// Cuántas líneas de las notas y de la reseña se ven en el detalle; el resto, al abrirlas.
+const NOTES_PREVIEW_LINES = 4;
+const REVIEW_PREVIEW_LINES = 3;
 
 export function BookDetailScreen({ navigation, route }: Props) {
   const styles = useStyles();
@@ -128,6 +139,8 @@ export function BookDetailScreen({ navigation, route }: Props) {
   // Un deseo aún no se tiene: no se lee, no tiene estado ni progreso; lo que se hace con él es comprarlo.
   const wishlist = isWishlistBook(book);
   const purchaseText = describePurchase(book);
+  const reviewTopics = getSpecificTopics(book);
+  const reviewed = hasReview(book);
   const details: { label: string; value: string }[] = [
     book.genres?.length ? { label: 'Géneros', value: book.genres.join(', ') } : undefined,
     book.seriesName
@@ -214,6 +227,68 @@ export function BookDetailScreen({ navigation, route }: Props) {
         <Button title="Registrar lectura" onPress={() => navigation.navigate('AddSession', { bookId: book.id })} />
       )}
 
+      {/* Notas y reseña son dos cosas distintas: las notas se escriben mientras se lee; la reseña, para valorar el libro. */}
+      {wishlist ? null : (
+        <>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={book.notes ? `Notas: ${book.notes}` : 'Notas, vacías'}
+            accessibilityHint={book.notes ? 'Toca para editar las notas' : 'Toca para añadir notas'}
+            onPress={() => navigation.navigate('BookNotes', { bookId: book.id })}
+            style={({ pressed }) => [styles.section, pressed && styles.pressed]}
+          >
+            <View style={styles.progressRow}>
+              <Text style={styles.blockTitle}>Notas</Text>
+              <Ionicons name={book.notes ? 'create-outline' : 'add-circle-outline'} size={iconSize.md} color={colors.primary} />
+            </View>
+            {book.notes ? (
+              <Text style={styles.preview} numberOfLines={NOTES_PREVIEW_LINES}>
+                {book.notes}
+              </Text>
+            ) : null}
+          </Pressable>
+
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={
+              reviewed
+                ? `Reseña: ${[
+                    isValidRating(book.rating) ? describeRating(book.rating) : '',
+                    book.review ?? '',
+                    reviewTopics.join(', '),
+                  ]
+                    .filter(Boolean)
+                    .join('. ')}`
+                : 'Reseña, vacía'
+            }
+            accessibilityHint={reviewed ? 'Toca para editar la reseña' : 'Toca para valorar el libro'}
+            onPress={() => navigation.navigate('BookReview', { bookId: book.id })}
+            style={({ pressed }) => [styles.section, pressed && styles.pressed]}
+          >
+            <View style={styles.progressRow}>
+              <Text style={styles.blockTitle}>Reseña</Text>
+              <Ionicons name={reviewed ? 'create-outline' : 'add-circle-outline'} size={iconSize.md} color={colors.primary} />
+            </View>
+            {isValidRating(book.rating) ? (
+              <View style={styles.ratingRow}>
+                <StarRating rating={book.rating} />
+                <Text style={styles.ratingValue}>{formatRating(book.rating)}</Text>
+              </View>
+            ) : null}
+            {book.review ? (
+              <Text style={styles.preview} numberOfLines={REVIEW_PREVIEW_LINES}>
+                {book.review}
+              </Text>
+            ) : null}
+            {reviewTopics.length > 0 ? (
+              <Text style={styles.topicsLine} numberOfLines={1}>
+                {reviewTopics.join(' · ')}
+              </Text>
+            ) : null}
+          </Pressable>
+        </>
+      )}
+
       {/* Las lecturas de este libro, derivadas de la misma lista de sesiones que usan Inicio y el Calendario. */}
       {wishlist ? null : bookSessions.loading ? (
         <SessionListSkeleton />
@@ -286,9 +361,16 @@ const useStyles = makeStyles((colors) => StyleSheet.create({
   title: { fontSize: fontSize.xl, fontFamily: fontFamily.displayBold, color: colors.textPrimary },
   authors: { fontSize: fontSize.md, fontFamily: fontFamily.regular, color: colors.textSecondary },
   section: { gap: spacing.sm, padding: spacing.md, borderRadius: radius.lg, backgroundColor: colors.surfaceTint },
-  progressRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  progressText: { fontSize: fontSize.md, fontFamily: fontFamily.regular, color: colors.textPrimary },
+  // El texto ocupa el espacio que queda (`flex: 1`) y se parte en varias líneas si hace falta: así el icono de editar
+  // nunca se sale del bloque, ni con una fecha de compra larga o un texto grande del sistema.
+  progressRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.sm },
+  progressText: { flex: 1, fontSize: fontSize.md, fontFamily: fontFamily.regular, color: colors.textPrimary },
   pressed: { opacity: opacity.pressed },
+  blockTitle: { flex: 1, fontSize: fontSize.md, fontFamily: fontFamily.semibold, color: colors.textPrimary },
+  preview: { fontSize: fontSize.md, fontFamily: fontFamily.regular, color: colors.textPrimary },
+  ratingRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  ratingValue: { fontSize: fontSize.md, fontFamily: fontFamily.semibold, color: colors.textPrimary },
+  topicsLine: { fontSize: fontSize.sm, fontFamily: fontFamily.regular, color: colors.textSecondary },
   row: { flexDirection: 'row', justifyContent: 'space-between', gap: spacing.md },
   rowLabel: { fontSize: fontSize.md, fontFamily: fontFamily.regular, color: colors.textSecondary },
   rowValue: { flex: 1, fontSize: fontSize.md, fontFamily: fontFamily.regular, color: colors.textPrimary, textAlign: 'right' },

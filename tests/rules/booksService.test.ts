@@ -20,6 +20,8 @@ import type { BookFormValues, UserBook, UserBookWithId } from '../../src/types/b
 import { EMPTY_BOOK_FORM, parseBookForm } from '../../src/utils/book';
 import {
   changeBookStatus,
+  saveBookNotes,
+  saveBookReview,
   savePurchase,
   createBook,
   deleteBook,
@@ -237,6 +239,92 @@ describe('changeBookStatus', () => {
   it('un usuario no puede cambiar el estado de un libro ajeno', async () => {
     const id = await create();
     await assertFails(changeBookStatus('alice', await read(id), 'reading', bob()));
+  });
+});
+
+describe('notas y reseña', () => {
+  it('guardar las notas no toca la reseña, ni el estado, ni el progreso', async () => {
+    const id = await create({ status: 'reading', pageCount: '300' });
+    await saveBookReview('alice', await read(id), { rating: 4.5, review: 'Muy bueno' }, alice());
+    await saveBookNotes('alice', await read(id), 'Capítulo 3: la prueba del miedo.\n\n«No temeré».', alice());
+
+    const book = await read(id);
+    expect(book.notes).toBe('Capítulo 3: la prueba del miedo.\n\n«No temeré».');
+    expect(book).toMatchObject({ rating: 4.5, review: 'Muy bueno', status: 'reading', currentPage: 0 });
+  });
+
+  it('guardar la reseña no toca las notas', async () => {
+    const id = await create();
+    await saveBookNotes('alice', await read(id), 'una idea', alice());
+    await saveBookReview('alice', await read(id), { rating: 3, specificReviews: [{ topic: 'Trama', text: 'Ágil' }] }, alice());
+
+    const book = await read(id);
+    expect(book.notes).toBe('una idea');
+    expect(book).toMatchObject({ rating: 3, specificReviews: [{ topic: 'Trama', text: 'Ágil' }] });
+    expect(book).not.toHaveProperty('review');
+  });
+
+  it('la reseña guardada es exactamente la enviada: lo que falta se elimina', async () => {
+    const id = await create();
+    await saveBookReview(
+      'alice',
+      await read(id),
+      {
+        rating: 5,
+        review: 'Imprescindible',
+        specificReviews: [
+          { topic: 'Mundo', text: 'Rico' },
+          { topic: 'Personajes', text: 'Vivos' },
+        ],
+      },
+      alice(),
+    );
+    // Se quita un tema, se cambia la calificación a media estrella y se borra la opinión general.
+    await saveBookReview('alice', await read(id), { rating: 0.5, specificReviews: [{ topic: 'Mundo', text: 'Rico' }] }, alice());
+
+    const book = await read(id);
+    expect(book.rating).toBe(0.5);
+    expect(book.specificReviews).toEqual([{ topic: 'Mundo', text: 'Rico' }]);
+    expect(book).not.toHaveProperty('review');
+  });
+
+  it('una reseña vacía elimina los tres campos', async () => {
+    const id = await create();
+    await saveBookReview('alice', await read(id), { rating: 4, review: 'Bien', specificReviews: [{ topic: 'Trama', text: 'Ágil' }] }, alice());
+    await saveBookReview('alice', await read(id), {}, alice());
+
+    const book = await read(id);
+    for (const field of ['rating', 'review', 'specificReviews']) expect(book).not.toHaveProperty(field);
+  });
+
+  it('sin texto, las notas se eliminan', async () => {
+    const id = await create();
+    await saveBookNotes('alice', await read(id), 'algo', alice());
+    await saveBookNotes('alice', await read(id), undefined, alice());
+    expect(await read(id)).not.toHaveProperty('notes');
+  });
+
+  it('persisten: se leen igual al volver a cargar el libro, con la media estrella', async () => {
+    const id = await create();
+    await saveBookReview('alice', await read(id), { rating: 4.5, review: 'Casi perfecto' }, alice());
+    const again = await read(id);
+    expect(again.rating).toBe(4.5);
+    expect(again.review).toBe('Casi perfecto');
+  });
+
+  it('las reglas rechazan una calificación que no es de media en media y no se escribe nada', async () => {
+    const id = await create();
+    await assertFails(saveBookReview('alice', await read(id), { rating: 4.3 }, alice()));
+    expect(await read(id)).not.toHaveProperty('rating');
+  });
+
+  it('un usuario no puede escribir las notas ni la reseña de un libro ajeno', async () => {
+    const id = await create();
+    await assertFails(saveBookNotes('alice', await read(id), 'x', bob()));
+    await assertFails(saveBookReview('alice', await read(id), { rating: 5 }, bob()));
+    const book = await read(id);
+    expect(book).not.toHaveProperty('notes');
+    expect(book).not.toHaveProperty('rating');
   });
 });
 

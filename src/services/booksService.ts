@@ -18,7 +18,7 @@ import {
 } from 'firebase/firestore';
 
 import { db } from '../../firebaseConfig';
-import type { NewBookFields, PurchaseFields, ReadingStatus, UserBook, UserBookWithId } from '../types/book';
+import type { NewBookFields, PurchaseFields, ReadingStatus, ReviewFields, UserBook, UserBookWithId } from '../types/book';
 import { getProgressAfterPageCountChange, planStatusChange, type StatusChange } from '../utils/book';
 
 // Firestore permite 500 operaciones por lote; se deja margen.
@@ -138,6 +138,37 @@ export async function savePurchase(
     acquisition: 'owned',
     purchasedAt: Timestamp.fromDate(purchase.purchasedAt),
     price: purchase.price ?? deleteField(),
+    updatedAt: serverTimestamp(),
+  });
+}
+
+/**
+ * Guarda las notas personales del libro (ideas, fragmentos, pensamientos); sin texto, las elimina. Son independientes
+ * de la reseña: no tocan la calificación ni las opiniones.
+ */
+export async function saveBookNotes(
+  uid: string,
+  book: Pick<UserBookWithId, 'id'>,
+  notes: string | undefined,
+  database: Firestore = db,
+): Promise<void> {
+  await updateDoc(bookDoc(uid, book.id, database), { notes: notes ?? deleteField(), updatedAt: serverTimestamp() });
+}
+
+/**
+ * Guarda la reseña del libro: la calificación, la opinión general y las reseñas por tema. Lo que falta se elimina del
+ * documento (la reseña guardada es exactamente la que se envía). Es independiente de las notas.
+ */
+export async function saveBookReview(
+  uid: string,
+  book: Pick<UserBookWithId, 'id'>,
+  review: ReviewFields,
+  database: Firestore = db,
+): Promise<void> {
+  await updateDoc(bookDoc(uid, book.id, database), {
+    rating: review.rating ?? deleteField(),
+    review: review.review ?? deleteField(),
+    specificReviews: review.specificReviews ?? deleteField(),
     updatedAt: serverTimestamp(),
   });
 }

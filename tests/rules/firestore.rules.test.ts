@@ -261,6 +261,103 @@ describe('libros generados por parseBookForm (el formulario y las reglas deben c
   });
 });
 
+describe('notas y reseñas (versión 1.1)', () => {
+  const ref = () => doc(alice(), 'users/alice/books/b1');
+  beforeEach(async () => {
+    await assertSucceeds(setDoc(ref(), validBook()));
+  });
+  const edit = (changes: Record<string, unknown>) => updateDoc(ref(), { ...changes, updatedAt: serverTimestamp() });
+
+  it('acepta la calificación de media en media, de 0,5 a 5', async () => {
+    for (const rating of [0.5, 1, 1.5, 2.5, 3, 4, 4.5, 5]) await assertSucceeds(edit({ rating }));
+  });
+
+  it('rechaza una calificación de 0, fuera de rango o que no es de media en media', async () => {
+    for (const rating of [0, -1, 5.5, 6, 4.3, 0.25, 4.75, '4']) await assertFails(edit({ rating }));
+  });
+
+  it('una reseña completa: calificación, opinión general y reseñas por tema', async () => {
+    await assertSucceeds(
+      edit({
+        rating: 4.5,
+        review: 'Una gran novela',
+        specificReviews: [
+          { topic: 'Construcción del mundo', text: 'Rico y coherente' },
+          { topic: 'Personajes', text: 'Muy vivos' },
+          { topic: 'El final', text: 'Redondo' },
+        ],
+      }),
+    );
+  });
+
+  it('las reseñas específicas son una lista de {tema, texto}: el tema lo escribe la persona', async () => {
+    await assertSucceeds(edit({ specificReviews: [{ topic: 'Lo que más me gustó', text: 'Ágil' }] }));
+    await assertSucceeds(edit({ specificReviews: [] }));
+    await assertSucceeds(edit({ specificReviews: [{ topic: 'a'.repeat(60), text: 'a'.repeat(5000) }] }));
+  });
+
+  it('rechaza reseñas específicas mal formadas: sin tema o texto, vacías, demasiado largas o de otro tipo', async () => {
+    await assertFails(edit({ specificReviews: [{ topic: 'Trama' }] }));
+    await assertFails(edit({ specificReviews: [{ text: 'Ágil' }] }));
+    await assertFails(edit({ specificReviews: [{ topic: '', text: 'Ágil' }] }));
+    await assertFails(edit({ specificReviews: [{ topic: 'Trama', text: '' }] }));
+    await assertFails(edit({ specificReviews: [{ topic: 'a'.repeat(61), text: 'Ágil' }] }));
+    await assertFails(edit({ specificReviews: [{ topic: 'Trama', text: 'a'.repeat(5001) }] }));
+    await assertFails(edit({ specificReviews: [{ topic: 'Trama', text: 'Ágil', extra: 1 }] }));
+    await assertFails(edit({ specificReviews: [{ topic: 5, text: 'Ágil' }] }));
+    await assertFails(edit({ specificReviews: ['Ágil'] }));
+    await assertFails(edit({ specificReviews: { plot: 'Ágil' } }));
+    await assertFails(edit({ specificReviews: 'Ágil' }));
+  });
+
+  it('se comprueba cada reseña de la lista, también la última, y como mucho hay cinco', async () => {
+    const ok = (i: number) => ({ topic: `Tema ${i}`, text: `Texto ${i}` });
+    await assertSucceeds(edit({ specificReviews: Array.from({ length: 5 }, (_, i) => ok(i)) }));
+    await assertFails(edit({ specificReviews: Array.from({ length: 6 }, (_, i) => ok(i)) }));
+    await assertFails(edit({ specificReviews: [...Array.from({ length: 4 }, (_, i) => ok(i)), { topic: '', text: 'x' }] }));
+    await assertFails(edit({ specificReviews: [{ topic: '', text: 'x' }, ok(1), ok(2)] }));
+    await assertFails(edit({ specificReviews: [ok(0), ok(1), { topic: 'Mal' }, ok(3)] }));
+  });
+
+  it('el máximo de reseñas cabe en el límite de expresiones de las reglas incluso con un libro con todos los campos', async () => {
+    const full = {
+      ...validBook(),
+      genres: ['A', 'B'],
+      seriesName: 'Saga',
+      seriesOrder: 1,
+      isbn13: '9780441172719',
+      coverUrl: 'https://covers.example/x.jpg',
+      pageCount: 300,
+      rating: 4.5,
+      review: 'Muy bueno',
+      notes: 'Notas',
+      price: 10,
+      purchasedAt: Timestamp.now(),
+      startedAt: Timestamp.now(),
+      finishedAt: Timestamp.now(),
+    };
+    const five = Array.from({ length: 5 }, (_, i) => ({ topic: `Tema ${i}`, text: `Texto ${i}` }));
+    // Crear un libro así con las cinco reseñas, y añadírselas después a otro igual de completo.
+    await assertSucceeds(setDoc(doc(alice(), 'users/alice/books/b2'), { ...full, specificReviews: five }));
+    const other = doc(alice(), 'users/alice/books/b3');
+    await assertSucceeds(setDoc(other, full));
+    await assertSucceeds(updateDoc(other, { specificReviews: five, updatedAt: serverTimestamp() }));
+  });
+
+  it('la opinión general y las notas aceptan hasta 10 000 caracteres, y son campos independientes', async () => {
+    await assertSucceeds(edit({ review: 'a'.repeat(10000) }));
+    await assertFails(edit({ review: 'a'.repeat(10001) }));
+    await assertSucceeds(edit({ notes: 'b'.repeat(10000) }));
+    await assertFails(edit({ notes: 'b'.repeat(10001) }));
+    await assertSucceeds(edit({ notes: 'solo notas' }));
+    await assertSucceeds(edit({ review: deleteField(), rating: deleteField(), specificReviews: deleteField() }));
+  });
+
+  it('otro usuario no puede escribir la reseña ni las notas de un libro ajeno', async () => {
+    await assertFails(updateDoc(doc(bob(), 'users/alice/books/b1'), { rating: 5, notes: 'x', updatedAt: serverTimestamp() }));
+  });
+});
+
 describe('lista de deseos y compra (versión 1.1)', () => {
   const ref = () => doc(alice(), 'users/alice/books/b1');
   const wished = () => ({ ...validBook(), status: 'want_to_read', acquisition: 'wishlist' });

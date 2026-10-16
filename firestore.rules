@@ -22,6 +22,36 @@ service cloud.firestore {
       return !(field in d) || (d[field] is number && d[field] >= min && d[field] <= max);
     }
 
+    // Calificación en estrellas: de 0,5 a 5, de media en media (nunca 0: sin calificar es no tener el campo).
+    function optionalRating(d, field) {
+      return !(field in d) || (d[field] is number && d[field] >= 0.5 && d[field] <= 5 && d[field] * 2 == int(d[field] * 2));
+    }
+
+    // Una reseña específica: el tema (lo escribe la persona) y su texto, ambos con contenido.
+    function validSpecificReview(r) {
+      return r is map
+        && r.keys().hasOnly(['topic', 'text']) && r.keys().hasAll(['topic', 'text'])
+        && r.topic is string && r.topic.size() > 0 && r.topic.size() <= 60
+        && r.text is string && r.text.size() > 0 && r.text.size() <= 5000;
+    }
+
+    // Reseñas por tema: una lista de hasta 5. Las reglas no pueden recorrer una lista, así que se comprueba cada
+    // posición. Cuidado: cada petición admite como máximo 1000 expresiones evaluadas (medido en el emulador: con un
+    // libro con todos los campos opcionales, 6 reseñas es lo máximo que cabe y 7 ya falla); por eso el tope es 5, con
+    // margen, y la lista se recibe como parámetro (`l`) en lugar de volver a leer `d[field]` en cada línea.
+    function validSpecificReviews(l) {
+      return l is list && l.size() <= 5
+        && (l.size() <= 0 || validSpecificReview(l[0]))
+        && (l.size() <= 1 || validSpecificReview(l[1]))
+        && (l.size() <= 2 || validSpecificReview(l[2]))
+        && (l.size() <= 3 || validSpecificReview(l[3]))
+        && (l.size() <= 4 || validSpecificReview(l[4]));
+    }
+
+    function optionalSpecificReviews(d, field) {
+      return !(field in d) || validSpecificReviews(d[field]);
+    }
+
     function optionalTimestamp(d, field) {
       return !(field in d) || d[field] is timestamp;
     }
@@ -49,7 +79,7 @@ service cloud.firestore {
     function validBook(d) {
       return d.keys().hasOnly([
           'title', 'authors', 'genres', 'seriesName', 'seriesOrder', 'isbn13', 'coverUrl', 'pageCount',
-          'status', 'acquisition', 'currentPage', 'rating', 'review', 'notes', 'price', 'purchasedAt',
+          'status', 'acquisition', 'currentPage', 'rating', 'review', 'specificReviews', 'notes', 'price', 'purchasedAt',
           'startedAt', 'finishedAt', 'createdAt', 'updatedAt'
         ])
         && d.keys().hasAll(['title', 'authors', 'status', 'acquisition', 'currentPage', 'createdAt', 'updatedAt'])
@@ -64,8 +94,9 @@ service cloud.firestore {
         && optionalString(d, 'isbn13', 13)
         && optionalString(d, 'coverUrl', 2000)
         && optionalInt(d, 'pageCount', 1, 100000)
-        && optionalInt(d, 'rating', 1, 5)
+        && optionalRating(d, 'rating')
         && optionalString(d, 'review', 10000)
+        && optionalSpecificReviews(d, 'specificReviews')
         && optionalString(d, 'notes', 10000)
         && optionalNumber(d, 'price', 0, 999999999)
         && optionalTimestamp(d, 'purchasedAt')
