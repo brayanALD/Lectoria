@@ -2,7 +2,7 @@
 
 Aplicación móvil para seguir tus lecturas: organiza tu biblioteca, registra cuánto lees y mantén el hábito. El nombre une *lectura* y *trayectoria*.
 
-> **Estado:** versión 1.0 (Fases 1 a 5 cerradas). Probada en Android; iOS pendiente. Siguiente, la versión 1.1.
+> **Estado:** versión 1.1 (Fases 1 a 5 cerradas y, de la Fase 6, la lista de deseos, las notas y reseñas y el objetivo mensual). Probada en Android; iOS pendiente. Siguiente, la versión 1.2 (autores, sagas y colecciones).
 
 ## Fases de desarrollo
 
@@ -13,7 +13,7 @@ Aplicación móvil para seguir tus lecturas: organiza tu biblioteca, registra cu
 | 3. ISBN | Añadir libros por ISBN: escribiéndolo o escaneando el código de barras | Cerrada |
 | 4. Sesiones | Registro de lecturas (manual y con cronómetro), progreso, calendario, rachas y meta diaria | Cerrada |
 | 5. Estadísticas | Resúmenes de lectura por día y por mes, con la meta diaria integrada | Cerrada |
-| 6. Experiencia lectora | Lista de deseos, notas y reseñas, sagas, autores, colecciones, logros | Pendiente |
+| 6. Experiencia lectora | Lista de deseos, notas y reseñas (versión 1.1); autores, sagas, colecciones y logros | En curso (1.1 cerrada) |
 | 7. Pulir | Estantería visual, recordatorios, accesibilidad, rendimiento | Pendiente |
 
 El plan completo (alcance, modelo de datos, decisiones y pendientes) está en [`BookTracker_Plan_de_desarrollo.md`](BookTracker_Plan_de_desarrollo.md).
@@ -30,6 +30,10 @@ El plan completo (alcance, modelo de datos, decisiones y pendientes) está en [`
 - **Meta diaria:** una meta de minutos o de páginas al día, a elegir, con barra de progreso en Inicio y cumplimiento de cada día en el Calendario. El progreso se calcula solo con las lecturas registradas, a mano o con el cronómetro.
 - **Actividad reciente:** las últimas lecturas en Inicio y la lista de lecturas de cada libro, que se pueden editar y eliminar.
 - **Estadísticas:** resumen por día y por mes (tiempo, páginas, sesiones, días de lectura y libros terminados), gráfico de lo leído cada día, cumplimiento de la meta diaria y racha. Se calculan siempre a partir de las lecturas registradas, así que coinciden con Inicio y el Calendario.
+- **Lista de deseos y compras:** guardar los libros que quieres leer en la pestaña «Deseos» de Biblioteca (se añaden con el mismo formulario, también por ISBN o con el escáner) y, al comprarlos, pasarlos a tu biblioteca con «Marcar como comprado», indicando fecha y precio.
+- **Notas y reseñas:** en cada libro tuyo, un espacio de notas para lo que quieras recordar mientras lees, y una reseña con calificación de media en media estrella, opinión general y hasta cinco reseñas de los temas que tú elijas (los personajes, el final…).
+- **Terminar un libro:** al marcarlo como terminado se registra la lectura de las páginas que faltaban, sin que tengas que anotarla.
+- **Objetivo mensual:** en Estadísticas, vista Mes, un objetivo de libros terminados al mes con su progreso.
 - **Datos privados:** cada persona solo accede a su propia biblioteca (reglas de Firestore con validación de campos).
 
 ## Tecnología
