@@ -9,6 +9,7 @@ import { minTouchSize, radius, spacing } from '../../../theme/spacing';
 import { fontFamily, fontSize } from '../../../theme/typography';
 import { getAuthErrorMessage } from '../../../utils/authErrors';
 import { MIN_PASSWORD_LENGTH, isValidPassword } from '../../../utils/validation';
+import { DeleteAccountSheet } from './DeleteAccountSheet';
 
 export function ProfileScreen() {
   const styles = useStyles();
@@ -19,6 +20,7 @@ export function ProfileScreen() {
   const [confirmation, setConfirmation] = useState('');
   const [savingPassword, setSavingPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [deleteOpen, setDeleteOpen] = useState(false);
 
   const handleLinkGoogle = async () => {
     setError(null);
@@ -137,6 +139,8 @@ export function ProfileScreen() {
       </View>
 
       <Button title="Cerrar sesión" variant="secondary" onPress={signOut} />
+      <Button title="Eliminar cuenta" variant="danger" onPress={() => setDeleteOpen(true)} />
+      <DeleteAccountSheet visible={deleteOpen} onClose={() => setDeleteOpen(false)} />
     </ScrollView>
   );
 }

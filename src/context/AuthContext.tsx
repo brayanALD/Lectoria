@@ -1,11 +1,14 @@
 import { createContext, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 
+import { deleteAccountData } from '../services/accountService';
 import {
+  deleteCurrentUser,
   getLinkedProviders,
   GOOGLE_PROVIDER,
   linkGoogleToCurrentUser,
   linkPasswordToCurrentUser,
   PASSWORD_PROVIDER,
+  reauthenticateCurrentUser,
   signInWithEmail,
   signInWithGoogle,
   signOutUser,
@@ -13,7 +16,9 @@ import {
   subscribeToAuthState,
   type User,
 } from '../services/authService';
+import { clearTimer } from '../services/timerStorage';
 import { ensureUserProfile } from '../services/userService';
+import { withTimeout } from '../utils/withTimeout';
 import type { ProfileInput } from '../types/user';
 
 interface AuthContextValue {
@@ -32,7 +37,15 @@ interface AuthContextValue {
   /** Añade una contraseña a la cuenta actual, usando su mismo correo. */
   linkPassword: (password: string) => Promise<void>;
   signOut: () => Promise<void>;
+  /**
+   * Elimina la cuenta con todos sus datos. Pide confirmar la identidad: con la contraseña si la cuenta tiene una (hay que
+   * pasarla) o con Google si no. Devuelve false si se cancela el selector de Google; al terminar, la sesión se cierra sola.
+   */
+  deleteAccount: (password?: string) => Promise<boolean>;
 }
+
+// Borrar una biblioteca grande son varios lotes; sin conexión no terminarían nunca.
+const DELETE_DATA_TIMEOUT_MS = 60000;
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
@@ -91,6 +104,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setProviders(getLinkedProviders());
       },
       signOut: signOutUser,
+      deleteAccount: async (password) => {
+        if (!user) throw Object.assign(new Error('auth/user-not-found'), { code: 'auth/user-not-found' });
+        // Primero se confirma la identidad (también asegura que hay conexión); después los datos, mientras la sesión
+        // sigue iniciada, y por último el usuario. Si algo falla a medias, repetirlo termina lo que quedó.
+        if (!(await reauthenticateCurrentUser(password))) return false;
+        await withTimeout(deleteAccountData(user.uid), DELETE_DATA_TIMEOUT_MS);
+        await clearTimer(user.uid);
+        await deleteCurrentUser();
+        return true;
+      },
     }),
     [user, initializing, providers],
   );

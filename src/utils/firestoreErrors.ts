@@ -19,3 +19,29 @@ export function getFirestoreErrorMessage(error: unknown): string {
   if (MESSAGES[code]) return MESSAGES[code];
   return code ? `${FALLBACK} (${code})` : FALLBACK;
 }
+
+/**
+ * El error con que se avisa de que no se pudo comprobar nada porque no hay conexión. Lleva el código `unavailable` de
+ * Firestore, así que `getFirestoreErrorMessage` lo traduce a «Sin conexión…».
+ */
+export function createOfflineError(): Error & { code: string } {
+  return Object.assign(new Error('offline'), { code: 'unavailable' });
+}
+
+/**
+ * Detecta, en una suscripción, el primer resultado vacío que Firestore saca de su caché sin haber podido consultar al
+ * servidor. Con la app recién abierta y sin red, la caché (en memoria en React Native) está vacía y Firestore entrega
+ * «sin resultados»: no es una biblioteca vacía, es que no se pudo comprobar, y mostrarlo como vacío parecería que se
+ * perdieron los datos. Una vez que la suscripción recibió algo cierto (datos, o el servidor confirmando), un vacío ya es
+ * cierto: p. ej. se eliminó el último libro sin red. Se crea una por suscripción; devuelve `true` si el resultado debe
+ * tratarse como falta de conexión.
+ */
+export function createOfflineGuard(): (snapshot: { empty: boolean; metadata: { fromCache: boolean } }) => boolean {
+  let confirmed = false;
+  return (snapshot) => {
+    if (confirmed) return false;
+    if (snapshot.empty && snapshot.metadata.fromCache) return true;
+    confirmed = true;
+    return false;
+  };
+}

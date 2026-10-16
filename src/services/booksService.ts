@@ -20,6 +20,7 @@ import {
 import { db } from '../../firebaseConfig';
 import type { NewBookFields, PurchaseFields, ReadingStatus, ReviewFields, UserBook, UserBookWithId } from '../types/book';
 import { getProgressAfterPageCountChange, planStatusChange, type StatusChange } from '../utils/book';
+import { createOfflineError, createOfflineGuard } from '../utils/firestoreErrors';
 
 // Firestore permite 500 operaciones por lote; se deja margen.
 const BATCH_SIZE = 400;
@@ -55,9 +56,16 @@ export function subscribeToBooks(
   database: Firestore = db,
 ): () => void {
   const booksQuery = query(booksCollection(uid, database), orderBy('createdAt', 'desc'));
+  const isOffline = createOfflineGuard();
   return onSnapshot(
     booksQuery,
+    // Con metadatos, para enterarse de cuándo el servidor confirma lo que antes solo salía de la caché.
+    { includeMetadataChanges: true },
     (snapshot) => {
+      if (isOffline(snapshot)) {
+        onError(createOfflineError());
+        return;
+      }
       onBooks(
         snapshot.docs.map((document) => ({
           id: document.id,

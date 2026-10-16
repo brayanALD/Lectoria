@@ -16,6 +16,7 @@ import { db } from '../../firebaseConfig';
 import type { UserBookWithId } from '../types/book';
 import type { NewSessionFields, ReadingSession, ReadingSessionWithId } from '../types/session';
 import { planStatusChange } from '../utils/book';
+import { createOfflineError, createOfflineGuard } from '../utils/firestoreErrors';
 import {
   planBookAfterSessionChange,
   planFinishReading,
@@ -197,9 +198,16 @@ export function subscribeToSessions(
   database: Firestore = db,
 ): () => void {
   const sessionsQuery = query(sessionsCollection(uid, database), orderBy('date', 'desc'));
+  const isOffline = createOfflineGuard();
   return onSnapshot(
     sessionsQuery,
+    // Con metadatos, para enterarse de cuándo el servidor confirma lo que antes solo salía de la caché.
+    { includeMetadataChanges: true },
     (snapshot) => {
+      if (isOffline(snapshot)) {
+        onError(createOfflineError());
+        return;
+      }
       onSessions(
         snapshot.docs.map((document) => ({
           id: document.id,

@@ -1,9 +1,11 @@
 import {
   createUserWithEmailAndPassword,
+  deleteUser,
   EmailAuthProvider,
   GoogleAuthProvider,
   linkWithCredential,
   onAuthStateChanged,
+  reauthenticateWithCredential,
   signInWithCredential,
   signInWithEmailAndPassword,
   signOut as firebaseSignOut,
@@ -117,12 +119,8 @@ export async function linkPasswordToCurrentUser(password: string): Promise<void>
 
 export { GOOGLE_PROVIDER, PASSWORD_PROVIDER };
 
-export async function signOutUser(): Promise<void> {
-  const usedGoogle = auth.currentUser?.providerData.some((p) => p.providerId === 'google.com');
-  await firebaseSignOut(auth);
-  if (!usedGoogle) return;
-
-  // Cierra también la sesión de Google para que la próxima vez se pueda elegir otra cuenta.
+/** Cierra también la sesión de Google para que la próxima vez se pueda elegir otra cuenta. */
+async function signOutOfGoogle(): Promise<void> {
   try {
     const { GoogleSignin } = await import('@react-native-google-signin/google-signin');
     // Tras reabrir la app la sesión se restaura sin pasar por el inicio de sesión, así que el cliente no está configurado.
@@ -131,4 +129,41 @@ export async function signOutUser(): Promise<void> {
   } catch (error) {
     console.warn('No se pudo cerrar la sesión de Google', error);
   }
+}
+
+function usedGoogle(): boolean {
+  return auth.currentUser?.providerData.some((p) => p.providerId === GOOGLE_PROVIDER) ?? false;
+}
+
+export async function signOutUser(): Promise<void> {
+  const google = usedGoogle();
+  await firebaseSignOut(auth);
+  if (google) await signOutOfGoogle();
+}
+
+/**
+ * Vuelve a confirmar la identidad antes de una operación delicada (Firebase la exige reciente): con la contraseña si se
+ * da, o con el selector de Google si no. Devuelve false si se cancela el selector de Google.
+ */
+export async function reauthenticateCurrentUser(password?: string): Promise<boolean> {
+  const user = auth.currentUser;
+  if (!user) throw coded('auth/user-not-found');
+  if (password !== undefined) {
+    if (!user.email) throw coded('lectoria/no-email');
+    await reauthenticateWithCredential(user, EmailAuthProvider.credential(user.email, password));
+    return true;
+  }
+  const idToken = await getGoogleIdToken();
+  if (!idToken) return false;
+  await reauthenticateWithCredential(user, GoogleAuthProvider.credential(idToken));
+  return true;
+}
+
+/** Elimina al usuario actual de Authentication (la sesión se cierra sola). Antes hay que haber reautenticado. */
+export async function deleteCurrentUser(): Promise<void> {
+  const user = auth.currentUser;
+  if (!user) throw coded('auth/user-not-found');
+  const google = usedGoogle();
+  await deleteUser(user);
+  if (google) await signOutOfGoogle();
 }
