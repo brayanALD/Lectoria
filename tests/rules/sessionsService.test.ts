@@ -6,11 +6,12 @@ import { collection, doc, getDoc, getDocs, setLogLevel, Timestamp, type Firestor
 import { readFileSync } from 'fs';
 import { join } from 'path';
 
-import { createBook } from '../../src/services/booksService';
+import { changeBookStatus, createBook } from '../../src/services/booksService';
 import {
   adjustBookProgress,
   createSession,
   deleteSession,
+  finishBook,
   subscribeToSessions,
   updateSession,
 } from '../../src/services/sessionsService';
@@ -503,5 +504,116 @@ describe('adjustBookProgress', () => {
     await assertFails(adjustBookProgress('alice', book, 50, new Date(), bob()));
     await assertFails(adjustBookProgress('alice', { ...book, currentPage: 90 }, 10, new Date(), bob()));
     expect((await readBook(book.id)).currentPage).toBe(0);
+  });
+});
+
+describe('finishBook', () => {
+  const sessions = async () => (await getDocs(collection(alice(), 'users/alice/sessions'))).docs.map((d) => d.data() as ReadingSession);
+
+  it('registra las páginas que faltaban y termina el libro en la misma operación', async () => {
+    const book = await createTestBook({ status: 'reading' });
+    await adjustBookProgress('alice', book, 240, new Date(), alice());
+    await finishBook('alice', await readBook(book.id), new Date(), alice());
+
+    const finished = await readBook(book.id);
+    expect(finished).toMatchObject({ status: 'finished', currentPage: 300 });
+    expect(finished.finishedAt).toBeInstanceOf(Timestamp);
+
+    const all = await sessions();
+    expect(all).toHaveLength(2);
+    expect(all.find((session) => session.endPage === 300)).toMatchObject({
+      bookId: book.id,
+      startPage: 240,
+      endPage: 300,
+      pagesRead: 60,
+      durationMinutes: 0,
+      dateKey: toDateKey(new Date()),
+    });
+  });
+
+  it.each([['want_to_read'], ['reading'], ['paused'], ['abandoned']] as const)(
+    'desde «%s» registra el resto del libro y lo deja terminado con sus fechas',
+    async (status) => {
+      const book = await createTestBook({ status });
+      await finishBook('alice', book, new Date(), alice());
+
+      const finished = await readBook(book.id);
+      expect(finished).toMatchObject({ status: 'finished', currentPage: 300 });
+      expect(finished.startedAt).toBeInstanceOf(Timestamp);
+      expect(finished.finishedAt).toBeInstanceOf(Timestamp);
+      expect(await sessions()).toMatchObject([{ startPage: 0, endPage: 300, pagesRead: 300 }]);
+    },
+  );
+
+  it('la sesión cuenta como día de lectura cuando son más de 1 página', async () => {
+    const book = await createTestBook({ status: 'reading' });
+    await adjustBookProgress('alice', book, 200, new Date(), alice());
+    await finishBook('alice', await readBook(book.id), new Date(), alice());
+    const last = (await sessions()).find((session) => session.endPage === 300) as ReadingSession;
+    expect(isReadingSession(last)).toBe(true);
+  });
+
+  it('sin el total de páginas solo cambia el estado: no inventa páginas', async () => {
+    const book = await createTestBook({ status: 'reading', pageCount: '' });
+    await finishBook('alice', book, new Date(), alice());
+
+    const finished = await readBook(book.id);
+    expect(finished.status).toBe('finished');
+    expect(finished.finishedAt).toBeInstanceOf(Timestamp);
+    expect(finished.currentPage).toBe(0);
+    expect(await sessions()).toHaveLength(0);
+  });
+
+  it('volver a terminar un libro reabierto no duplica la lectura', async () => {
+    const book = await createTestBook({ status: 'reading' });
+    await finishBook('alice', book, new Date(), alice());
+    expect(await sessions()).toHaveLength(1);
+
+    await changeBookStatus('alice', await readBook(book.id), 'reading', alice());
+    const reopened = await readBook(book.id);
+    expect(reopened).toMatchObject({ status: 'reading', currentPage: 300 });
+    expect(reopened.finishedAt).toBeUndefined();
+
+    await finishBook('alice', reopened, new Date(), alice());
+    expect(await readBook(book.id)).toMatchObject({ status: 'finished', currentPage: 300 });
+    expect(await sessions()).toHaveLength(1);
+  });
+
+  it('un libro ya terminado no se toca ni registra nada', async () => {
+    const book = await createTestBook({ status: 'reading' });
+    await finishBook('alice', book, new Date(), alice());
+    const finished = await readBook(book.id);
+
+    await finishBook('alice', finished, new Date(), alice());
+    expect(await sessions()).toHaveLength(1);
+    expect((await readBook(book.id)).updatedAt).toEqual(finished.updatedAt);
+  });
+
+  it('un libro que llega al final con una lectura normal no registra una segunda sesión al terminar', async () => {
+    const book = await createTestBook({ status: 'reading' });
+    await createSession('alice', book, buildSession(book, { minutes: '30', endPage: '300' }), alice());
+    expect(await readBook(book.id)).toMatchObject({ status: 'finished' });
+    expect(await sessions()).toHaveLength(1);
+  });
+
+  it('eliminar la lectura registrada al terminar reabre el libro y lo devuelve a la página anterior', async () => {
+    const book = await createTestBook({ status: 'reading' });
+    await adjustBookProgress('alice', book, 240, new Date(), alice());
+    await finishBook('alice', await readBook(book.id), new Date(), alice());
+
+    const all = await readSessions();
+    const closing = all.find((session) => session.endPage === 300) as ReadingSessionWithId;
+    await deleteSession('alice', closing, await readBook(book.id), all, alice());
+
+    const after = await readBook(book.id);
+    expect(after).toMatchObject({ status: 'reading', currentPage: 240 });
+    expect(after.finishedAt).toBeUndefined();
+  });
+
+  it('un usuario no puede terminar el libro de otro, y no se escribe nada', async () => {
+    const book = await createTestBook({ status: 'reading' });
+    await assertFails(finishBook('alice', book, new Date(), bob()));
+    expect((await readBook(book.id)).status).toBe('reading');
+    expect(await sessions()).toHaveLength(0);
   });
 });

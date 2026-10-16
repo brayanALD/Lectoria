@@ -106,11 +106,14 @@ export function statusChangeToUpdate(change: StatusChange): UpdateData<UserBook>
   return changes;
 }
 
-/** Cambia el estado de lectura y ajusta fechas y progreso (ver `planStatusChange`). No hace nada si no cambia. */
+/**
+ * Cambia el estado de lectura y ajusta fechas y progreso (ver `planStatusChange`). No hace nada si no cambia.
+ * No admite «Terminado»: para eso está `finishBook` (sessionsService), que además registra las páginas que faltaban.
+ */
 export async function changeBookStatus(
   uid: string,
   book: UserBookWithId,
-  next: ReadingStatus,
+  next: Exclude<ReadingStatus, 'finished'>,
   database: Firestore = db,
 ): Promise<void> {
   const plan = planStatusChange(book, next);

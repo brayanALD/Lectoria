@@ -6,6 +6,7 @@ import {
   parseProgressInput,
   parseSessionForm,
   planBookAfterSessionChange,
+  planFinishReading,
   planProgressCorrection,
   planSessionBookUpdate,
   toDateKey,
@@ -409,5 +410,61 @@ describe('planBookAfterSessionChange', () => {
         currentPage: 60,
       });
     });
+  });
+});
+
+describe('planFinishReading', () => {
+  it('registra las páginas que faltaban, de la página actual a la última, sin minutos', () => {
+    expect(planFinishReading('book1', { currentPage: 240, pageCount: 300 }, NOW, 'UTC')).toEqual({
+      bookId: 'book1',
+      date: NOW,
+      dateKey: '2026-10-13',
+      startPage: 240,
+      endPage: 300,
+      pagesRead: 60,
+      durationMinutes: 0,
+    });
+  });
+
+  it('desde la página 0 registra el libro entero', () => {
+    expect(planFinishReading('book1', { currentPage: 0, pageCount: 300 }, NOW, 'UTC')).toMatchObject({
+      startPage: 0,
+      endPage: 300,
+      pagesRead: 300,
+    });
+  });
+
+  it('con una sola página pendiente registra esa página', () => {
+    expect(planFinishReading('book1', { currentPage: 299, pageCount: 300 }, NOW, 'UTC')).toMatchObject({ pagesRead: 1 });
+  });
+
+  it('sin el total de páginas no inventa una cantidad: no hay sesión', () => {
+    expect(planFinishReading('book1', { currentPage: 50 }, NOW, 'UTC')).toBeUndefined();
+    expect(planFinishReading('book1', { currentPage: 50, pageCount: 0 }, NOW, 'UTC')).toBeUndefined();
+  });
+
+  it('si el libro ya está en la última página no hay nada que registrar (no duplica lecturas)', () => {
+    expect(planFinishReading('book1', { currentPage: 300, pageCount: 300 }, NOW, 'UTC')).toBeUndefined();
+    expect(planFinishReading('book1', { currentPage: 320, pageCount: 300 }, NOW, 'UTC')).toBeUndefined();
+  });
+
+  it('el día de la sesión es el de la zona horaria indicada', () => {
+    const lateNight = new Date('2026-10-14T03:30:00Z');
+    expect(planFinishReading('book1', book, lateNight, 'UTC')?.dateKey).toBe('2026-10-14');
+    expect(planFinishReading('book1', book, lateNight, 'America/Bogota')?.dateKey).toBe('2026-10-13');
+  });
+
+  it('la sesión resultante sirve para terminar el libro y cuenta como día de lectura si son más de 1 página', () => {
+    const reading = planFinishReading('book1', book, NOW, 'UTC');
+    expect(reading).toBeDefined();
+    expect(planSessionBookUpdate({ ...book, status: 'paused' }, reading?.endPage)).toMatchObject({
+      status: 'finished',
+      currentPage: 300,
+      setFinishedAt: true,
+      changed: true,
+    });
+    expect(isReadingSession(reading as { durationMinutes: number; pagesRead: number })).toBe(true);
+    const lastPage = planFinishReading('book1', { currentPage: 299, pageCount: 300 }, NOW, 'UTC');
+    expect(isReadingSession(lastPage as { durationMinutes: number; pagesRead: number })).toBe(false);
   });
 });

@@ -217,14 +217,6 @@ describe('changeBookStatus', () => {
     expect(book.startedAt).toBeInstanceOf(Timestamp);
   });
 
-  it('terminar fija la fecha de fin y deja el libro en la última página', async () => {
-    const id = await create({ status: 'reading', pageCount: '300' });
-    await changeBookStatus('alice', await read(id), 'finished', alice());
-    const book = await read(id);
-    expect(book).toMatchObject({ status: 'finished', currentPage: 300 });
-    expect(book.finishedAt).toBeInstanceOf(Timestamp);
-  });
-
   it('reabrir un libro terminado borra la fecha de fin y conserva el progreso', async () => {
     const id = await create({ status: 'finished', pageCount: '300' });
     await changeBookStatus('alice', await read(id), 'reading', alice());

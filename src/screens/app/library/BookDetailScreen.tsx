@@ -17,6 +17,7 @@ import { useDeleteSession } from '../../../hooks/useDeleteSession';
 import { useReadingStats } from '../../../hooks/useReadingStats';
 import type { AppStackParamList } from '../../../navigation/types';
 import { changeBookStatus, deleteBook } from '../../../services/booksService';
+import { finishBook } from '../../../services/sessionsService';
 import { adjustBookProgress } from '../../../services/sessionsService';
 import type { ReadingStatus } from '../../../types/book';
 import { makeStyles, useTheme } from '../../../context/ThemeContext';
@@ -84,7 +85,8 @@ export function BookDetailScreen({ navigation, route }: Props) {
     setActionError(null);
     setChangingStatus(true);
     try {
-      await withTimeout(changeBookStatus(user.uid, book, next), WRITE_TIMEOUT_MS);
+      // Terminar un libro registra también las páginas que faltaban como una sesión de lectura.
+      await withTimeout(next === 'finished' ? finishBook(user.uid, book) : changeBookStatus(user.uid, book, next), WRITE_TIMEOUT_MS);
     } catch (e) {
       setActionError(getFirestoreErrorMessage(e));
     } finally {

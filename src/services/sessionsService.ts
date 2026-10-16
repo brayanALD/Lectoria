@@ -15,7 +15,14 @@ import {
 import { db } from '../../firebaseConfig';
 import type { UserBookWithId } from '../types/book';
 import type { NewSessionFields, ReadingSession, ReadingSessionWithId } from '../types/session';
-import { planBookAfterSessionChange, planProgressCorrection, planSessionBookUpdate, toDateKey } from '../utils/session';
+import { planStatusChange } from '../utils/book';
+import {
+  planBookAfterSessionChange,
+  planFinishReading,
+  planProgressCorrection,
+  planSessionBookUpdate,
+  toDateKey,
+} from '../utils/session';
 import { statusChangeToUpdate } from './booksService';
 
 // El parámetro `database` permite probar el servicio contra el emulador; en la app siempre se usa `db`.
@@ -56,6 +63,31 @@ export async function createSession(
 
   await batch.commit();
   return sessionRef.id;
+}
+
+/**
+ * Marca un libro como «Terminado». Si faltaban páginas para el final, las registra como una sesión de lectura (sin
+ * minutos, de la página actual a la última; ver `planFinishReading`) en la MISMA operación atómica que cambia el
+ * libro, así que las estadísticas, el calendario y las rachas las cuentan como cualquier otra lectura. Si no se
+ * conoce el total de páginas o el libro ya estaba en la última, solo cambia el estado (no hay nada que registrar), y
+ * volver a terminar un libro reabierto no duplica la lectura. No hace nada si el libro ya está terminado.
+ * Es la única vía para pasar a «Terminado»: `changeBookStatus` no lo admite.
+ */
+export async function finishBook(
+  uid: string,
+  book: UserBookWithId,
+  now: Date = new Date(),
+  database: Firestore = db,
+): Promise<void> {
+  if (book.status === 'finished') return;
+
+  const reading = planFinishReading(book.id, book, now);
+  if (reading) {
+    // Llegar a la última página termina el libro (y fija startedAt/finishedAt) en el mismo lote que la sesión.
+    await createSession(uid, book, reading, database);
+    return;
+  }
+  await updateDoc(doc(database, 'users', uid, 'books', book.id), statusChangeToUpdate(planStatusChange(book, 'finished')));
 }
 
 /**

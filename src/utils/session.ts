@@ -179,6 +179,32 @@ export function planSessionBookUpdate(book: BookProgressState, endPage: number |
   return result;
 }
 
+/**
+ * La sesión que se registra al marcar un libro como «Terminado»: las páginas que faltaban para llegar al final (de la
+ * página actual a la última), sin minutos y con la fecha de `now`. Devuelve `undefined` cuando no hay nada que registrar:
+ * - no se conoce el total de páginas (no se inventa una cantidad), o
+ * - el libro ya está en la última página (p. ej. se reabre uno terminado y se vuelve a terminar: esas páginas ya
+ *   constan en sus sesiones y registrarlas otra vez las duplicaría).
+ */
+export function planFinishReading(
+  bookId: string,
+  book: Pick<BookProgressState, 'currentPage' | 'pageCount'>,
+  now: Date = new Date(),
+  timeZone?: string,
+): NewSessionFields | undefined {
+  const { pageCount, currentPage } = book;
+  if (!pageCount || currentPage >= pageCount) return undefined;
+  return {
+    bookId,
+    date: now,
+    dateKey: toDateKey(now, timeZone),
+    startPage: currentPage,
+    endPage: pageCount,
+    pagesRead: pageCount - currentPage,
+    durationMinutes: 0,
+  };
+}
+
 export type ProgressInputResult = { ok: true; page: number } | { ok: false; error: string };
 
 /** Valida la página escrita al ajustar el progreso a mano: un entero entre 0 y el total del libro (si se conoce). */

@@ -11,6 +11,7 @@ import {
   adjustBookProgress,
   createSession,
   deleteSession,
+  finishBook,
   subscribeToSessions,
   updateSession,
 } from '../../src/services/sessionsService';
@@ -738,7 +739,7 @@ describe('estadísticas', () => {
     const book = await addBook();
     expect(countFinishedBooks((await live.until((current) => current.books.length === 1)).books, TODAY_MONTH)).toBe(0);
 
-    await changeBookStatus('alice', book, 'finished', database);
+    await finishBook('alice', book, new Date(), database);
     const finished = await live.until((current) => current.books[0].status === 'finished');
     expect(countFinishedBooks(finished.books, TODAY_MONTH)).toBe(1);
     expect(countFinishedBooks(finished.books, monthOf(addDays(TODAY, -40)))).toBe(0);
@@ -746,6 +747,28 @@ describe('estadísticas', () => {
     await changeBookStatus('alice', finished.books[0], 'reading', database);
     const reopened = await live.until((current) => current.books[0].status === 'reading');
     expect(countFinishedBooks(reopened.books, TODAY_MONTH)).toBe(0);
+  });
+
+  it('terminar un libro registra las páginas que faltaban y todas las vistas las cuentan una sola vez', async () => {
+    const book = await addBook();
+    await createSession('alice', book, sessionFields(book, { minutes: '30', endPage: '240' }), database);
+    const before = await live.until((current) => current.sessions.length === 1 && current.books[0].currentPage === 240);
+
+    await finishBook('alice', before.books[0], new Date(), database);
+    const finished = await live.until((current) => current.books[0].status === 'finished' && current.sessions.length === 2);
+    expect(monthOf_(finished).totals).toEqual({ readingDays: 1, minutes: 30, pages: 300, sessions: 2 });
+    expect(summarizeDay(finished.days, TODAY)).toMatchObject({ minutes: 30, pages: 300, sessions: 2 });
+    expect(countFinishedBooks(finished.books, TODAY_MONTH)).toBe(1);
+    expectBooksMatchSessions(finished);
+
+    // Reabrirlo y volver a terminarlo no repite la lectura.
+    await changeBookStatus('alice', finished.books[0], 'reading', database);
+    const reopened = await live.until((current) => current.books[0].status === 'reading');
+    await finishBook('alice', reopened.books[0], new Date(), database);
+    const again = await live.until((current) => current.books[0].status === 'finished');
+    expect(again.sessions).toHaveLength(2);
+    expect(monthOf_(again).totals).toMatchObject({ pages: 300, sessions: 2 });
+    expectBooksMatchSessions(again);
   });
 
   it('llegar a la última página al registrar una lectura termina el libro y lo cuenta en las estadísticas', async () => {
@@ -766,11 +789,11 @@ describe('estadísticas', () => {
     const none = await live.until((current) => current.monthlyGoal === 2 && current.books.length === 2);
     expect(progress(none)).toMatchObject({ value: 0, percent: 0, remaining: 2, met: false });
 
-    await changeBookStatus('alice', first, 'finished', database);
+    await finishBook('alice', first, new Date(), database);
     const half = await live.until((current) => current.books.filter((book) => book.status === 'finished').length === 1);
     expect(progress(half)).toMatchObject({ value: 1, percent: 50, remaining: 1, met: false });
 
-    await changeBookStatus('alice', second, 'finished', database);
+    await finishBook('alice', second, new Date(), database);
     const met = await live.until((current) => current.books.filter((book) => book.status === 'finished').length === 2);
     expect(progress(met)).toMatchObject({ value: 2, percent: 100, remaining: 0, met: true });
 
