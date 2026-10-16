@@ -14,8 +14,10 @@ import { SetGoalLink } from '../../../components/SetGoalLink';
 import { StatisticsSkeleton } from '../../../components/StatisticsSkeleton';
 import { useBooks } from '../../../hooks/useBooks';
 import { useDailyGoal } from '../../../hooks/useDailyGoal';
+import { useMonthlyBooksGoal } from '../../../hooks/useMonthlyBooksGoal';
 import { useReadingStats } from '../../../hooks/useReadingStats';
 import { useSaveDailyGoal } from '../../../hooks/useSaveDailyGoal';
+import { useSaveMonthlyBooksGoal } from '../../../hooks/useSaveMonthlyBooksGoal';
 import { useSessions } from '../../../hooks/useSessions';
 import type { AppStackParamList } from '../../../navigation/types';
 import { makeStyles, useTheme } from '../../../context/ThemeContext';
@@ -30,10 +32,13 @@ import {
   monthOf,
 } from '../../../utils/calendar';
 import { formatGoalValue } from '../../../utils/dailyGoal';
+import { getMonthlyGoalProgress } from '../../../utils/monthlyGoal';
 import { addDays } from '../../../utils/readingDays';
 import { formatDuration } from '../../../utils/readingStats';
 import { chartMetric, countFinishedBooks, describeMonthChart, summarizeDay, summarizeMonth } from '../../../utils/statistics';
 import { DailyBars } from './DailyBars';
+import { MonthlyGoalProgress } from './MonthlyGoalProgress';
+import { MonthlyGoalSheet } from './MonthlyGoalSheet';
 import { StatTile } from './StatTile';
 
 type Mode = 'day' | 'month';
@@ -46,7 +51,7 @@ const MODES: { mode: Mode; label: string }[] = [
 /**
  * Estadísticas de lectura por día y por mes. Todo se deriva de las mismas sesiones y libros que usan Inicio, el
  * Calendario y el detalle del libro (fuente única), así que se actualiza solo al registrar, editar o eliminar una
- * sesión. La meta diaria, en minutos o en páginas, se integra en las dos vistas.
+ * sesión. La meta diaria, en minutos o en páginas, se integra en las dos vistas y el objetivo mensual de libros, en la del mes.
  */
 export function StatisticsScreen() {
   const styles = useStyles();
@@ -57,12 +62,16 @@ export function StatisticsScreen() {
   const goalState = useDailyGoal();
   const { days, streaks, todayKey } = useReadingStats();
   const saveGoal = useSaveDailyGoal();
+  const monthlyGoalState = useMonthlyBooksGoal();
+  const saveMonthlyGoal = useSaveMonthlyBooksGoal();
   const { goal } = goalState;
+  const monthlyGoal = monthlyGoalState.goal;
 
   const [mode, setMode] = useState<Mode>('month');
   // `cursor` fija el periodo que se ve (un día o el mes que lo contiene) y se conserva al cambiar de vista.
   const [cursor, setCursor] = useState(todayKey);
   const [editingGoal, setEditingGoal] = useState(false);
+  const [editingMonthlyGoal, setEditingMonthlyGoal] = useState(false);
 
   const today = monthOf(todayKey);
   const cursorMonth = monthOf(cursor);
@@ -70,8 +79,13 @@ export function StatisticsScreen() {
   const dayStats = useMemo(() => summarizeDay(days, cursor, goal), [days, cursor, goal]);
   const monthStats = useMemo(() => summarizeMonth(days, monthOf(cursor), todayKey, goal), [days, cursor, todayKey, goal]);
   const finishedBooks = useMemo(() => countFinishedBooks(books.books, monthOf(cursor)), [books.books, cursor]);
+  // El objetivo mensual se compara con los libros terminados del mes que se ve (hoy, el actual).
+  const monthlyProgress = useMemo(
+    () => (monthlyGoal === undefined ? undefined : getMonthlyGoalProgress(finishedBooks, monthlyGoal)),
+    [finishedBooks, monthlyGoal],
+  );
 
-  if (sessions.loading || books.loading || goalState.loading) return <StatisticsSkeleton />;
+  if (sessions.loading || books.loading || goalState.loading || monthlyGoalState.loading) return <StatisticsSkeleton />;
 
   if (sessions.error && sessions.sessions.length === 0) {
     return (
@@ -85,6 +99,7 @@ export function StatisticsScreen() {
             sessions.retry();
             books.retry();
             goalState.retry();
+            monthlyGoalState.retry();
           },
         }}
       />
@@ -109,6 +124,7 @@ export function StatisticsScreen() {
 
   const metric = chartMetric(goal);
   const openGoalEditor = () => setEditingGoal(true);
+  const openMonthlyGoalEditor = () => setEditingMonthlyGoal(true);
 
   return (
     <>
@@ -196,6 +212,16 @@ export function StatisticsScreen() {
               <SetGoalLink onPress={openGoalEditor} />
             )}
 
+            {monthlyProgress ? (
+              <MonthlyGoalProgress
+                progress={monthlyProgress}
+                past={compareMonths(cursorMonth, today) < 0}
+                onPress={openMonthlyGoalEditor}
+              />
+            ) : (
+              <SetGoalLink label="Fijar objetivo mensual" onPress={openMonthlyGoalEditor} />
+            )}
+
             {streaks.longest > 0 ? (
               <Text style={styles.streak} accessibilityLabel={describeStreaks(streaks.current, streaks.longest)}>
                 Racha: {streaks.current} {streaks.current === 1 ? 'día' : 'días'} · Récord: {streaks.longest}
@@ -206,6 +232,12 @@ export function StatisticsScreen() {
       </ScrollView>
 
       <DailyGoalSheet visible={editingGoal} onClose={() => setEditingGoal(false)} goal={goal} onSave={saveGoal} />
+      <MonthlyGoalSheet
+        visible={editingMonthlyGoal}
+        onClose={() => setEditingMonthlyGoal(false)}
+        goal={monthlyGoal}
+        onSave={saveMonthlyGoal}
+      />
     </>
   );
 }

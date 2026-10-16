@@ -6,7 +6,12 @@ import { doc, getDoc, serverTimestamp, setDoc, setLogLevel, type Firestore } fro
 import { readFileSync } from 'fs';
 import { join } from 'path';
 
-import { setDailyGoal, subscribeToDailyGoal } from '../../src/services/userService';
+import {
+  setDailyGoal,
+  setMonthlyBooksGoal,
+  subscribeToDailyGoal,
+  subscribeToMonthlyBooksGoal,
+} from '../../src/services/userService';
 import type { DailyGoal } from '../../src/types/goal';
 
 // El servicio importa db de firebaseConfig (React Native); en las pruebas se le pasa el Firestore del emulador.
@@ -148,6 +153,89 @@ describe('subscribeToDailyGoal', () => {
   });
 
   it('un usuario no puede leer la meta de otro', async () => {
+    await expect(next(bob())).rejects.toBeDefined();
+  });
+});
+
+describe('setMonthlyBooksGoal', () => {
+  it('guarda el objetivo en el perfil sin tocar el resto de sus datos', async () => {
+    await setMonthlyBooksGoal('alice', 4, alice());
+    expect(await profileData()).toMatchObject({ monthlyBooksGoal: 4, displayName: 'Alice', timeZone: 'UTC' });
+  });
+
+  it('cambiar el valor sustituye el anterior y quitarlo elimina el campo', async () => {
+    await setMonthlyBooksGoal('alice', 4, alice());
+    await setMonthlyBooksGoal('alice', 6, alice());
+    expect((await profileData())?.monthlyBooksGoal).toBe(6);
+
+    await setMonthlyBooksGoal('alice', undefined, alice());
+    expect(await profileData()).not.toHaveProperty('monthlyBooksGoal');
+  });
+
+  it('es independiente de la meta diaria: ninguna borra a la otra', async () => {
+    await setDailyGoal('alice', pages(20), alice());
+    await setMonthlyBooksGoal('alice', 3, alice());
+    expect(await profileData()).toMatchObject({ dailyGoalPages: 20, monthlyBooksGoal: 3 });
+
+    await setDailyGoal('alice', undefined, alice());
+    expect(await profileData()).toMatchObject({ monthlyBooksGoal: 3 });
+
+    await setDailyGoal('alice', minutes(30), alice());
+    await setMonthlyBooksGoal('alice', undefined, alice());
+    expect(await profileData()).toMatchObject({ dailyGoalMinutes: 30 });
+  });
+
+  it.each([[0], [1001], [-1], [2.5]])('las reglas rechazan un objetivo de %s libros', async (target) => {
+    await assertFails(setMonthlyBooksGoal('alice', target, alice()));
+    expect(await profileData()).not.toHaveProperty('monthlyBooksGoal');
+  });
+
+  it('acepta los límites', async () => {
+    await setMonthlyBooksGoal('alice', 1, alice());
+    await setMonthlyBooksGoal('alice', 1000, alice());
+    expect((await profileData())?.monthlyBooksGoal).toBe(1000);
+  });
+
+  it('un usuario no puede cambiar el objetivo de otro', async () => {
+    await assertFails(setMonthlyBooksGoal('alice', 5, bob()));
+    expect(await profileData()).not.toHaveProperty('monthlyBooksGoal');
+  });
+});
+
+describe('subscribeToMonthlyBooksGoal', () => {
+  const next = (database: Firestore, until: (target: number | undefined) => boolean = () => true) =>
+    new Promise<number | undefined>((resolve, reject) => {
+      const unsubscribe = subscribeToMonthlyBooksGoal(
+        'alice',
+        (target) => {
+          if (until(target)) {
+            unsubscribe();
+            resolve(target);
+          }
+        },
+        reject,
+        database,
+      );
+    });
+
+  it('sin objetivo devuelve undefined', async () => {
+    expect(await next(alice())).toBeUndefined();
+  });
+
+  it('devuelve el objetivo y se entera de los cambios y de que se quita', async () => {
+    await setMonthlyBooksGoal('alice', 3, alice());
+    expect(await next(alice())).toBe(3);
+
+    const changed = next(alice(), (target) => target === 7);
+    await setMonthlyBooksGoal('alice', 7, alice());
+    expect(await changed).toBe(7);
+
+    const removed = next(alice(), (target) => target === undefined);
+    await setMonthlyBooksGoal('alice', undefined, alice());
+    expect(await removed).toBeUndefined();
+  });
+
+  it('un usuario no puede leer el objetivo de otro', async () => {
     await expect(next(bob())).rejects.toBeDefined();
   });
 });

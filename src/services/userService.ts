@@ -66,3 +66,28 @@ export function subscribeToDailyGoal(
     onError,
   );
 }
+
+// El objetivo mensual en libros vive en el mismo perfil, en `monthlyBooksGoal` (entero de 1 a 1000, ver firestore.rules).
+// Como la meta diaria, solo actualiza ese campo en un perfil que `ensureUserProfile` ya creó.
+
+/** Fija el objetivo mensual de libros, o lo quita si `target` es `undefined`. */
+export async function setMonthlyBooksGoal(uid: string, target: number | undefined, database: Firestore = db): Promise<void> {
+  await updateDoc(doc(database, 'users', uid), { monthlyBooksGoal: target ?? deleteField() });
+}
+
+/** Escucha en tiempo real el objetivo mensual de libros (`undefined` si no hay). Devuelve la función para cancelar. */
+export function subscribeToMonthlyBooksGoal(
+  uid: string,
+  onGoal: (target: number | undefined) => void,
+  onError: (error: Error) => void,
+  database: Firestore = db,
+): () => void {
+  return onSnapshot(
+    doc(database, 'users', uid),
+    (snapshot) => {
+      const target: unknown = snapshot.data()?.monthlyBooksGoal;
+      onGoal(typeof target === 'number' ? target : undefined);
+    },
+    onError,
+  );
+}

@@ -5,19 +5,25 @@ import { makeStyles, useTheme } from '../context/ThemeContext';
 import { iconSize, minTouchSize, opacity, spacing } from '../theme/spacing';
 import { fontFamily, fontSize } from '../theme/typography';
 
+interface SetGoalLinkProps {
+  onPress: () => void;
+  /** Lo que dice el enlace (por defecto, la meta diaria). */
+  label?: string;
+}
+
 /** «Fijar meta diaria»: lo que se ofrece donde iría el progreso de la meta cuando todavía no hay ninguna. */
-export function SetGoalLink({ onPress }: { onPress: () => void }) {
+export function SetGoalLink({ onPress, label = 'Fijar meta diaria' }: SetGoalLinkProps) {
   const styles = useStyles();
   const { colors } = useTheme();
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel="Fijar meta diaria"
+      accessibilityLabel={label}
       onPress={onPress}
       style={({ pressed }) => [styles.link, pressed && styles.pressed]}
     >
       <Ionicons name="flag-outline" size={iconSize.md} color={colors.primary} accessible={false} />
-      <Text style={styles.label}>Fijar meta diaria</Text>
+      <Text style={styles.label}>{label}</Text>
     </Pressable>
   );
 }

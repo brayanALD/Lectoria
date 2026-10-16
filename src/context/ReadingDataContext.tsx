@@ -3,7 +3,7 @@ import { AppState } from 'react-native';
 
 import { subscribeToBooks } from '../services/booksService';
 import { subscribeToSessions } from '../services/sessionsService';
-import { subscribeToDailyGoal } from '../services/userService';
+import { subscribeToDailyGoal, subscribeToMonthlyBooksGoal } from '../services/userService';
 import type { UserBookWithId } from '../types/book';
 import type { DailyGoal } from '../types/goal';
 import type { ReadingSessionWithId } from '../types/session';
@@ -32,6 +32,8 @@ interface ReadingDataValue {
   sessions: LiveList<ReadingSessionWithId>;
   /** La meta diaria (minutos o páginas): una lista de 0 o 1 elementos (sin meta = vacía). */
   goal: LiveList<DailyGoal>;
+  /** El objetivo mensual de libros: una lista de 0 o 1 elementos (sin objetivo = vacía). */
+  monthlyGoal: LiveList<number>;
   /** Minutos y páginas por día (`dateKey`), derivados de las sesiones. */
   days: Map<string, DaySummary>;
   /** Días que cuentan como «día de lectura», derivados de las sesiones. */
@@ -67,8 +69,8 @@ function useTodayKeyState(): string {
 }
 
 /**
- * Única fuente de datos de lectura de la app: UNA suscripción a los libros, UNA a las sesiones y UNA a la meta
- * diaria del usuario (se reinician si cambia el usuario). Inicio, Biblioteca, Calendario, el detalle del libro, el
+ * Única fuente de datos de lectura de la app: UNA suscripción a los libros, UNA a las sesiones, UNA a la meta
+ * diaria y UNA al objetivo mensual de libros del usuario (se reinician si cambia el usuario). Inicio, Biblioteca, Calendario, el detalle del libro, el
  * registro de lecturas y el cronómetro leen todos de aquí, así que crear, editar o eliminar una sesión o un libro se
  * refleja a la vez en todas las pantallas, sin parpadeos de carga al navegar y sin recalcular los mismos resúmenes en
  * cada una. También fija el «hoy» común. Va dentro de `AuthProvider` y antes del navegador.
@@ -83,9 +85,11 @@ export function ReadingDataProvider({ children }: { children: ReactNode }) {
     initialListState<ReadingSessionWithId>(),
   );
   const [goalState, dispatchGoal] = useReducer(listReducer<DailyGoal>, initialListState<DailyGoal>());
+  const [monthlyGoalState, dispatchMonthlyGoal] = useReducer(listReducer<number>, initialListState<number>());
   const [booksAttempt, setBooksAttempt] = useState(0);
   const [sessionsAttempt, setSessionsAttempt] = useState(0);
   const [goalAttempt, setGoalAttempt] = useState(0);
+  const [monthlyGoalAttempt, setMonthlyGoalAttempt] = useState(0);
   const todayKey = useTodayKeyState();
 
   useEffect(() => {
@@ -127,9 +131,23 @@ export function ReadingDataProvider({ children }: { children: ReactNode }) {
     );
   }, [uid, goalAttempt]);
 
+  useEffect(() => {
+    if (!uid) {
+      dispatchMonthlyGoal({ type: 'idle' });
+      return;
+    }
+    dispatchMonthlyGoal({ type: 'subscribe' });
+    return subscribeToMonthlyBooksGoal(
+      uid,
+      (target) => dispatchMonthlyGoal({ type: 'success', items: target === undefined ? [] : [target] }),
+      (error) => dispatchMonthlyGoal({ type: 'failure', message: getFirestoreErrorMessage(error) }),
+    );
+  }, [uid, monthlyGoalAttempt]);
+
   const retryBooks = useCallback(() => setBooksAttempt((count) => count + 1), []);
   const retrySessions = useCallback(() => setSessionsAttempt((count) => count + 1), []);
   const retryGoal = useCallback(() => setGoalAttempt((count) => count + 1), []);
+  const retryMonthlyGoal = useCallback(() => setMonthlyGoalAttempt((count) => count + 1), []);
 
   const sortedSessions = useMemo(() => sortSessions(sessionsState.items), [sessionsState.items]);
   const days = useMemo(() => summarizeByDay(sortedSessions), [sortedSessions]);
@@ -140,17 +158,31 @@ export function ReadingDataProvider({ children }: { children: ReactNode }) {
       books: { ...booksState, retry: retryBooks },
       sessions: { ...sessionsState, items: sortedSessions, retry: retrySessions },
       goal: { ...goalState, retry: retryGoal },
+      monthlyGoal: { ...monthlyGoalState, retry: retryMonthlyGoal },
       days,
       readingDays,
       todayKey,
     }),
-    [booksState, sessionsState, goalState, sortedSessions, retryBooks, retrySessions, retryGoal, days, readingDays, todayKey],
+    [
+      booksState,
+      sessionsState,
+      goalState,
+      monthlyGoalState,
+      sortedSessions,
+      retryBooks,
+      retrySessions,
+      retryGoal,
+      retryMonthlyGoal,
+      days,
+      readingDays,
+      todayKey,
+    ],
   );
 
   return <ReadingDataContext.Provider value={value}>{children}</ReadingDataContext.Provider>;
 }
 
-/** Acceso al contexto; las pantallas usan `useBooks`, `useSessions`, `useBook`, `useReadingStats` y `useDailyGoal`. */
+/** Acceso al contexto; las pantallas usan `useBooks`, `useSessions`, `useBook`, `useReadingStats`, `useDailyGoal` y `useMonthlyBooksGoal`. */
 export function useReadingData(): ReadingDataValue {
   const value = useContext(ReadingDataContext);
   if (!value) throw new Error('useReadingData debe usarse dentro de ReadingDataProvider');

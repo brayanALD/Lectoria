@@ -160,6 +160,28 @@ describe('meta diaria en el perfil (minutos o páginas)', () => {
   });
 });
 
+describe('objetivo mensual de libros en el perfil', () => {
+  const profile = () => doc(alice(), 'users/alice');
+  beforeEach(async () => {
+    await assertSucceeds(setDoc(profile(), validProfile()));
+  });
+
+  it('acepta un número entero de libros entre 1 y 1000 y rechaza el resto', async () => {
+    await assertSucceeds(updateDoc(profile(), { monthlyBooksGoal: 1 }));
+    await assertSucceeds(updateDoc(profile(), { monthlyBooksGoal: 1000 }));
+    await assertFails(updateDoc(profile(), { monthlyBooksGoal: 0 }));
+    await assertFails(updateDoc(profile(), { monthlyBooksGoal: 1001 }));
+    await assertFails(updateDoc(profile(), { monthlyBooksGoal: 2.5 }));
+    await assertFails(updateDoc(profile(), { monthlyBooksGoal: '3' }));
+  });
+
+  it('convive con la meta diaria, sea de minutos o de páginas', async () => {
+    await assertSucceeds(updateDoc(profile(), { dailyGoalMinutes: 30, monthlyBooksGoal: 4 }));
+    await assertSucceeds(updateDoc(profile(), { dailyGoalPages: 20, dailyGoalMinutes: deleteField() }));
+    await assertSucceeds(updateDoc(profile(), { monthlyBooksGoal: deleteField() }));
+  });
+});
+
 describe('libros users/{uid}/books', () => {
   it('permite crear y editar un libro válido', async () => {
     const ref = doc(alice(), 'users/alice/books/b1');

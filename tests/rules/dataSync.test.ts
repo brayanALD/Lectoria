@@ -14,7 +14,12 @@ import {
   subscribeToSessions,
   updateSession,
 } from '../../src/services/sessionsService';
-import { setDailyGoal, subscribeToDailyGoal } from '../../src/services/userService';
+import {
+  setDailyGoal,
+  setMonthlyBooksGoal,
+  subscribeToDailyGoal,
+  subscribeToMonthlyBooksGoal,
+} from '../../src/services/userService';
 import type { UserBookWithId } from '../../src/types/book';
 import type { DailyGoal } from '../../src/types/goal';
 import type { ReadingSessionWithId, SessionFormValues } from '../../src/types/session';
@@ -22,6 +27,7 @@ import { EMPTY_BOOK_FORM, parseBookForm } from '../../src/utils/book';
 import { dateForDay, monthOf } from '../../src/utils/calendar';
 import { getGoalProgress } from '../../src/utils/dailyGoal';
 import { initialListState, listReducer, type ListState } from '../../src/utils/listState';
+import { getMonthlyGoalProgress } from '../../src/utils/monthlyGoal';
 import { addDays, computeStreaks, getReadingDays, summarizeByDay } from '../../src/utils/readingDays';
 import { totalsForSessions } from '../../src/utils/readingStats';
 import { buildTimerDraft, pauseTimer, startTimer } from '../../src/utils/readingTimer';
@@ -69,6 +75,8 @@ interface LiveView {
   streaks: ReturnType<typeof computeStreaks>;
   /** La meta diaria, de minutos o de páginas (`undefined` si no hay). */
   goal: DailyGoal | undefined;
+  /** El objetivo mensual de libros (`undefined` si no hay). */
+  monthlyGoal: number | undefined;
 }
 
 const TODAY = toDateKey(new Date());
@@ -78,6 +86,7 @@ function openLiveView() {
   let booksState: ListState<UserBookWithId> = initialListState<UserBookWithId>();
   let sessionsState: ListState<ReadingSessionWithId> = initialListState<ReadingSessionWithId>();
   let goalState: ListState<DailyGoal> = initialListState<DailyGoal>();
+  let monthlyGoalState: ListState<number> = initialListState<number>();
   const waiting = new Set<() => void>();
   const notify = () => waiting.forEach((check) => check());
 
@@ -116,6 +125,18 @@ function openLiveView() {
     database,
   );
 
+  const stopMonthlyGoal = subscribeToMonthlyBooksGoal(
+    'alice',
+    (target) => {
+      monthlyGoalState = listReducer(monthlyGoalState, { type: 'success', items: target === undefined ? [] : [target] });
+      notify();
+    },
+    (error) => {
+      throw error;
+    },
+    database,
+  );
+
   // Igual que el proveedor de la app: las sesiones se ordenan con `sortSessions` y de ellas salen los resúmenes.
   const snapshot = (): LiveView => {
     const sessions = sortSessions(sessionsState.items);
@@ -127,6 +148,7 @@ function openLiveView() {
       readingDays,
       streaks: computeStreaks(readingDays, TODAY),
       goal: goalState.items[0],
+      monthlyGoal: monthlyGoalState.items[0],
     };
   };
 
@@ -139,7 +161,7 @@ function openLiveView() {
           reject(new Error(`La vista no se puso al día: ${JSON.stringify(summary(snapshot()))}`));
         }, 8000);
         const check = () => {
-          if (booksState.loading || sessionsState.loading || goalState.loading) return;
+          if (booksState.loading || sessionsState.loading || goalState.loading || monthlyGoalState.loading) return;
           const view = snapshot();
           if (!predicate(view)) return;
           clearTimeout(timer);
@@ -154,6 +176,7 @@ function openLiveView() {
       stopBooks();
       stopSessions();
       stopGoal();
+      stopMonthlyGoal();
     },
   };
 }
@@ -731,6 +754,42 @@ describe('estadísticas', () => {
     const view = await live.until((current) => current.books[0].status === 'finished' && current.sessions.length === 1);
     expect(countFinishedBooks(view.books, TODAY_MONTH)).toBe(1);
     expect(monthOf_(view).totals).toMatchObject({ minutes: 40, pages: 300 });
+  });
+
+  it('el objetivo mensual sigue a los libros terminados: avanza al terminar, se cumple y retrocede al reabrir', async () => {
+    const progress = (view: LiveView) =>
+      getMonthlyGoalProgress(countFinishedBooks(view.books, TODAY_MONTH), view.monthlyGoal as number);
+
+    await setMonthlyBooksGoal('alice', 2, database);
+    const first = await addBook('Dune');
+    const second = await addBook('Emma');
+    const none = await live.until((current) => current.monthlyGoal === 2 && current.books.length === 2);
+    expect(progress(none)).toMatchObject({ value: 0, percent: 0, remaining: 2, met: false });
+
+    await changeBookStatus('alice', first, 'finished', database);
+    const half = await live.until((current) => current.books.filter((book) => book.status === 'finished').length === 1);
+    expect(progress(half)).toMatchObject({ value: 1, percent: 50, remaining: 1, met: false });
+
+    await changeBookStatus('alice', second, 'finished', database);
+    const met = await live.until((current) => current.books.filter((book) => book.status === 'finished').length === 2);
+    expect(progress(met)).toMatchObject({ value: 2, percent: 100, remaining: 0, met: true });
+
+    // Terminar más libros que el objetivo lo mantiene cumplido; reabrir uno lo deja a medias de nuevo.
+    await changeBookStatus('alice', met.books.find((book) => book.id === second.id) as UserBookWithId, 'reading', database);
+    const reopened = await live.until((current) => current.books.filter((book) => book.status === 'finished').length === 1);
+    expect(progress(reopened)).toMatchObject({ value: 1, met: false });
+
+    // El objetivo cambia y se quita en vivo; el mes anterior no cuenta los libros terminados hoy.
+    await setMonthlyBooksGoal('alice', 1, database);
+    const changed = await live.until((current) => current.monthlyGoal === 1);
+    expect(progress(changed)).toMatchObject({ value: 1, percent: 100, met: true });
+    expect(getMonthlyGoalProgress(countFinishedBooks(changed.books, monthOf(addDays(TODAY, -40))), 1)).toMatchObject({
+      value: 0,
+      met: false,
+    });
+
+    await setMonthlyBooksGoal('alice', undefined, database);
+    expect((await live.until((current) => current.monthlyGoal === undefined)).monthlyGoal).toBeUndefined();
   });
 
   it('eliminar el libro retira sus lecturas de las estadísticas', async () => {
