@@ -37,7 +37,7 @@ export function BlurTargetProvider({ children }: { children: ReactNode }) {
 
 export function BlurTarget({ children, inert = false }: BlurTargetProps) {
   const ref = useContext(TargetContext);
-  const Target = blur?.BlurTargetView ?? View;
+  const Target = View; // PRUEBA TEMPORAL: descartar blur?.BlurTargetView como causa de la pantalla en blanco
   return (
     <Target
       ref={ref ?? undefined}
