@@ -11,6 +11,7 @@ import { EmptyState } from '../../../components/EmptyState';
 import { LibrarySkeleton } from '../../../components/BookSkeletons';
 import { SettingsButton } from '../../../components/SettingsButton';
 import { useBooks } from '../../../hooks/useBooks';
+import { SaveShelfSheet } from './SaveShelfSheet';
 import type { AppStackParamList } from '../../../navigation/types';
 import { makeStyles, useTheme } from '../../../context/ThemeContext';
 import { iconSize, minTouchSize, opacity, radius, spacing } from '../../../theme/spacing';
@@ -23,6 +24,7 @@ import {
   getFilterOptions,
   type BookFilterState,
 } from '../../../utils/bookFilters';
+import { hasFilterCriteria, stateToFilters } from '../../../utils/collections';
 
 type ViewMode = 'list' | 'grid';
 
@@ -36,10 +38,14 @@ export function LibraryScreen() {
   const { books, loading, error, retry } = useBooks();
   const [mode, setMode] = useState<ViewMode>('list');
   const [filters, setFilters] = useState<BookFilterState>(EMPTY_FILTERS);
+  const [shelfOpen, setShelfOpen] = useState(false);
   // La lista que se ve (libros propios o deseos): el recuento y las opciones de filtro salen de ella.
   const wishlistMode = filters.acquisition === 'wishlist';
   const scopedBooks = useMemo(() => filterByAcquisition(books, filters.acquisition), [books, filters.acquisition]);
   const visibleBooks = useMemo(() => filterBooks(books, filters), [books, filters]);
+  // «Guardar estantería» solo se ofrece con algún criterio además de la lista (propios o deseos).
+  const shelfFilters = useMemo(() => stateToFilters(filters), [filters]);
+  const canSaveShelf = hasFilterCriteria(shelfFilters);
   const filterOptions = useMemo(() => getFilterOptions(scopedBooks), [scopedBooks]);
   // Los números de las pestañas: cuántos libros tiene cada lista.
   const counts = useMemo(
@@ -102,6 +108,7 @@ export function LibraryScreen() {
         options={filterOptions}
         counts={counts}
         resultCount={visibleBooks.length}
+        onSaveShelf={canSaveShelf ? () => setShelfOpen(true) : undefined}
         accessory={
           scopedBooks.length > 0 ? (
             <Pressable
@@ -152,6 +159,13 @@ export function LibraryScreen() {
           )}
         />
       )}
+
+      <SaveShelfSheet
+        visible={shelfOpen}
+        onClose={() => setShelfOpen(false)}
+        filters={shelfFilters}
+        onSaved={(collectionId) => navigation.navigate('CollectionDetail', { collectionId })}
+      />
     </View>
   );
 }

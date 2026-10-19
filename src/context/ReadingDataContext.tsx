@@ -2,9 +2,11 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useReducer,
 import { AppState } from 'react-native';
 
 import { subscribeToBooks } from '../services/booksService';
+import { subscribeToCollections } from '../services/collectionsService';
 import { subscribeToSessions } from '../services/sessionsService';
 import { subscribeToDailyGoal, subscribeToMonthlyBooksGoal } from '../services/userService';
 import type { UserBookWithId } from '../types/book';
+import type { CollectionWithId } from '../types/collection';
 import type { DailyGoal } from '../types/goal';
 import type { ReadingSessionWithId } from '../types/session';
 import { msUntilNextDay } from '../utils/calendar';
@@ -34,6 +36,8 @@ interface ReadingDataValue {
   goal: LiveList<DailyGoal>;
   /** El objetivo mensual de libros: una lista de 0 o 1 elementos (sin objetivo = vacía). */
   monthlyGoal: LiveList<number>;
+  /** Colecciones y estanterías del usuario, de la más antigua a la más reciente. */
+  collections: LiveList<CollectionWithId>;
   /** Minutos y páginas por día (`dateKey`), derivados de las sesiones. */
   days: Map<string, DaySummary>;
   /** Días que cuentan como «día de lectura», derivados de las sesiones. */
@@ -70,7 +74,7 @@ function useTodayKeyState(): string {
 
 /**
  * Única fuente de datos de lectura de la app: UNA suscripción a los libros, UNA a las sesiones, UNA a la meta
- * diaria y UNA al objetivo mensual de libros del usuario (se reinician si cambia el usuario). Inicio, Biblioteca, Calendario, el detalle del libro, el
+ * diaria, UNA al objetivo mensual de libros y UNA a las colecciones del usuario (se reinician si cambia el usuario). Inicio, Biblioteca, Calendario, el detalle del libro, el
  * registro de lecturas y el cronómetro leen todos de aquí, así que crear, editar o eliminar una sesión o un libro se
  * refleja a la vez en todas las pantallas, sin parpadeos de carga al navegar y sin recalcular los mismos resúmenes en
  * cada una. También fija el «hoy» común. Va dentro de `AuthProvider` y antes del navegador.
@@ -86,7 +90,12 @@ export function ReadingDataProvider({ children }: { children: ReactNode }) {
   );
   const [goalState, dispatchGoal] = useReducer(listReducer<DailyGoal>, initialListState<DailyGoal>());
   const [monthlyGoalState, dispatchMonthlyGoal] = useReducer(listReducer<number>, initialListState<number>());
+  const [collectionsState, dispatchCollections] = useReducer(
+    listReducer<CollectionWithId>,
+    initialListState<CollectionWithId>(),
+  );
   const [booksAttempt, setBooksAttempt] = useState(0);
+  const [collectionsAttempt, setCollectionsAttempt] = useState(0);
   const [sessionsAttempt, setSessionsAttempt] = useState(0);
   const [goalAttempt, setGoalAttempt] = useState(0);
   const [monthlyGoalAttempt, setMonthlyGoalAttempt] = useState(0);
@@ -104,6 +113,19 @@ export function ReadingDataProvider({ children }: { children: ReactNode }) {
       (error) => dispatchBooks({ type: 'failure', message: getFirestoreErrorMessage(error) }),
     );
   }, [uid, booksAttempt]);
+
+  useEffect(() => {
+    if (!uid) {
+      dispatchCollections({ type: 'idle' });
+      return;
+    }
+    dispatchCollections({ type: 'subscribe' });
+    return subscribeToCollections(
+      uid,
+      (items) => dispatchCollections({ type: 'success', items }),
+      (error) => dispatchCollections({ type: 'failure', message: getFirestoreErrorMessage(error) }),
+    );
+  }, [uid, collectionsAttempt]);
 
   useEffect(() => {
     if (!uid) {
@@ -145,6 +167,7 @@ export function ReadingDataProvider({ children }: { children: ReactNode }) {
   }, [uid, monthlyGoalAttempt]);
 
   const retryBooks = useCallback(() => setBooksAttempt((count) => count + 1), []);
+  const retryCollections = useCallback(() => setCollectionsAttempt((count) => count + 1), []);
   const retrySessions = useCallback(() => setSessionsAttempt((count) => count + 1), []);
   const retryGoal = useCallback(() => setGoalAttempt((count) => count + 1), []);
   const retryMonthlyGoal = useCallback(() => setMonthlyGoalAttempt((count) => count + 1), []);
@@ -159,6 +182,7 @@ export function ReadingDataProvider({ children }: { children: ReactNode }) {
       sessions: { ...sessionsState, items: sortedSessions, retry: retrySessions },
       goal: { ...goalState, retry: retryGoal },
       monthlyGoal: { ...monthlyGoalState, retry: retryMonthlyGoal },
+      collections: { ...collectionsState, retry: retryCollections },
       days,
       readingDays,
       todayKey,
@@ -168,11 +192,13 @@ export function ReadingDataProvider({ children }: { children: ReactNode }) {
       sessionsState,
       goalState,
       monthlyGoalState,
+      collectionsState,
       sortedSessions,
       retryBooks,
       retrySessions,
       retryGoal,
       retryMonthlyGoal,
+      retryCollections,
       days,
       readingDays,
       todayKey,

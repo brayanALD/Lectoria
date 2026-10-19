@@ -125,6 +125,33 @@ service cloud.firestore {
         && optionalString(d, 'notes', 5000);
     }
 
+    // ---- Colección o estantería: users/{uid}/collections/{collectionId} ----
+    // Los filtros de una estantería: la lista (propios o deseos) y al menos un criterio más.
+    function validCollectionFilters(f) {
+      return f is map
+        && f.keys().hasOnly(['acquisition', 'query', 'status', 'genre', 'author', 'series'])
+        && f.keys().hasAll(['acquisition'])
+        && f.acquisition in ['wishlist', 'owned']
+        && f.keys().size() > 1
+        && optionalString(f, 'query', 200)
+        && (!('status' in f) || f.status in ['want_to_read', 'reading', 'paused', 'finished', 'abandoned'])
+        && optionalString(f, 'genre', 200)
+        && optionalString(f, 'author', 200)
+        && optionalString(f, 'series', 200);
+    }
+
+    // Manual: lleva `bookIds` (hasta 500, pueden apuntar a libros ya borrados). Filtrada: lleva `filters`. Nunca las dos.
+    function validCollection(d) {
+      return d.keys().hasOnly(['name', 'kind', 'bookIds', 'filters', 'createdAt', 'updatedAt'])
+        && d.keys().hasAll(['name', 'kind', 'createdAt', 'updatedAt'])
+        && d.name is string && d.name.size() > 0 && d.name.size() <= 60
+        && (
+          (d.kind == 'manual' && !('filters' in d) && optionalStringList(d, 'bookIds', 500))
+          || (d.kind == 'filter' && !('bookIds' in d) && 'filters' in d && validCollectionFilters(d.filters))
+        )
+        && d.updatedAt == request.time;
+    }
+
     match /users/{uid} {
       allow read: if signedInAs(uid);
       allow create: if signedInAs(uid)
@@ -158,7 +185,20 @@ service cloud.firestore {
         allow delete: if signedInAs(uid);
       }
 
-      // collections y reminders se añaden al implementar esas versiones (1.2 y 1.4).
+      match /collections/{collectionId} {
+        allow read: if signedInAs(uid);
+        allow create: if signedInAs(uid)
+          && validCollection(request.resource.data)
+          && request.resource.data.createdAt == request.time;
+        // El tipo no cambia: una manual no se convierte en estantería ni al revés.
+        allow update: if signedInAs(uid)
+          && validCollection(request.resource.data)
+          && request.resource.data.createdAt == resource.data.createdAt
+          && request.resource.data.kind == resource.data.kind;
+        allow delete: if signedInAs(uid);
+      }
+
+      // reminders se añade al implementar esa versión (1.4).
     }
 
     match /{document=**} {

@@ -1,18 +1,37 @@
-import { useState } from 'react';
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { useMemo, useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { Button } from '../../../components/Button';
+import { NavRow } from '../../../components/NavRow';
 import { TextField } from '../../../components/TextField';
 import { useAuth } from '../../../context/AuthContext';
 import { makeStyles } from '../../../context/ThemeContext';
+import { useBooks } from '../../../hooks/useBooks';
+import { useCollections } from '../../../hooks/useCollections';
+import type { AppStackParamList } from '../../../navigation/types';
 import { minTouchSize, radius, spacing } from '../../../theme/spacing';
 import { fontFamily, fontSize } from '../../../theme/typography';
 import { getAuthErrorMessage } from '../../../utils/authErrors';
+import { summarizeAuthors } from '../../../utils/authors';
+import { summarizeSeries } from '../../../utils/series';
 import { MIN_PASSWORD_LENGTH, isValidPassword } from '../../../utils/validation';
 import { DeleteAccountSheet } from './DeleteAccountSheet';
 
+/** «3 autores», «1 saga»: la cuenta con su nombre en singular o plural. */
+function formatCount(count: number, singular: string, plural: string): string {
+  return `${count} ${count === 1 ? singular : plural}`;
+}
+
 export function ProfileScreen() {
   const styles = useStyles();
+  const navigation = useNavigation<NativeStackNavigationProp<AppStackParamList>>();
+  const { books, loading: booksLoading } = useBooks();
+  const { collections, loading: collectionsLoading } = useCollections();
+  // Autores y sagas se derivan de los libros; las cuentas solo se muestran cuando ya hay datos.
+  const authorCount = useMemo(() => summarizeAuthors(books).length, [books]);
+  const seriesCount = useMemo(() => summarizeSeries(books).length, [books]);
   const { user, hasGoogle, hasPassword, linkGoogle, linkPassword, signOut } = useAuth();
   const [linkingGoogle, setLinkingGoogle] = useState(false);
   const [showPasswordForm, setShowPasswordForm] = useState(false);
@@ -75,6 +94,27 @@ export function ProfileScreen() {
         <Text style={styles.email} numberOfLines={1}>
           {user?.email}
         </Text>
+      </View>
+
+      <View style={styles.library}>
+        <NavRow
+          title="Colecciones"
+          subtitle={collectionsLoading || booksLoading ? undefined : formatCount(collections.length, 'colección', 'colecciones')}
+          icon="albums-outline"
+          onPress={() => navigation.navigate('Collections')}
+        />
+        <NavRow
+          title="Sagas"
+          subtitle={booksLoading ? undefined : formatCount(seriesCount, 'saga', 'sagas')}
+          icon="layers-outline"
+          onPress={() => navigation.navigate('Series')}
+        />
+        <NavRow
+          title="Autores"
+          subtitle={booksLoading ? undefined : formatCount(authorCount, 'autor', 'autores')}
+          icon="person-outline"
+          onPress={() => navigation.navigate('Authors')}
+        />
       </View>
 
       <View style={styles.block}>
@@ -150,6 +190,7 @@ const useStyles = makeStyles((colors) => StyleSheet.create({
   container: { padding: spacing.lg, gap: spacing.lg, paddingBottom: spacing.xl * 4 },
   block: { gap: spacing.sm, padding: spacing.md, borderRadius: radius.lg, backgroundColor: colors.surfaceTint },
   account: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+  library: { gap: spacing.sm },
   avatar: {
     width: minTouchSize + spacing.sm,
     height: minTouchSize + spacing.sm,

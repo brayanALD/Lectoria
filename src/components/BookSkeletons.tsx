@@ -17,7 +17,7 @@ const PLACEHOLDER_ITEMS = 6;
 const FORM_FIELDS = 6;
 const SESSION_PLACEHOLDERS = 3;
 
-function ListCardSkeleton() {
+export function ListCardSkeleton() {
   const styles = useStyles();
   return (
     <View style={[styles.card, styles.cardList]}>

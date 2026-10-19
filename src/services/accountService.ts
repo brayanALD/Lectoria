@@ -5,10 +5,10 @@ import { db } from '../../firebaseConfig';
 // Firestore admite 500 operaciones por lote; se deja margen.
 const BATCH_SIZE = 400;
 // Firestore no borra las subcolecciones al borrar el documento padre (plan, sección 7): se borran una por una.
-const SUBCOLLECTIONS = ['sessions', 'books'] as const;
+const SUBCOLLECTIONS = ['sessions', 'books', 'collections'] as const;
 
 /**
- * Elimina todos los datos de la cuenta: sus lecturas, sus libros y, al final, el perfil (`users/{uid}`). Es idempotente:
+ * Elimina todos los datos de la cuenta: sus lecturas, sus libros, sus colecciones y, al final, el perfil (`users/{uid}`). Es idempotente:
  * si se interrumpe, se puede repetir y borra lo que quede. No elimina el usuario de Authentication (eso va después, con
  * la sesión aún iniciada, porque sin ella las reglas ya no dejarían borrar nada). El parámetro `database` permite
  * probarlo contra el emulador; en la app siempre se usa `db`.

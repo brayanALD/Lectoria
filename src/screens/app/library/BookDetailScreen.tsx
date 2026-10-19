@@ -22,7 +22,7 @@ import { finishBook } from '../../../services/sessionsService';
 import { adjustBookProgress } from '../../../services/sessionsService';
 import type { ReadingStatus } from '../../../types/book';
 import { makeStyles, useTheme } from '../../../context/ThemeContext';
-import { iconSize, opacity, radius, spacing } from '../../../theme/spacing';
+import { iconSize, minTouchSize, opacity, radius, spacing } from '../../../theme/spacing';
 import { fontFamily, fontSize } from '../../../theme/typography';
 import { getProgressPercent, isWishlistBook } from '../../../utils/book';
 import { formatDayLabel } from '../../../utils/calendar';
@@ -141,14 +141,21 @@ export function BookDetailScreen({ navigation, route }: Props) {
   const purchaseText = describePurchase(book);
   const reviewTopics = getSpecificTopics(book);
   const reviewed = hasReview(book);
-  const details: { label: string; value: string }[] = [
+  const seriesName = book.seriesName;
+  const details: { label: string; value: string; hint?: string; onPress?: () => void }[] = [
     book.genres?.length ? { label: 'Géneros', value: book.genres.join(', ') } : undefined,
-    book.seriesName
-      ? { label: 'Saga', value: `${book.seriesName}${book.seriesOrder !== undefined ? ` #${book.seriesOrder}` : ''}` }
+    // La saga abre su detalle: los libros de la saga en orden.
+    seriesName
+      ? {
+          label: 'Saga',
+          value: `${seriesName}${book.seriesOrder !== undefined ? ` #${book.seriesOrder}` : ''}`,
+          hint: 'Abre los libros de esta saga',
+          onPress: () => navigation.navigate('SeriesDetail', { name: seriesName }),
+        }
       : undefined,
     book.startedAt ? { label: 'Empezado', value: formatLongDate(book.startedAt) } : undefined,
     book.finishedAt ? { label: 'Terminado', value: formatLongDate(book.finishedAt) } : undefined,
-  ].filter((row): row is { label: string; value: string } => row !== undefined);
+  ].filter((row): row is NonNullable<typeof row> => row !== undefined);
 
   return (
     <>
@@ -159,7 +166,22 @@ export function BookDetailScreen({ navigation, route }: Props) {
           <Text style={styles.title} accessibilityRole="header">
             {book.title}
           </Text>
-          <Text style={styles.authors}>{book.authors.join(', ')}</Text>
+          {/* Cada autor abre sus libros (enlaces dentro del texto). */}
+          <Text style={styles.authors}>
+            {book.authors.map((author, index) => (
+              <Text key={`${author}-${index}`}>
+                {index > 0 ? ', ' : ''}
+                <Text
+                  style={styles.link}
+                  accessibilityRole="link"
+                  accessibilityHint="Abre los libros de este autor"
+                  onPress={() => navigation.navigate('AuthorDetail', { name: author })}
+                >
+                  {author}
+                </Text>
+              </Text>
+            ))}
+          </Text>
         </View>
       </View>
 
@@ -190,12 +212,31 @@ export function BookDetailScreen({ navigation, route }: Props) {
 
       {details.length > 0 ? (
         <View style={styles.section}>
-          {details.map((row) => (
-            <View key={row.label} style={styles.row}>
-              <Text style={styles.rowLabel}>{row.label}</Text>
-              <Text style={styles.rowValue}>{row.value}</Text>
-            </View>
-          ))}
+          {details.map((row) => {
+            const content = (
+              <>
+                <Text style={styles.rowLabel}>{row.label}</Text>
+                <Text style={styles.rowValue}>{row.value}</Text>
+                {row.onPress ? <Ionicons name="chevron-forward" size={iconSize.sm} color={colors.textSecondary} accessible={false} /> : null}
+              </>
+            );
+            return row.onPress ? (
+              <Pressable
+                key={row.label}
+                accessibilityRole="button"
+                accessibilityLabel={`${row.label}: ${row.value}`}
+                accessibilityHint={row.hint}
+                onPress={row.onPress}
+                style={({ pressed }) => [styles.row, styles.rowTouch, pressed && styles.pressed]}
+              >
+                {content}
+              </Pressable>
+            ) : (
+              <View key={row.label} style={styles.row}>
+                {content}
+              </View>
+            );
+          })}
         </View>
       ) : null}
 
@@ -360,6 +401,7 @@ const useStyles = makeStyles((colors) => StyleSheet.create({
   headerText: { flex: 1, gap: spacing.xs },
   title: { fontSize: fontSize.xl, fontFamily: fontFamily.displayBold, color: colors.textPrimary },
   authors: { fontSize: fontSize.md, fontFamily: fontFamily.regular, color: colors.textSecondary },
+  link: { textDecorationLine: 'underline' },
   section: { gap: spacing.sm, padding: spacing.md, borderRadius: radius.lg, backgroundColor: colors.surfaceTint },
   // El texto ocupa el espacio que queda (`flex: 1`) y se parte en varias líneas si hace falta: así el icono de editar
   // nunca se sale del bloque, ni con una fecha de compra larga o un texto grande del sistema.
@@ -372,6 +414,7 @@ const useStyles = makeStyles((colors) => StyleSheet.create({
   ratingValue: { fontSize: fontSize.md, fontFamily: fontFamily.semibold, color: colors.textPrimary },
   topicsLine: { fontSize: fontSize.sm, fontFamily: fontFamily.regular, color: colors.textSecondary },
   row: { flexDirection: 'row', justifyContent: 'space-between', gap: spacing.md },
+  rowTouch: { minHeight: minTouchSize, alignItems: 'center' },
   rowLabel: { fontSize: fontSize.md, fontFamily: fontFamily.regular, color: colors.textSecondary },
   rowValue: { flex: 1, fontSize: fontSize.md, fontFamily: fontFamily.regular, color: colors.textPrimary, textAlign: 'right' },
   error: { fontSize: fontSize.sm, fontFamily: fontFamily.regular, color: colors.error },

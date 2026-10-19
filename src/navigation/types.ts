@@ -27,6 +27,16 @@ export type AppStackParamList = {
   BookNotes: { bookId: string };
   BookReview: { bookId: string };
   EditBook: { bookId: string };
+  /** «Mi biblioteca» (versión 1.2): colecciones y estanterías, sagas y autores, derivados de los libros. */
+  Collections: undefined;
+  CollectionDetail: { collectionId: string };
+  /** Sin `collectionId` crea una colección manual; con él edita esa colección o estantería. */
+  CollectionForm: { collectionId?: string } | undefined;
+  Series: undefined;
+  /** `name`: el nombre de la saga; identifica a la saga sin distinguir tildes ni mayúsculas. */
+  SeriesDetail: { name: string };
+  Authors: undefined;
+  AuthorDetail: { name: string };
 };
 
 export type TabParamList = {

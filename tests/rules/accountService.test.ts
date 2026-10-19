@@ -32,11 +32,11 @@ beforeEach(async () => {
 });
 
 // Se siembra sin reglas: lo que se prueba es el borrado, no la validación de cada documento.
-async function seed(uid: string, books: number, sessions: number): Promise<void> {
+async function seed(uid: string, books: number, sessions: number, collections = 0): Promise<void> {
   await env.withSecurityRulesDisabled(async (context) => {
     const database = context.firestore() as unknown as Firestore;
     await setDoc(doc(database, 'users', uid), { displayName: uid });
-    for (const [name, count] of [['books', books], ['sessions', sessions]] as const) {
+    for (const [name, count] of [['books', books], ['sessions', sessions], ['collections', collections]] as const) {
       for (let start = 0; start < count; start += 400) {
         const batch = writeBatch(database);
         for (let i = start; i < Math.min(start + 400, count); i++) {
@@ -74,6 +74,13 @@ describe('deleteAccountData', () => {
     expect(await profileExists('alice')).toBe(false);
   });
 
+  it('borra también las colecciones y estanterías', async () => {
+    await seed('alice', 2, 2, 3);
+    expect(await count(alice(), 'alice', 'collections')).toBe(3);
+    await deleteAccountData('alice', alice());
+    expect(await count(alice(), 'alice', 'collections')).toBe(0);
+  });
+
   it('borra bibliotecas más grandes que un lote', async () => {
     await seed('alice', 10, 850);
     await deleteAccountData('alice', alice());
@@ -83,8 +90,9 @@ describe('deleteAccountData', () => {
 
   it('no toca los datos de otra persona', async () => {
     await seed('alice', 2, 2);
-    await seed('bob', 4, 6);
+    await seed('bob', 4, 6, 2);
     await deleteAccountData('alice', alice());
+    expect(await count(bob(), 'bob', 'collections')).toBe(2);
     expect(await count(bob(), 'bob', 'books')).toBe(4);
     expect(await count(bob(), 'bob', 'sessions')).toBe(6);
     expect(await profileExists('bob')).toBe(true);

@@ -31,6 +31,8 @@ interface BookFiltersProps {
   resultCount: number;
   /** Lo que va a la derecha de las pestañas (el cambio de vista de la pantalla). */
   accessory?: ReactNode;
+  /** Si existe, el resumen ofrece «Guardar estantería» con la búsqueda y los filtros actuales. */
+  onSaveShelf?: () => void;
 }
 
 type SheetFilter = 'status' | 'genre' | 'author' | 'series';
@@ -65,7 +67,7 @@ const SUMMARY_CLOSE_SIZE = iconSize.sm - spacing.xs;
  * solo si hay búsqueda o filtros, un resumen con el recuento y un chip para quitar cada filtro. El estado de lectura,
  * el género, el autor y la saga se eligen en una hoja inferior.
  */
-export function BookFilters({ filters, onChange, options, counts, resultCount, accessory }: BookFiltersProps) {
+export function BookFilters({ filters, onChange, options, counts, resultCount, accessory, onSaveShelf }: BookFiltersProps) {
   const styles = useStyles();
   const { colors } = useTheme();
   const [sheetOpen, setSheetOpen] = useState(false);
@@ -204,6 +206,18 @@ export function BookFilters({ filters, onChange, options, counts, resultCount, a
               Limpiar
             </Text>
           </Pressable>
+          {onSaveShelf ? (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Guardar como estantería"
+              onPress={onSaveShelf}
+              style={styles.summaryTouch}
+            >
+              <Text style={styles.clearText} maxFontSizeMultiplier={maxFontScale}>
+                Guardar estantería
+              </Text>
+            </Pressable>
+          ) : null}
         </ScrollView>
       ) : null}
 
