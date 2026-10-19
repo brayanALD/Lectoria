@@ -2,7 +2,7 @@
 
 Aplicación móvil para seguir tus lecturas: organiza tu biblioteca, registra cuánto lees y mantén el hábito. El nombre une *lectura* y *trayectoria*.
 
-> **Estado:** versión 1.1 (Fases 1 a 5 cerradas y, de la Fase 6, la lista de deseos, las notas y reseñas y el objetivo mensual). Probada en Android; iOS pendiente. Siguiente, la versión 1.2 (autores, sagas y colecciones).
+> **Estado:** versión 1.2 (Fases 1 a 5 cerradas y, de la Fase 6, la lista de deseos, las notas y reseñas, el objetivo mensual, los autores, las sagas, las colecciones y las estanterías). Probada en Android; iOS pendiente. Siguiente, la versión 1.3 (ruleta de no leídos, logros y estantería realista).
 
 ## Fases de desarrollo
 
@@ -13,7 +13,7 @@ Aplicación móvil para seguir tus lecturas: organiza tu biblioteca, registra cu
 | 3. ISBN | Añadir libros por ISBN: escribiéndolo o escaneando el código de barras | Cerrada |
 | 4. Sesiones | Registro de lecturas (manual y con cronómetro), progreso, calendario, rachas y meta diaria | Cerrada |
 | 5. Estadísticas | Resúmenes de lectura por día y por mes, con la meta diaria integrada | Cerrada |
-| 6. Experiencia lectora | Lista de deseos, notas y reseñas (versión 1.1); autores, sagas, colecciones y logros | En curso (1.1 cerrada) |
+| 6. Experiencia lectora | Lista de deseos, notas y reseñas (versión 1.1); autores, sagas, colecciones y estanterías (versión 1.2); logros | En curso (1.2 cerrada) |
 | 7. Pulir | Estantería visual, recordatorios, accesibilidad, rendimiento | Pendiente |
 
 El plan completo (alcance, modelo de datos, decisiones y pendientes) está en [`BookTracker_Plan_de_desarrollo.md`](BookTracker_Plan_de_desarrollo.md).
@@ -34,6 +34,9 @@ El plan completo (alcance, modelo de datos, decisiones y pendientes) está en [`
 - **Notas y reseñas:** en cada libro tuyo, un espacio de notas para lo que quieras recordar mientras lees, y una reseña con calificación de media en media estrella, opinión general y hasta cinco reseñas de los temas que tú elijas (los personajes, el final…).
 - **Terminar un libro:** al marcarlo como terminado se registra la lectura de las páginas que faltaban, sin que tengas que anotarla.
 - **Objetivo mensual:** en Estadísticas, vista Mes, un objetivo de libros terminados al mes con su progreso.
+- **Autores y sagas:** en «Mi espacio», la lista de autores y la de sagas de tu biblioteca. El detalle de un autor reúne sus libros; el de una saga los muestra en orden, con cuántos llevas terminados, el siguiente por leer y los números que faltan. También se abren tocando el autor o la saga en el detalle de un libro.
+- **Colecciones:** listas de libros que eliges tú (propios o de tu lista de deseos), con buscador para añadirlos; se pueden renombrar, editar y eliminar sin tocar los libros.
+- **Estanterías filtradas:** en Biblioteca, guarda la búsqueda y los filtros activos con un nombre; la estantería se actualiza sola cuando cambian tus libros.
 - **Datos privados:** cada persona solo accede a su propia biblioteca (reglas de Firestore con validación de campos).
 
 ## Tecnología
