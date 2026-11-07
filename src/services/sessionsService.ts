@@ -1,190 +1,78 @@
-import {
-  collection,
-  deleteField,
-  doc,
-  onSnapshot,
-  orderBy,
-  query,
-  serverTimestamp,
-  Timestamp,
-  updateDoc,
-  writeBatch,
-  type Firestore,
-} from 'firebase/firestore';
+import { collection, onSnapshot, orderBy, query, type Firestore } from 'firebase/firestore';
 
 import { db } from '../../firebaseConfig';
-import type { UserBookWithId } from '../types/book';
 import type { NewSessionFields, ReadingSession, ReadingSessionWithId } from '../types/session';
-import { planStatusChange } from '../utils/book';
 import { createOfflineError, createOfflineGuard } from '../utils/firestoreErrors';
-import {
-  planBookAfterSessionChange,
-  planFinishReading,
-  planProgressCorrection,
-  planSessionBookUpdate,
-  toDateKey,
-} from '../utils/session';
-import { statusChangeToUpdate } from './booksService';
+import { api } from './apiClient';
 
-// El parámetro `database` permite probar el servicio contra el emulador; en la app siempre se usa `db`.
+// Las lecturas (`subscribeToSessions`) van directo a Firestore, en tiempo real; las ESCRITURAS pasan por la API, que
+// guarda la sesión y mueve el libro en UNA transacción (el progreso del libro nunca queda desfasado de sus sesiones) y
+// calcula ella misma las páginas leídas y el día. Ver `api/src/services/sessions.ts`.
+// El parámetro `database` de la suscripción permite probarla contra el emulador; en la app siempre se usa `db`.
 const sessionsCollection = (uid: string, database: Firestore) => collection(database, 'users', uid, 'sessions');
 
-/**
- * Registra una sesión de lectura y actualiza el libro en la MISMA operación atómica: o se guardan las dos cosas
- * o ninguna, así el progreso del libro nunca queda desfasado de sus sesiones.
- * Efecto en el libro (ver `planSessionBookUpdate`): avanza la página actual, pasa a «Leyendo» si no lo estaba y
- * a «Terminado» al llegar a la última página. Devuelve el id de la sesión.
- * `sessionId` fija el id (el cronómetro usa uno propio): si ya existe una sesión con ese id, las reglas rechazan el
- * segundo guardado, así que una misma lectura no puede registrarse dos veces.
- */
-export async function createSession(
-  uid: string,
-  book: UserBookWithId,
-  fields: NewSessionFields,
-  database: Firestore = db,
-  sessionId?: string,
-): Promise<string> {
-  const batch = writeBatch(database);
+/** La zona horaria del dispositivo: con ella el servidor decide a qué día pertenece cada sesión (rachas y calendario). */
+const deviceTimeZone = (): string => Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
 
-  const sessionRef = sessionId ? doc(sessionsCollection(uid, database), sessionId) : doc(sessionsCollection(uid, database));
-  batch.set(sessionRef, {
-    bookId: fields.bookId,
-    date: Timestamp.fromDate(fields.date),
-    dateKey: fields.dateKey,
-    pagesRead: fields.pagesRead,
+const bookPath = (bookId: string) => `/v1/books/${encodeURIComponent(bookId)}`;
+const sessionPath = (sessionId: string) => `/v1/sessions/${encodeURIComponent(sessionId)}`;
+
+/** Los datos de una sesión tal como los espera la API: sin lo que ella calcula (páginas leídas y día). */
+function sessionBody(fields: NewSessionFields) {
+  return {
+    date: fields.date.toISOString(),
+    timeZone: deviceTimeZone(),
     durationMinutes: fields.durationMinutes,
-    ...(fields.startPage !== undefined ? { startPage: fields.startPage } : {}),
-    ...(fields.endPage !== undefined ? { endPage: fields.endPage } : {}),
-    ...(fields.notes ? { notes: fields.notes } : {}),
-    createdAt: serverTimestamp(),
-  });
-
-  const plan = planSessionBookUpdate(book, fields.endPage);
-  if (plan.changed) batch.update(doc(database, 'users', uid, 'books', book.id), statusChangeToUpdate(plan));
-
-  await batch.commit();
-  return sessionRef.id;
+    startPage: fields.startPage,
+    endPage: fields.endPage,
+    notes: fields.notes,
+  };
 }
 
 /**
- * Marca un libro como «Terminado». Si faltaban páginas para el final, las registra como una sesión de lectura (sin
- * minutos, de la página actual a la última; ver `planFinishReading`) en la MISMA operación atómica que cambia el
- * libro, así que las estadísticas, el calendario y las rachas las cuentan como cualquier otra lectura. Si no se
- * conoce el total de páginas o el libro ya estaba en la última, solo cambia el estado (no hay nada que registrar), y
- * volver a terminar un libro reabierto no duplica la lectura. No hace nada si el libro ya está terminado.
- * Es la única vía para pasar a «Terminado»: `changeBookStatus` no lo admite.
+ * Registra una sesión de lectura y actualiza el libro en la MISMA operación atómica (en el servidor): avanza la página
+ * actual, pasa a «Leyendo» si no lo estaba y a «Terminado» al llegar a la última página. Devuelve el id de la sesión.
+ * `requestId` fija el id (el cronómetro usa `timer-<inicio>`; el formulario, un id por intento): si ya existe una sesión
+ * con ese id, la API devuelve esa en lugar de registrar la lectura otra vez.
  */
-export async function finishBook(
-  uid: string,
-  book: UserBookWithId,
-  now: Date = new Date(),
-  database: Firestore = db,
-): Promise<void> {
-  if (book.status === 'finished') return;
-
-  const reading = planFinishReading(book.id, book, now);
-  if (reading) {
-    // Llegar a la última página termina el libro (y fija startedAt/finishedAt) en el mismo lote que la sesión.
-    await createSession(uid, book, reading, database);
-    return;
-  }
-  await updateDoc(doc(database, 'users', uid, 'books', book.id), statusChangeToUpdate(planStatusChange(book, 'finished')));
+export async function createSession(fields: NewSessionFields, requestId?: string): Promise<string> {
+  const { id } = await api.post<{ id: string }>('/v1/sessions', { ...sessionBody(fields), bookId: fields.bookId, requestId });
+  return id;
 }
 
 /**
- * Ajusta a mano la página actual de un libro.
- * - Hacia delante: es lectura, así que se registra como una sesión de páginas (sin minutos) de hoy; cuenta para las
- *   estadísticas y, si supera 1 página, para la racha. Si llega a la última página, el libro pasa a «Terminado».
- * - Hacia atrás: es una corrección, no genera sesión. Un libro terminado vuelve a «Leyendo».
- * - Sin cambio: no hace nada.
+ * Marca un libro como «Terminado». Si faltaban páginas, el servidor las registra como una sesión (sin minutos, de la
+ * página actual a la última) en la MISMA transacción, así que estadísticas, calendario y rachas las cuentan como
+ * cualquier lectura. Es la única vía para pasar a «Terminado»: `changeBookStatus` no lo admite.
  */
-export async function adjustBookProgress(
-  uid: string,
-  book: UserBookWithId,
-  page: number,
-  now: Date = new Date(),
-  database: Firestore = db,
-): Promise<void> {
-  if (page === book.currentPage) return;
-
-  if (page > book.currentPage) {
-    await createSession(
-      uid,
-      book,
-      {
-        bookId: book.id,
-        date: now,
-        dateKey: toDateKey(now),
-        startPage: book.currentPage,
-        endPage: page,
-        pagesRead: page - book.currentPage,
-        durationMinutes: 0,
-      },
-      database,
-    );
-    return;
-  }
-
-  await updateDoc(doc(database, 'users', uid, 'books', book.id), statusChangeToUpdate(planProgressCorrection(book, page)));
+export async function finishBook(bookId: string): Promise<void> {
+  await api.post(`${bookPath(bookId)}/finish`, { timeZone: deviceTimeZone() });
 }
 
 /**
- * Elimina una sesión y deja el libro coherente en la MISMA operación atómica: si esa sesión era la que fijaba la
- * página actual, el libro vuelve a la mayor página de sus demás sesiones (ver `planBookAfterSessionChange`), sin
- * que haya que corregirlo a mano. `sessions` es la lista completa de sesiones del usuario (la que ya sincroniza
- * `useSessions`); de ella se toman las demás sesiones del libro. Si el libro ya no existe, solo se borra la sesión.
+ * Ajusta a mano la página actual de un libro. Hacia delante es lectura (se registra como una sesión de páginas de hoy);
+ * hacia atrás es una corrección que no genera sesión. Sin cambio, no hace nada.
  */
-export async function deleteSession(
-  uid: string,
-  session: ReadingSessionWithId,
-  book: UserBookWithId | undefined,
-  sessions: readonly ReadingSessionWithId[],
-  database: Firestore = db,
-): Promise<void> {
-  const batch = writeBatch(database);
-  batch.delete(doc(database, 'users', uid, 'sessions', session.id));
-
-  if (book) {
-    const plan = planBookAfterSessionChange(book, siblingsOf(session, sessions), session, undefined);
-    if (plan.changed) batch.update(doc(database, 'users', uid, 'books', book.id), statusChangeToUpdate(plan));
-  }
-  await batch.commit();
+export async function adjustBookProgress(bookId: string, page: number): Promise<void> {
+  await api.post(`${bookPath(bookId)}/progress`, { page, timeZone: deviceTimeZone() });
 }
 
 /**
- * Edita una sesión (fecha, minutos, páginas y notas; el libro no cambia) y actualiza el libro en la MISMA
- * operación atómica según `planBookAfterSessionChange`: subir o bajar la página final mueve el progreso del libro
- * de forma coherente. Los campos opcionales que se vacían se eliminan de la sesión.
+ * Elimina una sesión y deja el libro coherente en la MISMA transacción: si esa sesión era la que fijaba la página actual,
+ * el libro vuelve a la mayor página de sus demás sesiones. El servidor lee él mismo las demás sesiones del libro.
  */
-export async function updateSession(
-  uid: string,
-  session: ReadingSessionWithId,
-  fields: NewSessionFields,
-  book: UserBookWithId | undefined,
-  sessions: readonly ReadingSessionWithId[],
-  database: Firestore = db,
-): Promise<void> {
-  const batch = writeBatch(database);
-  batch.update(doc(database, 'users', uid, 'sessions', session.id), {
-    date: Timestamp.fromDate(fields.date),
-    dateKey: fields.dateKey,
-    pagesRead: fields.pagesRead,
-    durationMinutes: fields.durationMinutes,
-    startPage: fields.startPage ?? deleteField(),
-    endPage: fields.endPage ?? deleteField(),
-    notes: fields.notes ?? deleteField(),
-  });
-
-  if (book) {
-    const plan = planBookAfterSessionChange(book, siblingsOf(session, sessions), session, fields);
-    if (plan.changed) batch.update(doc(database, 'users', uid, 'books', book.id), statusChangeToUpdate(plan));
-  }
-  await batch.commit();
+export async function deleteSession(sessionId: string): Promise<void> {
+  await api.delete(sessionPath(sessionId));
 }
 
-/** Las demás sesiones del mismo libro (sin la indicada). */
-function siblingsOf(session: ReadingSessionWithId, sessions: readonly ReadingSessionWithId[]): ReadingSessionWithId[] {
-  return sessions.filter((other) => other.bookId === session.bookId && other.id !== session.id);
+/**
+ * Edita una sesión (fecha, minutos, páginas y notas; el libro no cambia) y actualiza el libro en la MISMA transacción: subir
+ * o bajar la página final mueve el progreso del libro de forma coherente. Lo opcional que se vacía se elimina.
+ */
+export async function updateSession(sessionId: string, fields: NewSessionFields): Promise<void> {
+  // Al editar se conserva el día que eligió la persona (`dateKey`): si cambió de zona horaria desde que la registró,
+  // recalcularlo movería la lectura de día.
+  await api.put(sessionPath(sessionId), { ...sessionBody(fields), dateKey: fields.dateKey });
 }
 
 /**

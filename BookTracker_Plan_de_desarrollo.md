@@ -287,6 +287,8 @@ Las reglas viven en `firestore.rules` (fuente de verdad; no se duplican aquí). 
 
 **Privacidad** [Recomendado]: reseñas y notas privadas por defecto; exportación de datos (1.5); **eliminación de cuenta**: Firestore no borra subcolecciones al eliminar el documento padre, por lo que el borrado completo requiere eliminar `books` y `sessions` desde la app (o una función en backend) además de `deleteUser`. Las tiendas de aplicaciones suelen exigir poder eliminar la cuenta desde la app [Pendiente: verificar requisitos vigentes antes de publicar]. **Implementado el 2026-10-16** (ver §9, «Eliminar la cuenta»).
 
+> **Actualización (2026-11-07):** las escrituras de la app pasaron a una API propia (sección 16): las reglas de esta sección serán de solo lectura (`firestore.api.rules`) cuando se despliegue; la validación de campos que se describe aquí la hace entonces la API.
+
 ## 8. Alta de libros: ISBN y entrada manual
 
 **Método A — escaneo:** abrir cámara → detectar EAN-13 → validar ISBN-13 (aceptar y normalizar ISBN-10) → consultar proveedor → mostrar metadatos → confirmar/corregir → guardar.
@@ -509,3 +511,17 @@ Orden de la Fase 1 (plantilla): theme → AuthContext → AppNavigator → Login
 Tablas Markdown con línea en blanco que impedía su renderizado; fórmulas LaTeX sustituidas por texto plano; estructura de carpetas reducida a lo necesario para el MVP.
 
 **Conservado del plan original:** visión y dos áreas, MVP y versiones, cinco pestañas, separación libro/registro personal, escaneo ISBN con respaldo manual, reglas de sesiones y rachas, estantería en tres etapas, criterios de aceptación y recomendación de priorizar datos sobre estética.
+
+## 16. Migración a una API propia (2026-11-07) [Confirmado; código hecho, despliegue pendiente]
+
+Decisión del usuario: centralizar la lógica de negocio en una API web (Render) siguiendo el patrón del proyecto de referencia
+Jornada-Viva. **Alcance:** libros, sesiones (y el progreso derivado), colecciones, perfil y metas, borrado de los datos de la
+cuenta y búsqueda por ISBN. **Fuera de alcance:** autenticación (sigue siendo Firebase Auth), estadísticas, rachas y calendario
+(se derivan de los listeners en tiempo real, sin cambios), el cronómetro y los filtros (interfaz).
+
+- **Arquitectura:** la app lee de Firestore en tiempo real y escribe por la API (Express + Firebase Admin, TypeScript, carpeta
+  `api/`); las reglas pasan a solo lectura. La API reutiliza `src/utils` y `src/types` (una sola copia de la lógica).
+- **Seguridad:** el `uid` sale del ID token; la clave de la cuenta de servicio y la del catálogo solo viven en el servidor.
+- **Datos:** el esquema de Firestore no cambia; no hay migración de datos.
+- **Diferencias de comportamiento, despliegue, recuperación, pruebas y propuestas pendientes:** `docs/migracion-api.md`.
+- **Pendiente:** desplegar en Render, publicar `firestore.api.rules`, compilar y probar en dispositivo.

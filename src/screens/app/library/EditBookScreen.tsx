@@ -50,7 +50,7 @@ export function EditBookScreen({ navigation, route }: Props) {
       showStatus={false}
       onSubmit={async (fields) => {
         if (!user) throw new Error('No hay sesión iniciada');
-        await updateBookDetails(user.uid, book, fields);
+        await updateBookDetails(book.id, fields);
       }}
       onSaved={() => navigation.goBack()}
     />

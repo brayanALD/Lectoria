@@ -8,6 +8,12 @@ const MESSAGES: Record<string, string> = {
   'already-exists': 'Ese elemento ya existe.',
   'lectoria/timeout':
     'No hay respuesta del servidor. Revisa tu conexión. Si lo que intentabas guardar ya aparece en tu biblioteca, se guardó correctamente.',
+  // Errores de la API de Lectoria (ver `services/apiClientCore`).
+  'lectoria/server-unavailable': 'El servidor no responde ahora mismo. Espera unos segundos e inténtalo de nuevo.',
+  'lectoria/book-not-owned': 'Este libro está en tu lista de deseos. Márcalo como comprado para registrar lecturas.',
+  'lectoria/api-not-configured': 'Esta versión de la app no tiene configurado el servidor. Actualiza la app.',
+  'invalid-argument': 'Los datos no son válidos. Revisa lo que escribiste e inténtalo de nuevo.',
+  'failed-precondition': 'No se pudo completar la operación porque los datos cambiaron. Inténtalo de nuevo.',
 };
 
 const FALLBACK = 'No se pudo completar la operación. Inténtalo de nuevo.';

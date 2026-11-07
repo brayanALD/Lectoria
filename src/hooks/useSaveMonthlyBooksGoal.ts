@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { setMonthlyBooksGoal } from '../services/userService';
 import { withTimeout } from '../utils/withTimeout';
 
-// Sin conexión, una escritura de Firestore no termina hasta recuperar la red: se corta la espera.
+// Sin conexión (o con el servidor despertando) la petición no termina enseguida: se corta la espera.
 const WRITE_TIMEOUT_MS = 10000;
 
 /**
@@ -17,7 +17,7 @@ export function useSaveMonthlyBooksGoal(): (target: number | undefined) => Promi
   return useCallback(
     async (target) => {
       if (!uid) throw new Error('No hay sesión iniciada');
-      await withTimeout(setMonthlyBooksGoal(uid, target), WRITE_TIMEOUT_MS);
+      await withTimeout(setMonthlyBooksGoal(target), WRITE_TIMEOUT_MS);
     },
     [uid],
   );

@@ -37,11 +37,11 @@ El plan completo (alcance, modelo de datos, decisiones y pendientes) está en [`
 - **Autores y sagas:** en «Mi espacio», la lista de autores y la de sagas de tu biblioteca. El detalle de un autor reúne sus libros; el de una saga los muestra en orden, con cuántos llevas terminados, el siguiente por leer y los números que faltan. También se abren tocando el autor o la saga en el detalle de un libro.
 - **Colecciones:** listas de libros que eliges tú (propios o de tu lista de deseos), con buscador para añadirlos; se pueden renombrar, editar y eliminar sin tocar los libros.
 - **Estanterías filtradas:** en Biblioteca, guarda la búsqueda y los filtros activos con un nombre; la estantería se actualiza sola cuando cambian tus libros.
-- **Datos privados:** cada persona solo accede a su propia biblioteca (reglas de Firestore con validación de campos).
+- **Datos privados:** cada persona solo accede a su propia biblioteca: la app lee de Firestore (reglas de acceso por usuario) y todas las escrituras pasan por una API propia que valida y aplica la lógica de negocio.
 
 ## Tecnología
 
-Expo SDK 57 · React Native 0.86 · TypeScript · React Navigation · Firebase (Authentication y Firestore) · AsyncStorage · expo-camera · Open Library (catálogo de libros, sin clave) · Jest.
+Expo SDK 57 · React Native 0.86 · TypeScript · React Navigation · Firebase (Authentication y Firestore) · AsyncStorage · expo-camera · Jest. API propia en Node.js + Express + Firebase Admin (carpeta `api/`, desplegable en Render) que también consulta Open Library para el catálogo de libros.
 
 ## Primeros pasos
 
@@ -58,7 +58,7 @@ npm install
 cp .env.example .env     # y completa los valores de tu proyecto de Firebase
 ```
 
-Las variables (`EXPO_PUBLIC_FIREBASE_*`, `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID` y, opcionalmente, `EXPO_PUBLIC_OPENLIBRARY_CONTACT`) se describen en `.env.example`. El archivo `.env` no se versiona.
+Las variables (`EXPO_PUBLIC_FIREBASE_*`, `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID` y `EXPO_PUBLIC_API_URL`, la dirección de la API) se describen en `.env.example`. El archivo `.env` no se versiona.
 
 ### Ejecutar
 
@@ -68,6 +68,10 @@ npx expo start
 
 El escáner de código de barras funciona también en Expo Go. El acceso con **Google** usa código nativo y **no funciona en Expo Go**: requiere una *development build* de EAS. Para generarla, coloca tu `google-services.json` en la raíz (no se versiona) y ejecuta `npx eas-cli build --profile development --platform android`. En EAS Build el archivo se entrega mediante la variable de entorno de tipo archivo `GOOGLE_SERVICES_JSON`. Después, `npx expo start` abre la app en esa build.
 
+### API
+
+La app guarda a través de la API de `api/` (ver [`api/README.md`](api/README.md) y [`docs/migracion-api.md`](docs/migracion-api.md)): libros, lecturas, colecciones, metas, borrado de cuenta y búsqueda por ISBN. Para ejecutarla en local, copia `api/.env.example` a `api/.env`, completa los valores y ejecuta `npm --prefix api install` y `npm --prefix api run dev`. El despliegue se describe en `render.yaml`.
+
 ### Firebase
 
 Reglas e índices de Firestore:
@@ -76,13 +80,17 @@ Reglas e índices de Firestore:
 npx firebase-tools deploy --only firestore
 ```
 
+Cuando la API esté desplegada y la app la use, las reglas pasan a solo lectura (`firestore.api.rules`, que se publica con `firebase.api.json`; ver la migración).
+
 ## Comandos
 
 | Comando | Qué hace |
 |---|---|
 | `npm run typecheck` | Comprueba los tipos de TypeScript |
 | `npm test` | Pruebas unitarias (Jest) |
-| `npm run test:rules` | Pruebas de las reglas y de los servicios (libros, sesiones, meta y sincronización) contra el emulador de Firestore |
+| `npm run test:rules` | Reglas de Firestore y pruebas de extremo a extremo (servicios de la app → API → Firestore → suscripciones) contra el emulador |
+| `npm run test:api` | Pruebas de la API real contra el emulador de Firestore |
+| `npm run typecheck:api` | Comprueba los tipos de la API |
 | `npx expo-doctor` | Diagnóstico de dependencias |
 
 ## Estructura
@@ -94,12 +102,15 @@ src/
 ├── hooks/        Acceso a datos desde las pantallas
 ├── navigation/   Pila de autenticación, pila de la app y pestañas
 ├── screens/      Pantallas (auth y app: home, library, calendar, statistics, profile)
-├── services/     Único acceso a Firebase y al catálogo de libros
+├── services/     Único acceso a Firebase y a la API (escrituras y catálogo de libros)
 ├── theme/        Tokens de diseño (colores, espaciado, tipografía)
 ├── types/        Modelos de TypeScript
 └── utils/        Lógica pura y probada (validación, filtros, fechas, rachas, cronómetro, meta diaria)
+api/              API REST (Express + Firebase Admin), con sus propias pruebas
 tests/rules/      Pruebas contra el emulador de Firestore
-firestore.rules   Reglas de seguridad
+firestore.rules   Reglas de seguridad actuales (escritura directa)
+firestore.api.rules  Reglas de solo lectura para cuando todo pase por la API
+render.yaml       Servicio de la API para Render
 ```
 
 ## Principios de diseño
@@ -115,6 +126,6 @@ La paleta oficial es Evergreen `#14281D`, Hunter Green `#355834`, Olive Bark `#6
 
 ## Seguridad
 
-- Las reglas de Firestore aíslan los datos por usuario y validan tipos, límites y campos permitidos.
-- Los archivos de configuración nativa de Firebase y las variables de entorno no están en el repositorio.
+- Las reglas de Firestore aíslan los datos por usuario; la API valida tipos, límites y campos de cada escritura con el `uid` del ID token de Firebase, nunca con datos del cliente.
+- Los archivos de configuración nativa de Firebase, las variables de entorno y la clave de la cuenta de servicio de la API no están en el repositorio; ninguna clave del catálogo de libros viaja dentro de la app.
 - Las claves de API de Firebase son identificadores de cliente; se restringen en Google Cloud a las aplicaciones y APIs necesarias.

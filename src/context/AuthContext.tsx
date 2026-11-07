@@ -16,6 +16,7 @@ import {
   subscribeToAuthState,
   type User,
 } from '../services/authService';
+import { useApiWarmUp } from '../hooks/useApiWarmUp';
 import { clearTimer } from '../services/timerStorage';
 import { ensureUserProfile } from '../services/userService';
 import { withTimeout } from '../utils/withTimeout';
@@ -66,6 +67,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [],
   );
 
+  // Mantiene despierta la API mientras haya sesión (el hosting gratuito la duerme tras unos minutos sin uso).
+  useApiWarmUp(user !== null);
+
   useEffect(() => {
     if (!user) return;
     const input = pendingProfile.current ?? undefined;
@@ -109,7 +113,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // Primero se confirma la identidad (también asegura que hay conexión); después los datos, mientras la sesión
         // sigue iniciada, y por último el usuario. Si algo falla a medias, repetirlo termina lo que quedó.
         if (!(await reauthenticateCurrentUser(password))) return false;
-        await withTimeout(deleteAccountData(user.uid), DELETE_DATA_TIMEOUT_MS);
+        await withTimeout(deleteAccountData(), DELETE_DATA_TIMEOUT_MS);
         await clearTimer(user.uid);
         await deleteCurrentUser();
         return true;

@@ -25,6 +25,7 @@ import { fontFamily, fontSize } from '../../../theme/typography';
 import { dateForDay, formatDayLabel, resolveDayKey } from '../../../utils/calendar';
 import { getFirestoreErrorMessage } from '../../../utils/firestoreErrors';
 import { buildTimerDraft, type TimerDraft } from '../../../utils/readingTimer';
+import { makeRequestId, newRequestSeed } from '../../../utils/requestId';
 import { MAX_SESSION_NOTES, parseSessionForm, toDateKey } from '../../../utils/session';
 import { pickDefaultBook } from '../../../utils/sessionBooks';
 import { withTimeout } from '../../../utils/withTimeout';
@@ -134,6 +135,7 @@ function SessionForm({ navigation, books, sessions, fixedBookId, editing, draft,
   const [dateSheet, setDateSheet] = useState(false);
 
   const { ref: containerRef, top, onLayout } = useWindowTop();
+  const requestSeed = useRef(newRequestSeed());
   const scrollRef = useRef<ScrollView>(null);
   const startRef = useRef<TextInput>(null);
   const pageRef = useRef<TextInput>(null);
@@ -207,8 +209,10 @@ function SessionForm({ navigation, books, sessions, fixedBookId, editing, draft,
     setSaving(true);
     try {
       const save = editing
-        ? updateSession(user.uid, editing, { ...result.data, dateKey: dayKey }, book, sessions)
-        : createSession(user.uid, book, result.data, undefined, draft?.sessionId).then(() => undefined);
+        ? updateSession(editing.id, { ...result.data, dateKey: dayKey })
+        : // El cronómetro guarda con el id de su sesión; el formulario, con uno por intento (ver `makeRequestId`): repetir
+          // el guardado tras un corte de red no registra la lectura dos veces.
+          createSession(result.data, draft?.sessionId ?? makeRequestId(requestSeed.current, result.data)).then(() => undefined);
       await withTimeout(save, SAVE_TIMEOUT_MS);
       if (draft) discard();
       navigation.goBack();

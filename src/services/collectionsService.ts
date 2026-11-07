@@ -1,78 +1,43 @@
-import {
-  addDoc,
-  collection,
-  deleteDoc,
-  doc,
-  onSnapshot,
-  orderBy,
-  query,
-  serverTimestamp,
-  updateDoc,
-  type Firestore,
-} from 'firebase/firestore';
+import { collection, onSnapshot, orderBy, query, type Firestore } from 'firebase/firestore';
 
 import { db } from '../../firebaseConfig';
 import type { Collection, CollectionFilters, CollectionWithId } from '../types/collection';
 import { createOfflineError, createOfflineGuard } from '../utils/firestoreErrors';
+import { api } from './apiClient';
 
-// El parámetro `database` permite probar el servicio contra el emulador; en la app siempre se usa `db`.
+// Las lecturas (`subscribeToCollections`) van directo a Firestore; las ESCRITURAS pasan por la API. Ver
+// `api/src/services/collections.ts`. El parámetro `database` de la suscripción permite probarla contra el emulador.
 const collectionsRef = (uid: string, database: Firestore) => collection(database, 'users', uid, 'collections');
-const collectionDoc = (uid: string, collectionId: string, database: Firestore) =>
-  doc(database, 'users', uid, 'collections', collectionId);
+
+const collectionPath = (collectionId: string) => `/v1/collections/${encodeURIComponent(collectionId)}`;
 
 /**
- * Crea una colección manual con los libros elegidos y devuelve su id. El nombre ya viene validado
- * (`parseCollectionName`) y los ids, depurados (`parseBookSelection`).
+ * Crea una colección manual con los libros elegidos y devuelve su id. El servidor vuelve a validar el nombre (con
+ * contenido, hasta 60 caracteres, sin repetir otro) y descarta los libros que no existan. `requestId` evita duplicarla al
+ * reintentar.
  */
-export async function createManualCollection(
-  uid: string,
-  name: string,
-  bookIds: string[],
-  database: Firestore = db,
-): Promise<string> {
-  const ref = await addDoc(collectionsRef(uid, database), {
-    name,
-    kind: 'manual',
-    bookIds,
-    createdAt: serverTimestamp(),
-    updatedAt: serverTimestamp(),
-  });
-  return ref.id;
+export async function createManualCollection(name: string, bookIds: string[], requestId?: string): Promise<string> {
+  const { id } = await api.post<{ id: string }>('/v1/collections', { kind: 'manual', name, bookIds, requestId });
+  return id;
 }
 
 /** Crea una estantería filtrada con los filtros guardados (`stateToFilters`) y devuelve su id. */
-export async function createFilterCollection(
-  uid: string,
-  name: string,
-  filters: CollectionFilters,
-  database: Firestore = db,
-): Promise<string> {
-  const ref = await addDoc(collectionsRef(uid, database), {
-    name,
-    kind: 'filter',
-    filters,
-    createdAt: serverTimestamp(),
-    updatedAt: serverTimestamp(),
-  });
-  return ref.id;
+export async function createFilterCollection(name: string, filters: CollectionFilters, requestId?: string): Promise<string> {
+  const { id } = await api.post<{ id: string }>('/v1/collections', { kind: 'filter', name, filters, requestId });
+  return id;
 }
 
 /**
  * Guarda los cambios de una colección en una sola escritura: el nombre y, en una manual, sus libros (la selección
- * completa, ya depurada con `parseBookSelection`). Una estantería solo cambia de nombre.
+ * completa). Una estantería solo cambia de nombre.
  */
-export async function updateCollection(
-  uid: string,
-  collectionId: string,
-  changes: { name?: string; bookIds?: string[] },
-  database: Firestore = db,
-): Promise<void> {
-  await updateDoc(collectionDoc(uid, collectionId, database), { ...changes, updatedAt: serverTimestamp() });
+export async function updateCollection(collectionId: string, changes: { name?: string; bookIds?: string[] }): Promise<void> {
+  await api.patch(collectionPath(collectionId), changes);
 }
 
 /** Elimina la colección o estantería. Sus libros no se tocan. */
-export async function deleteCollection(uid: string, collectionId: string, database: Firestore = db): Promise<void> {
-  await deleteDoc(collectionDoc(uid, collectionId, database));
+export async function deleteCollection(collectionId: string): Promise<void> {
+  await api.delete(collectionPath(collectionId));
 }
 
 /**

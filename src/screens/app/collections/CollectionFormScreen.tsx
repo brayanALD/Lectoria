@@ -1,5 +1,5 @@
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { StyleSheet, Text } from 'react-native';
 
 import { BookFormSkeleton } from '../../../components/BookSkeletons';
@@ -27,6 +27,7 @@ import {
   uniqueIds,
 } from '../../../utils/collections';
 import { getFirestoreErrorMessage } from '../../../utils/firestoreErrors';
+import { makeRequestId, newRequestSeed } from '../../../utils/requestId';
 import { withTimeout } from '../../../utils/withTimeout';
 
 type Props = NativeStackScreenProps<AppStackParamList, 'CollectionForm'>;
@@ -92,6 +93,8 @@ function Form({ existing, collections, onCreated, onSaved }: FormProps) {
   const [selectionError, setSelectionError] = useState<string | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  // Reintentar tras un corte de red no crea una segunda colección (ver `makeRequestId`).
+  const requestSeed = useRef(newRequestSeed());
 
   const handleSave = async () => {
     if (saving) return;
@@ -107,10 +110,10 @@ function Form({ existing, collections, onCreated, onSaved }: FormProps) {
       if (!user) throw new Error('No hay sesión iniciada');
       const bookIds = parsedBooks?.ok ? parsedBooks.bookIds : undefined;
       if (existing) {
-        await withTimeout(updateCollection(user.uid, existing.id, { name: parsedName.name, ...(bookIds ? { bookIds } : {}) }), SAVE_TIMEOUT_MS);
+        await withTimeout(updateCollection(existing.id, { name: parsedName.name, ...(bookIds ? { bookIds } : {}) }), SAVE_TIMEOUT_MS);
         onSaved();
       } else {
-        const id = await withTimeout(createManualCollection(user.uid, parsedName.name, bookIds ?? []), SAVE_TIMEOUT_MS);
+        const id = await withTimeout(createManualCollection(parsedName.name, bookIds ?? [], makeRequestId(requestSeed.current, { name: parsedName.name, bookIds })), SAVE_TIMEOUT_MS);
         onCreated(id);
       }
     } catch (e) {

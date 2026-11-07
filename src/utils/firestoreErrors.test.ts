@@ -19,7 +19,23 @@ describe('getFirestoreErrorMessage', () => {
   });
 
   it('muestra el código cuando no lo conoce, para poder diagnosticarlo', () => {
-    expect(getFirestoreErrorMessage({ code: 'failed-precondition' })).toContain('(failed-precondition)');
+    expect(getFirestoreErrorMessage({ code: 'data-loss' })).toContain('(data-loss)');
+  });
+
+  it.each([
+    'lectoria/server-unavailable',
+    'lectoria/book-not-owned',
+    'lectoria/api-not-configured',
+    'invalid-argument',
+    'failed-precondition',
+  ])('traduce el código de la API %s', (code) => {
+    const message = getFirestoreErrorMessage({ code });
+    expect(message).toBeTruthy();
+    expect(message).not.toContain(code);
+  });
+
+  it('avisa de que el servidor puede estar despertando, sin culpar a la conexión', () => {
+    expect(getFirestoreErrorMessage({ code: 'lectoria/server-unavailable' })).toMatch(/servidor/);
   });
 
   it('devuelve un mensaje genérico para valores que no son errores de Firestore', () => {

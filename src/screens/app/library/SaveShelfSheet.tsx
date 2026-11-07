@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { Button } from '../../../components/Button';
@@ -13,6 +13,7 @@ import { spacing } from '../../../theme/spacing';
 import { fontFamily, fontSize } from '../../../theme/typography';
 import { MAX_COLLECTION_NAME_LENGTH, describeFilters, parseCollectionName } from '../../../utils/collections';
 import { getFirestoreErrorMessage } from '../../../utils/firestoreErrors';
+import { makeRequestId, newRequestSeed } from '../../../utils/requestId';
 import { withTimeout } from '../../../utils/withTimeout';
 
 interface SaveShelfSheetProps {
@@ -36,9 +37,13 @@ export function SaveShelfSheet({ visible, onClose, filters, onSaved }: SaveShelf
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
+  // Reintentar tras un corte de red no crea una segunda estantería (ver `makeRequestId`). Cada apertura es una intención nueva.
+  const requestSeed = useRef(newRequestSeed());
+
   // Cada vez que se abre arranca limpia.
   useEffect(() => {
     if (visible) {
+      requestSeed.current = newRequestSeed();
       setName('');
       setError(null);
     }
@@ -55,7 +60,7 @@ export function SaveShelfSheet({ visible, onClose, filters, onSaved }: SaveShelf
     setSaving(true);
     try {
       if (!user) throw new Error('No hay sesión iniciada');
-      const id = await withTimeout(createFilterCollection(user.uid, parsed.name, filters), SAVE_TIMEOUT_MS);
+      const id = await withTimeout(createFilterCollection(parsed.name, filters, makeRequestId(requestSeed.current, { name: parsed.name, filters })), SAVE_TIMEOUT_MS);
       onClose();
       onSaved(id);
     } catch (e) {

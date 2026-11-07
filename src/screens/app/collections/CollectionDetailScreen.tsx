@@ -65,7 +65,7 @@ export function CollectionDetailScreen({ navigation, route }: Props) {
     setActionError(null);
     setDeleting(true);
     try {
-      await withTimeout(deleteCollection(user.uid, collection.id), DELETE_TIMEOUT_MS);
+      await withTimeout(deleteCollection(collection.id), DELETE_TIMEOUT_MS);
       navigation.goBack();
     } catch (e) {
       setActionError(getFirestoreErrorMessage(e));

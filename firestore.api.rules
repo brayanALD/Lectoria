@@ -1,0 +1,36 @@
+rules_version = '2';
+
+// Reglas de Lectoria CON LA API (estado final de la migración). Ver docs/migracion-api/.
+//
+// La app móvil solo LEE de Firestore (listeners en tiempo real); todas las ESCRITURAS las hace la API de Lectoria con el
+// Admin SDK, que no pasa por estas reglas. Por eso aquí nadie puede escribir: ni crear, ni cambiar, ni borrar. La validación
+// de campos que antes hacía `firestore.rules` (límites, tipos, `updatedAt == request.time`…) ahora la hace la API
+// (api/src/validation.ts y los servicios), con las mismas reglas de negocio que usa el formulario de la app.
+//
+// PUBLICAR SOLO cuando la API esté desplegada y todas las apps instaladas usen la API: una app antigua (que escribe
+// directo en Firestore) dejaría de poder guardar. Se publica con `firebase.api.json`:
+//   npx firebase-tools deploy --only firestore:rules --config firebase.api.json
+// y NO con `firebase.json`, que carga `firestore.rules` (la versión anterior, con escritura directa del cliente).
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedInAs(uid) {
+      return request.auth != null && request.auth.uid == uid;
+    }
+
+    // El perfil y todo lo que cuelga de él (libros, lecturas, colecciones y lo que se añada): solo lo lee su dueño.
+    match /users/{uid} {
+      allow read: if signedInAs(uid);
+      allow write: if false;
+
+      match /{document=**} {
+        allow read: if signedInAs(uid);
+        allow write: if false;
+      }
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

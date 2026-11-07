@@ -1,0 +1,29 @@
+{
+  "name": "lectoria-api",
+  "version": "1.0.0",
+  "private": true,
+  "description": "API con la lógica de negocio de Lectoria (libros, sesiones de lectura, colecciones, metas y catálogo por ISBN)",
+  "main": "dist/server.cjs",
+  "scripts": {
+    "build": "esbuild src/server.ts --bundle --platform=node --target=node20 --format=cjs --packages=external --outfile=dist/server.cjs",
+    "start": "node dist/server.cjs",
+    "dev": "tsx src/server.ts",
+    "typecheck": "tsc --noEmit",
+    "test": "tsx --test --test-concurrency=1 \"tests/**/*.test.ts\""
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "dayjs": "^1.11.23",
+    "express": "^5.1.0",
+    "firebase-admin": "^13.0.0"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.0",
+    "@types/node": "^22.0.0",
+    "esbuild": "^0.25.0",
+    "tsx": "^4.19.0",
+    "typescript": "~5.9.0"
+  }
+}

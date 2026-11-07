@@ -56,7 +56,7 @@ function NotesForm({ book, onSaved }: { book: UserBookWithId; onSaved: () => voi
     setSaving(true);
     try {
       if (!user) throw new Error('No hay sesión iniciada');
-      await withTimeout(saveBookNotes(user.uid, book, result.notes), SAVE_TIMEOUT_MS);
+      await withTimeout(saveBookNotes(book.id, result.notes), SAVE_TIMEOUT_MS);
       onSaved();
     } catch (e) {
       setSubmitError(getFirestoreErrorMessage(e));

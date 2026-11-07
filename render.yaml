@@ -1,0 +1,32 @@
+# Blueprint de Render para la API de Lectoria (https://render.com/docs/blueprint-spec).
+# Render lo lee desde la raíz del repositorio: New + > Blueprint > elegir este repositorio.
+#
+# No lleva rootDir a propósito: la API reutiliza código de la app (src/utils y src/types, la misma lógica de estados, progreso
+# y reseñas que usa el formulario), así que el build necesita el repositorio completo. Se empaqueta en un solo archivo
+# (api/dist/server.cjs) con esbuild; solo las dependencias de api/ se instalan.
+services:
+  - type: web
+    name: lectoria-api
+    runtime: node
+    # Virginia es la región más cercana a la base de datos de Firestore (us-east1).
+    region: virginia
+    # El plan gratuito duerme el servicio tras ~15 min sin tráfico (el primer arranque tarda 30–60 s); la app lo mantiene
+    # despierto mientras está abierta (ver useApiWarmUp). Para un servicio siempre activo, cambiar a `starter`.
+    plan: free
+    branch: main
+    buildCommand: npm --prefix api ci --include=dev && npm --prefix api run build
+    startCommand: node api/dist/server.cjs
+    healthCheckPath: /v1/salud
+    autoDeploy: true
+    envVars:
+      - key: NODE_VERSION
+        value: 22
+      - key: RATE_LIMIT_PER_MINUTE
+        value: 120
+      # Id del proyecto de Firebase (Configuración del proyecto > General). Se pide al crear el Blueprint.
+      - key: FIREBASE_PROJECT_ID
+        sync: false
+      # Clave de la cuenta de servicio de Firebase (JSON en una línea, o ese JSON en base64). SECRETO: solo en Render.
+      - key: FIREBASE_SERVICE_ACCOUNT
+        sync: false
+      # Opcionales, se añaden desde el panel si se quieren: OPENLIBRARY_CONTACT, GOOGLE_BOOKS_API_KEY, CORS_ORIGINS.

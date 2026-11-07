@@ -1,15 +1,15 @@
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Alert } from 'react-native';
 
 import { BookForm } from '../../../components/BookForm';
-import { useAuth } from '../../../context/AuthContext';
 import { useBooks } from '../../../hooks/useBooks';
 import type { AppStackParamList } from '../../../navigation/types';
 import { findBookByIsbn } from '../../../services/bookCatalogService';
 import { createBook } from '../../../services/booksService';
 import { findDuplicateBook } from '../../../utils/bookDuplicates';
 import { getFilterOptions } from '../../../utils/bookFilters';
+import { makeRequestId, newRequestSeed } from '../../../utils/requestId';
 
 type Props = NativeStackScreenProps<AppStackParamList, 'AddBook'>;
 
@@ -29,8 +29,9 @@ function confirmDuplicate(title: string): Promise<boolean> {
 }
 
 export function AddBookScreen({ navigation, route }: Props) {
-  const { user } = useAuth();
   const { books } = useBooks();
+  // Reintentar tras un corte de red no crea un segundo libro: el id solo cambia si cambian los datos.
+  const requestSeed = useRef(newRequestSeed());
   const seriesNames = useMemo(() => getFilterOptions(books).series, [books]);
   // «Deseos» añade el libro a la lista de deseos; por defecto, a la biblioteca.
   const acquisition = route.params?.acquisition ?? 'owned';
@@ -58,8 +59,7 @@ export function AddBookScreen({ navigation, route }: Props) {
         return duplicate ? confirmDuplicate(duplicate.title) : true;
       }}
       onSubmit={async (fields) => {
-        if (!user) throw new Error('No hay sesión iniciada');
-        await createBook(user.uid, fields);
+        await createBook(fields, makeRequestId(requestSeed.current, fields));
       }}
       onSaved={() => navigation.goBack()}
     />

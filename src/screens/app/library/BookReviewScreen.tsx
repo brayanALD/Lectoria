@@ -95,7 +95,7 @@ function ReviewForm({ book, onSaved }: { book: UserBookWithId; onSaved: () => vo
     setSaving(true);
     try {
       if (!user) throw new Error('No hay sesión iniciada');
-      await withTimeout(saveBookReview(user.uid, book, result.data), SAVE_TIMEOUT_MS);
+      await withTimeout(saveBookReview(book.id, result.data), SAVE_TIMEOUT_MS);
       onSaved();
     } catch (e) {
       setSubmitError(getFirestoreErrorMessage(e));

@@ -101,7 +101,7 @@ export function BookDetailScreen({ navigation, route }: Props) {
     setChangingStatus(true);
     try {
       // Terminar un libro registra también las páginas que faltaban como una sesión de lectura.
-      await withTimeout(next === 'finished' ? finishBook(user.uid, book) : changeBookStatus(user.uid, book, next), WRITE_TIMEOUT_MS);
+      await withTimeout(next === 'finished' ? finishBook(book.id) : changeBookStatus(book.id, next), WRITE_TIMEOUT_MS);
     } catch (e) {
       setActionError(getFirestoreErrorMessage(e));
     } finally {
@@ -127,7 +127,7 @@ export function BookDetailScreen({ navigation, route }: Props) {
     setActionError(null);
     setDeleting(true);
     try {
-      await withTimeout(deleteBook(user.uid, book.id), DELETE_TIMEOUT_MS);
+      await withTimeout(deleteBook(book.id), DELETE_TIMEOUT_MS);
       navigation.goBack();
     } catch (e) {
       setActionError(getFirestoreErrorMessage(e));
@@ -377,7 +377,7 @@ export function BookDetailScreen({ navigation, route }: Props) {
       todayKey={todayKey}
       onSave={async (purchase) => {
         if (!user) throw new Error('No hay sesión iniciada');
-        await withTimeout(savePurchase(user.uid, book, purchase), WRITE_TIMEOUT_MS);
+        await withTimeout(savePurchase(book.id, purchase), WRITE_TIMEOUT_MS);
       }}
     />
 
@@ -387,7 +387,7 @@ export function BookDetailScreen({ navigation, route }: Props) {
       book={book}
       onSave={async (page) => {
         if (!user) throw new Error('No hay sesión iniciada');
-        await withTimeout(adjustBookProgress(user.uid, book, page), WRITE_TIMEOUT_MS);
+        await withTimeout(adjustBookProgress(book.id, page), WRITE_TIMEOUT_MS);
       }}
     />
     </>
