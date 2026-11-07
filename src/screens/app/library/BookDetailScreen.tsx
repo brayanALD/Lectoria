@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useState } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { BookCover } from '../../../components/BookCover';
 import { Button } from '../../../components/Button';
@@ -9,12 +9,14 @@ import { EmptyState } from '../../../components/EmptyState';
 import { BookDetailSkeleton, SessionListSkeleton } from '../../../components/BookSkeletons';
 import { ReadingProgress } from '../../../components/ReadingProgress';
 import { SessionRow } from '../../../components/SessionRow';
+import { SplitLayout } from '../../../components/SplitLayout';
 import { StarRating } from '../../../components/StarRating';
 import { StatusSelector } from '../../../components/StatusSelector';
 import { useAuth } from '../../../context/AuthContext';
 import { useBook } from '../../../hooks/useBook';
 import { useBookSessions } from '../../../hooks/useBookSessions';
 import { useDeleteSession } from '../../../hooks/useDeleteSession';
+import { useLayout } from '../../../hooks/useLayout';
 import { useReadingStats } from '../../../hooks/useReadingStats';
 import type { AppStackParamList } from '../../../navigation/types';
 import { changeBookStatus, deleteBook, savePurchase } from '../../../services/booksService';
@@ -24,6 +26,7 @@ import type { ReadingStatus } from '../../../types/book';
 import { makeStyles, useTheme } from '../../../context/ThemeContext';
 import { iconSize, minTouchSize, opacity, radius, spacing } from '../../../theme/spacing';
 import { fontFamily, fontSize } from '../../../theme/typography';
+import { showAlert } from '../../../components/alert';
 import { getProgressPercent, isWishlistBook } from '../../../utils/book';
 import { formatDayLabel } from '../../../utils/calendar';
 import { formatLongDate } from '../../../utils/dateUtils';
@@ -59,6 +62,7 @@ export function BookDetailScreen({ navigation, route }: Props) {
   const styles = useStyles();
   const { colors } = useTheme();
   const { user } = useAuth();
+  const { isWide } = useLayout();
   const { book, loading, error, retry } = useBook(route.params.bookId);
   const bookSessions = useBookSessions(route.params.bookId);
   const { todayKey } = useReadingStats();
@@ -110,7 +114,7 @@ export function BookDetailScreen({ navigation, route }: Props) {
   };
 
   const confirmDelete = () => {
-    Alert.alert(
+    showAlert(
       `¿Eliminar «${book.title}»?`,
       isWishlistBook(book)
         ? 'Esta acción no se puede deshacer.'
@@ -157,9 +161,16 @@ export function BookDetailScreen({ navigation, route }: Props) {
     book.finishedAt ? { label: 'Terminado', value: formatLongDate(book.finishedAt) } : undefined,
   ].filter((row): row is NonNullable<typeof row> => row !== undefined);
 
-  return (
+  // Dos columnas en escritorio: lo esencial del libro (portada, estado, progreso, datos y acciones) a la izquierda; lo que
+  // se escribe o se consulta (notas, reseña y lecturas) a la derecha. En el móvil se apilan en el mismo orden de siempre.
+  const actions = (
+    <View style={styles.actions}>
+      <Button title="Editar" variant="secondary" onPress={() => navigation.navigate('EditBook', { bookId: book.id })} />
+      <Button title="Eliminar" variant="danger" onPress={confirmDelete} />
+    </View>
+  );
+  const essentials = (
     <>
-    <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
       <View style={styles.header}>
         <BookCover title={book.title} coverUrl={book.coverUrl} width={COVER_WIDTH} />
         <View style={styles.headerText}>
@@ -267,7 +278,11 @@ export function BookDetailScreen({ navigation, route }: Props) {
       ) : (
         <Button title="Registrar lectura" onPress={() => navigation.navigate('AddSession', { bookId: book.id })} />
       )}
-
+      {isWide ? actions : null}
+    </>
+  );
+  const writings = (
+    <>
       {/* Notas y reseña son dos cosas distintas: las notas se escriben mientras se lee; la reseña, para valorar el libro. */}
       {wishlist ? null : (
         <>
@@ -361,11 +376,14 @@ export function BookDetailScreen({ navigation, route }: Props) {
           ) : null}
         </View>
       ) : null}
+    </>
+  );
 
-      <View style={styles.actions}>
-        <Button title="Editar" variant="secondary" onPress={() => navigation.navigate('EditBook', { bookId: book.id })} />
-        <Button title="Eliminar" variant="danger" onPress={confirmDelete} />
-      </View>
+  return (
+    <>
+    <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
+      <SplitLayout main={essentials} aside={writings} />
+      {isWide ? null : actions}
     </ScrollView>
 
     <PurchaseSheet

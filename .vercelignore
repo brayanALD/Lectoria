@@ -1,0 +1,29 @@
+# Lo que NO se sube a Vercel (la web se compila allí con `expo export`; ver vercel.json).
+# Secretos: nunca salen de la máquina. Las variables EXPO_PUBLIC_* se definen en el proyecto de Vercel.
+.env
+.env.*
+google-services.json
+GoogleService-Info.plist
+*.jks
+*.p8
+*.p12
+*.key
+*.pem
+*.mobileprovision
+
+# Dependencias y salidas locales (Vercel las genera)
+node_modules
+api/node_modules
+api/dist
+dist
+dist-web
+dist-e2e
+.expo
+.vercel
+*.log
+*.tsbuildinfo
+
+# No hacen falta para compilar la web
+api
+tests
+docs

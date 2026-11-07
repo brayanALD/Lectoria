@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="%LANG_ISO_CODE%">
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no, viewport-fit=cover" />
+    <title>%WEB_TITLE%</title>
+    <meta name="color-scheme" content="light dark" />
+    <meta name="apple-mobile-web-app-title" content="Lectoria" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Lectoria" />
+    <meta property="og:title" content="Lectoria" />
+    <meta property="og:description" content="Tu biblioteca personal, tus sesiones de lectura, rachas y estadísticas." />
+    <meta property="og:image" content="/icon.png" />
+    <link rel="apple-touch-icon" href="/icon.png" />
+
+    <!-- Plantilla de Expo para la web (https://necolas.github.io/react-native-web/docs/setup/#root-element) con los
+         ajustes de Lectoria. Los colores de aquí son los de la paleta (Porcelain y Evergreen) y solo existen para que no
+         haya un destello blanco antes de que cargue la app; en cuanto arranca, ThemeContext pone los del tema activo. -->
+    <style id="expo-reset">
+      html,
+      body {
+        height: 100%;
+      }
+      /* La app gestiona su propio desplazamiento (ScrollView / FlatList), no el de la página. */
+      body {
+        overflow: hidden;
+        margin: 0;
+        background-color: #f1f5f2;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+        text-rendering: optimizeLegibility;
+        -webkit-text-size-adjust: 100%;
+        overscroll-behavior: none;
+      }
+      @media (prefers-color-scheme: dark) {
+        body {
+          background-color: #14281d;
+        }
+      }
+      #root {
+        display: flex;
+        height: 100%;
+        flex: 1;
+      }
+
+      /* Teclado: un anillo de foco visible y coherente en toda la app (el color lo fija ThemeContext). */
+      :focus-visible {
+        outline: 2px solid var(--lectoria-focus, #355834) !important;
+        outline-offset: 2px;
+      }
+      /* Los campos de texto ya cambian su borde al enfocarse (TextField): sin anillo doble. */
+      input:focus-visible,
+      textarea:focus-visible {
+        outline: none !important;
+      }
+
+      /* Barras de desplazamiento discretas, del color del tema. */
+      * {
+        scrollbar-width: thin;
+        scrollbar-color: var(--lectoria-scroll, rgba(110, 99, 61, 0.5)) transparent;
+      }
+      ::selection {
+        background: var(--lectoria-selection, rgba(194, 168, 120, 0.45));
+      }
+      @media (prefers-reduced-motion: reduce) {
+        * {
+          scroll-behavior: auto !important;
+        }
+      }
+    </style>
+  </head>
+
+  <body>
+    <noscript>Lectoria necesita JavaScript para funcionar.</noscript>
+    <div id="root"></div>
+  </body>
+</html>

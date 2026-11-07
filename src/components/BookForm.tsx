@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { KeyboardAvoidingView, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
+import { readingColumn } from '../hooks/useLayout';
 import { useWindowTop } from '../hooks/useWindowTop';
 import type { Acquisition, BookFormErrors, BookFormValues, CatalogBook, NewBookFields } from '../types/book';
 import { makeStyles } from '../context/ThemeContext';
@@ -173,7 +174,7 @@ export function BookForm({
       <KeyboardAvoidingView style={styles.flex} behavior="padding" keyboardVerticalOffset={top}>
         <ScrollView
           ref={scrollRef}
-          contentContainerStyle={styles.content}
+          contentContainerStyle={[styles.content, readingColumn]}
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode="on-drag"
         >

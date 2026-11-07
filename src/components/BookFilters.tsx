@@ -1,7 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useState, type ReactNode } from 'react';
-import { Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import type { Acquisition } from '../types/book';
 import { makeStyles, useTheme } from '../context/ThemeContext';
@@ -19,6 +18,7 @@ import {
 } from '../utils/bookFilters';
 import { Button } from './Button';
 import { Chip } from './Chip';
+import { Sheet } from './Sheet';
 
 interface BookFiltersProps {
   filters: BookFilterState;
@@ -71,7 +71,6 @@ export function BookFilters({ filters, onChange, options, counts, resultCount, a
   const styles = useStyles();
   const { colors } = useTheme();
   const [sheetOpen, setSheetOpen] = useState(false);
-  const insets = useSafeAreaInsets();
   const activeFilters = getActiveFilters(filters);
   const activeCount = countActiveFilters(filters);
 
@@ -221,54 +220,39 @@ export function BookFilters({ filters, onChange, options, counts, resultCount, a
         </ScrollView>
       ) : null}
 
-      <Modal
-        visible={sheetOpen}
-        transparent
-        animationType="slide"
-        statusBarTranslucent
-        onRequestClose={() => setSheetOpen(false)}
-      >
-        <Pressable
-          style={styles.overlay}
-          onPress={() => setSheetOpen(false)}
-          accessibilityRole="button"
-          accessibilityLabel="Cerrar filtros"
-        />
-        {/* accessibilityViewIsModal: el lector de pantalla no sale de la hoja hacia el contenido de detrás. */}
-        <View style={[styles.sheet, { paddingBottom: insets.bottom + spacing.md }]} accessibilityViewIsModal>
-          <ScrollView contentContainerStyle={styles.sheetContent}>
-            {sections.map((section) => (
-              <View key={section.key} style={styles.section}>
-                <Text style={styles.sectionTitle} accessibilityRole="header">
-                  {section.title}
-                </Text>
-                <View style={styles.wrap}>
-                  {section.options.map((option) => (
-                    <Chip
-                      key={option.value}
-                      label={option.label}
-                      selected={section.selected === option.value}
-                      onPress={() =>
-                        set({ [section.key]: section.selected === option.value ? null : option.value } as Partial<BookFilterState>)
-                      }
-                    />
-                  ))}
-                </View>
+      <Sheet visible={sheetOpen} onClose={() => setSheetOpen(false)}>
+        <ScrollView contentContainerStyle={styles.sheetContent}>
+          {sections.map((section) => (
+            <View key={section.key} style={styles.section}>
+              <Text style={styles.sectionTitle} accessibilityRole="header">
+                {section.title}
+              </Text>
+              <View style={styles.wrap}>
+                {section.options.map((option) => (
+                  <Chip
+                    key={option.value}
+                    label={option.label}
+                    selected={section.selected === option.value}
+                    onPress={() =>
+                      set({ [section.key]: section.selected === option.value ? null : option.value } as Partial<BookFilterState>)
+                    }
+                  />
+                ))}
               </View>
-            ))}
-          </ScrollView>
+            </View>
+          ))}
+        </ScrollView>
 
-          <View style={styles.sheetActions}>
-            <Button
-              title="Limpiar"
-              variant="secondary"
-              disabled={activeCount === 0}
-              onPress={() => set({ status: null, genre: null, author: null, series: null })}
-            />
-            <Button title={`Ver ${formatBookCount(resultCount)}`} onPress={() => setSheetOpen(false)} />
-          </View>
+        <View style={styles.sheetActions}>
+          <Button
+            title="Limpiar"
+            variant="secondary"
+            disabled={activeCount === 0}
+            onPress={() => set({ status: null, genre: null, author: null, series: null })}
+          />
+          <Button title={`Ver ${formatBookCount(resultCount)}`} onPress={() => setSheetOpen(false)} />
         </View>
-      </Modal>
+      </Sheet>
     </View>
   );
 }
@@ -343,17 +327,9 @@ const useStyles = makeStyles((colors) => StyleSheet.create({
   },
   summaryChipText: { fontSize: fontSize.sm, fontFamily: fontFamily.semibold, color: colors.onPrimary },
   clearText: { fontSize: fontSize.sm, fontFamily: fontFamily.bold, color: colors.primary, paddingHorizontal: spacing.xs },
-  overlay: { flex: 1, backgroundColor: colors.overlay },
-  sheet: {
-    maxHeight: '80%',
-    backgroundColor: colors.background,
-    borderTopLeftRadius: radius.md * 2,
-    borderTopRightRadius: radius.md * 2,
-    paddingTop: spacing.lg,
-  },
-  sheetContent: { padding: spacing.lg, paddingTop: 0, gap: spacing.lg },
+  sheetContent: { gap: spacing.lg },
   section: { gap: spacing.sm },
   sectionTitle: { fontSize: fontSize.md, fontFamily: fontFamily.semibold, color: colors.textPrimary },
   wrap: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
-  sheetActions: { gap: spacing.sm, paddingHorizontal: spacing.lg },
+  sheetActions: { gap: spacing.sm },
 }));

@@ -1,6 +1,6 @@
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useMemo, useState } from 'react';
-import { Alert, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 
 import { BookCardList } from '../../../components/BookCardList';
 import { Button } from '../../../components/Button';
@@ -15,6 +15,7 @@ import type { AppStackParamList } from '../../../navigation/types';
 import { deleteCollection } from '../../../services/collectionsService';
 import { spacing } from '../../../theme/spacing';
 import { fontFamily, fontSize } from '../../../theme/typography';
+import { showAlert } from '../../../components/alert';
 import { formatBookCount } from '../../../utils/book';
 import { countMissingBooks, describeFilters, resolveCollectionBooks } from '../../../utils/collections';
 import { getFirestoreErrorMessage } from '../../../utils/firestoreErrors';
@@ -74,7 +75,7 @@ export function CollectionDetailScreen({ navigation, route }: Props) {
   };
 
   const confirmDelete = () => {
-    Alert.alert(
+    showAlert(
       `¿Eliminar «${collection.name}»?`,
       isShelf ? 'Tus libros no se tocan. Esta acción no se puede deshacer.' : 'Solo se elimina la colección: tus libros no se tocan.',
       [

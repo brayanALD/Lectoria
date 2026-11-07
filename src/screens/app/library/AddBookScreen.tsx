@@ -1,12 +1,12 @@
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Alert } from 'react-native';
 
 import { BookForm } from '../../../components/BookForm';
 import { useBooks } from '../../../hooks/useBooks';
 import type { AppStackParamList } from '../../../navigation/types';
 import { findBookByIsbn } from '../../../services/bookCatalogService';
 import { createBook } from '../../../services/booksService';
+import { showAlert } from '../../../components/alert';
 import { findDuplicateBook } from '../../../utils/bookDuplicates';
 import { getFilterOptions } from '../../../utils/bookFilters';
 import { makeRequestId, newRequestSeed } from '../../../utils/requestId';
@@ -16,7 +16,7 @@ type Props = NativeStackScreenProps<AppStackParamList, 'AddBook'>;
 /** Pregunta si se añade un libro que ya está en la biblioteca. Descartar el aviso equivale a cancelar. */
 function confirmDuplicate(title: string): Promise<boolean> {
   return new Promise((resolve) => {
-    Alert.alert(
+    showAlert(
       `Ya tienes «${title}»`,
       '¿Añadirlo de todos modos?',
       [

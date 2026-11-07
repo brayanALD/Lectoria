@@ -11,6 +11,7 @@ import { EmptyState } from '../../../components/EmptyState';
 import { LibrarySkeleton } from '../../../components/BookSkeletons';
 import { SettingsButton } from '../../../components/SettingsButton';
 import { useBooks } from '../../../hooks/useBooks';
+import { useLayout } from '../../../hooks/useLayout';
 import { SaveShelfSheet } from './SaveShelfSheet';
 import type { AppStackParamList } from '../../../navigation/types';
 import { makeStyles, useTheme } from '../../../context/ThemeContext';
@@ -25,18 +26,17 @@ import {
   type BookFilterState,
 } from '../../../utils/bookFilters';
 import { hasFilterCriteria, stateToFilters } from '../../../utils/collections';
+import { CARD_GAP } from '../../../utils/layout';
 
 type ViewMode = 'list' | 'grid';
 
-const GRID_COLUMNS = 2;
-// Separación entre tarjetas (la misma que su relleno).
-const CARD_GAP = spacing.sm + spacing.xs;
 
 export function LibraryScreen() {
   const styles = useStyles();
   const { colors } = useTheme();
   const { books, loading, error, retry } = useBooks();
   const [mode, setMode] = useState<ViewMode>('list');
+  const { gridColumns, listColumns } = useLayout();
   const [filters, setFilters] = useState<BookFilterState>(EMPTY_FILTERS);
   const [shelfOpen, setShelfOpen] = useState(false);
   // La lista que se ve (libros propios o deseos): el recuento y las opciones de filtro salen de ella.
@@ -92,6 +92,9 @@ export function LibraryScreen() {
   }
 
   const isGrid = mode === 'grid';
+  // En la web ancha caben más columnas (también en lista); en el móvil son 2 en cuadrícula y 1 en lista.
+  const columns = isGrid ? gridColumns : listColumns;
+  const multiColumn = columns > 1;
 
   return (
     <View style={styles.container}>
@@ -132,15 +135,15 @@ export function LibraryScreen() {
         />
       ) : (
         <FlatList
-          key={mode}
+          key={`${mode}-${columns}`}
           data={visibleBooks}
           keyExtractor={(book) => book.id}
-          numColumns={isGrid ? GRID_COLUMNS : 1}
-          columnWrapperStyle={isGrid ? styles.gridRow : undefined}
+          numColumns={columns}
+          columnWrapperStyle={multiColumn ? styles.gridRow : undefined}
           contentContainerStyle={[styles.listContent, visibleBooks.length === 0 && styles.growContent]}
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode="on-drag"
-          ItemSeparatorComponent={isGrid ? undefined : ListSeparator}
+          ItemSeparatorComponent={multiColumn ? undefined : ListSeparator}
           ListEmptyComponent={
             <EmptyState
               icon="search-outline"
@@ -149,7 +152,7 @@ export function LibraryScreen() {
             />
           }
           renderItem={({ item }) => (
-            <View style={isGrid ? styles.gridCell : undefined}>
+            <View style={multiColumn ? [styles.gridCell, { maxWidth: `${100 / columns}%` }] : undefined}>
               <BookCard
                 book={item}
                 variant={isGrid ? 'grid' : 'list'}
@@ -195,6 +198,6 @@ const useStyles = makeStyles((colors) => StyleSheet.create({
   growContent: { flexGrow: 1 },
   separator: { height: CARD_GAP },
   gridRow: { gap: CARD_GAP, marginBottom: CARD_GAP },
-  // maxWidth evita que una última fila con un solo libro lo estire a todo el ancho.
-  gridCell: { flex: 1, maxWidth: `${100 / GRID_COLUMNS}%` },
+  // El maxWidth (según las columnas) evita que una última fila con pocos libros los estire a todo el ancho.
+  gridCell: { flex: 1 },
 }));

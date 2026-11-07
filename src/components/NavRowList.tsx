@@ -2,6 +2,7 @@ import type { Ionicons } from '@expo/vector-icons';
 import { FlatList, StyleSheet, View } from 'react-native';
 
 import { makeStyles } from '../context/ThemeContext';
+import { readingColumn } from '../hooks/useLayout';
 import { spacing } from '../theme/spacing';
 import { NavRow } from './NavRow';
 
@@ -23,7 +24,7 @@ export function NavRowList({ items, onOpen }: { items: readonly NavRowItem[]; on
       style={styles.list}
       data={items}
       keyExtractor={(item) => item.id}
-      contentContainerStyle={styles.content}
+      contentContainerStyle={[styles.content, readingColumn]}
       ItemSeparatorComponent={Separator}
       renderItem={({ item }) => (
         <NavRow title={item.title} subtitle={item.subtitle} icon={item.icon} onPress={() => onOpen(item.id)} />

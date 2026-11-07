@@ -525,3 +525,47 @@ cuenta y búsqueda por ISBN. **Fuera de alcance:** autenticación (sigue siendo 
 - **Datos:** el esquema de Firestore no cambia; no hay migración de datos.
 - **Diferencias de comportamiento, despliegue, recuperación, pruebas y propuestas pendientes:** `docs/migracion-api.md`.
 - **Pendiente:** desplegar en Render, publicar `firestore.api.rules`, compilar y probar en dispositivo.
+
+## 17. Versión web (2026-11-07) [Confirmado; desplegada en Vercel, verificada en navegador]
+
+Decisión del usuario: una versión web con la misma identidad visual, funciones y lógica de negocio, **que consume los mismos
+recursos y comparte el backend** (Firebase Auth, Firestore y la API de la §16), de modo que los datos se sincronizan entre
+la app móvil y la web.
+
+- **Una sola base de código.** La web es la misma app compilada con Expo para web (`react-native-web`, bundler Metro,
+  `web.output: "single"`): pantallas, hooks, servicios, utilidades, tema, tokens de diseño y pruebas son los mismos. No hay una
+  segunda copia de la lógica. Lo que difiere por plataforma son archivos `.web` y comprobaciones `Platform.OS === 'web'`.
+- **Adaptaciones de plataforma** (lo único que no es compartido):
+  `firebaseConfig.web.ts` (sesión en el navegador; el proyecto de Firebase es el mismo; `firebaseApp.ts` es la configuración
+  común); acceso con Google por la ventana emergente de Firebase (`signInWithPopup`/`linkWithPopup`/`reauthenticateWithPopup`
+  en `authService`; en el móvil sigue la librería nativa); `components/alert.ts` (`showAlert`) + `components/AlertHost` (en web `Alert.alert` de
+  React Native no hace nada, así que las confirmaciones usan un diálogo propio con el tema; **no usar `Alert.alert` directamente**,
+  usar `showAlert`); `ThemeContext` (sin `Appearance.setColorScheme` en web: fija `color-scheme` y variables CSS);
+  `navigation/linking.ts` (una URL por pantalla en español: `/biblioteca`, `/libro/:id`…, título del navegador; solo en web).
+- **Diseño de escritorio** (desde 900 px de ancho; por debajo, la web se ve como la app móvil, con pestañas inferiores):
+  barra lateral (`components/Sidebar`, montada por `navigation/WebShell` como `layout` del stack, visible también en las
+  pantallas secundarias) con la acción principal «Registrar lectura»; columna de contenido centrada de 1040 px;
+  `components/SplitLayout` reparte Inicio, Calendario, Estadísticas y el detalle del libro en dos columnas;
+  la biblioteca usa más columnas (`utils/layout.getLayout`, pura y probada); formularios y perfil en una columna de 640 px
+  (`readingColumn`); `Sheet` pasa a diálogo centrado (también los filtros, que ahora usan `Sheet`); el acceso muestra un
+  panel de marca (`components/BrandPanel`, una balda con libros hecha solo con la paleta) junto al formulario. Los valores
+  nuevos viven en `theme/spacing.ts` (`layout`, `opacity.hover`), `theme/elevation.ts` (`dialog`) y `theme/colors.ts`
+  (`brandPanel`, `onBrandPanel`, `brandSpine*`). En el móvil nada de esto cambia (`getLayout` devuelve la disposición de siempre).
+- **Despliegue.** Proyecto de Vercel `lectoria` (`https://lectoria-rose.vercel.app`): `vercel.json` compila con
+  `expo export --platform web` y sirve `dist`; `public/index.html` es la plantilla (foco, barras de desplazamiento, sin
+  destello al cargar). Variables `EXPO_PUBLIC_FIREBASE_*` en el proyecto de Vercel (configuración pública de cliente, igual que
+  en la app). **`EXPO_PUBLIC_API_URL` no se define en la web:** `vercel.json` reescribe `/v1/*` hacia la API de Render, así que
+  el navegador llama a su mismo origen y no hace falta CORS (la alternativa es definir `CORS_ORIGINS` en la API y la URL
+  directa). Desplegar: `npx vercel deploy --prod` (el proyecto también quedó conectado al repositorio de GitHub: un push a
+  `main` despliega solo).
+- **Probado** (2026-11-07, Chrome sin interfaz contra los emuladores de Auth y Firestore y la API real, con
+  `EXPO_PUBLIC_FIREBASE_EMULATOR_HOST`): registro, acceso, biblioteca, detalle, formularios, filtros, ajustes, registrar
+  lectura, racha en tiempo real, aviso de duplicado, cierre de sesión, tema claro y oscuro, y anchos de 390, 820, 1100 y 1440 px.
+  En el sitio desplegado: carga, enrutado profundo, proxy de la API y un acceso fallido contra Firebase Auth real.
+- **Pendiente** (no asumir):
+  1. **Autorizar el dominio en Firebase** (Authentication > Configuración > Dominios autorizados: `lectoria-rose.vercel.app`);
+     sin eso el acceso con Google en la web falla (el de correo funciona). Si se usa un dominio propio, también.
+  2. Probar en el sitio real el acceso con Google y un recorrido con una cuenta existente.
+  3. Probar en Android lo tocado por la web en código compartido (`BookFilters` usa `Sheet`; `AuthLayout`; encabezados).
+  4. El escáner de códigos de barras en web (`expo-camera` lo soporta; no verificado) y la cola de escrituras sin conexión.
+  5. Opcional: restringir por referente (`*.vercel.app` / dominio propio) la clave web de Firebase.

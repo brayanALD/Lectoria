@@ -11,9 +11,11 @@ import { GoalProgress } from '../../../components/GoalProgress';
 import { PeriodHeader } from '../../../components/PeriodHeader';
 import { ReadingProgress } from '../../../components/ReadingProgress';
 import { SetGoalLink } from '../../../components/SetGoalLink';
+import { SplitLayout } from '../../../components/SplitLayout';
 import { StatisticsSkeleton } from '../../../components/StatisticsSkeleton';
 import { useBooks } from '../../../hooks/useBooks';
 import { useDailyGoal } from '../../../hooks/useDailyGoal';
+import { useLayout } from '../../../hooks/useLayout';
 import { useMonthlyBooksGoal } from '../../../hooks/useMonthlyBooksGoal';
 import { useReadingStats } from '../../../hooks/useReadingStats';
 import { useSaveDailyGoal } from '../../../hooks/useSaveDailyGoal';
@@ -64,6 +66,7 @@ export function StatisticsScreen() {
   const saveGoal = useSaveDailyGoal();
   const monthlyGoalState = useMonthlyBooksGoal();
   const saveMonthlyGoal = useSaveMonthlyBooksGoal();
+  const { isWide } = useLayout();
   const { goal } = goalState;
   const monthlyGoal = monthlyGoalState.goal;
 
@@ -126,6 +129,71 @@ export function StatisticsScreen() {
   const openGoalEditor = () => setEditingGoal(true);
   const openMonthlyGoalEditor = () => setEditingMonthlyGoal(true);
 
+  // Las cifras del mes que sobran en la primera fila, el gráfico y las metas. En escritorio, gráfico y metas van en dos columnas.
+  const monthTiles = (
+    <>
+      <StatTile label="Días de lectura" value={`${monthStats.totals.readingDays} de ${monthStats.elapsedDays}`} />
+      <StatTile label="Libros terminados" value={String(finishedBooks)} />
+    </>
+  );
+  const monthChart = (
+    <View style={styles.section}>
+      <Text style={styles.heading} accessibilityRole="header">
+        {metric === 'pages' ? 'Páginas por día' : 'Minutos por día'}
+      </Text>
+      <DailyBars
+        points={monthStats.points}
+        goalValue={goal?.target}
+        accessibilityLabel={describeMonthChart(monthStats, metric)}
+      />
+    </View>
+  );
+  const monthGoals = (
+    <>
+      {goal && monthStats.goal ? (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`Meta diaria de ${formatGoalValue(goal.type, goal.target)}: cumplida ${monthStats.goal.daysMet} de ${monthStats.elapsedDays} días`}
+          accessibilityHint="Toca para cambiar la meta"
+          onPress={openGoalEditor}
+          style={({ pressed }) => [styles.section, pressed && styles.pressed]}
+        >
+          <View style={styles.goalRow}>
+            <Text style={styles.goalTitle}>
+              Meta cumplida {monthStats.goal.daysMet} de {monthStats.elapsedDays}{' '}
+              {monthStats.elapsedDays === 1 ? 'día' : 'días'}
+            </Text>
+            <Ionicons name="create-outline" size={iconSize.md} color={colors.primary} accessible={false} />
+          </View>
+          <ReadingProgress
+            percent={monthStats.goal.percent}
+            accessibilityLabel="Cumplimiento de la meta"
+            valueText={`${monthStats.goal.daysMet} de ${monthStats.elapsedDays} días`}
+          />
+          <Text style={styles.goalTarget}>Meta diaria: {formatGoalValue(goal.type, goal.target)}</Text>
+        </Pressable>
+      ) : (
+        <SetGoalLink onPress={openGoalEditor} />
+      )}
+
+      {monthlyProgress ? (
+        <MonthlyGoalProgress
+          progress={monthlyProgress}
+          past={compareMonths(cursorMonth, today) < 0}
+          onPress={openMonthlyGoalEditor}
+        />
+      ) : (
+        <SetGoalLink label="Fijar objetivo mensual" onPress={openMonthlyGoalEditor} />
+      )}
+
+      {streaks.longest > 0 ? (
+        <Text style={styles.streak} accessibilityLabel={describeStreaks(streaks.current, streaks.longest)}>
+          Racha: {streaks.current} {streaks.current === 1 ? 'día' : 'días'} · Récord: {streaks.longest}
+        </Text>
+      ) : null}
+    </>
+  );
+
   return (
     <>
       <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
@@ -166,67 +234,15 @@ export function StatisticsScreen() {
           </>
         ) : (
           <>
+            {/* En escritorio las cuatro cifras caben en una sola fila. */}
             <View style={styles.tiles}>
               <StatTile label="Tiempo" value={formatDuration(monthStats.totals.minutes)} />
               <StatTile label="Páginas" value={String(monthStats.totals.pages)} />
+              {isWide ? monthTiles : null}
             </View>
-            <View style={styles.tiles}>
-              <StatTile label="Días de lectura" value={`${monthStats.totals.readingDays} de ${monthStats.elapsedDays}`} />
-              <StatTile label="Libros terminados" value={String(finishedBooks)} />
-            </View>
+            {isWide ? null : <View style={styles.tiles}>{monthTiles}</View>}
 
-            <View style={styles.section}>
-              <Text style={styles.heading} accessibilityRole="header">
-                {metric === 'pages' ? 'Páginas por día' : 'Minutos por día'}
-              </Text>
-              <DailyBars
-                points={monthStats.points}
-                goalValue={goal?.target}
-                accessibilityLabel={describeMonthChart(monthStats, metric)}
-              />
-            </View>
-
-            {goal && monthStats.goal ? (
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel={`Meta diaria de ${formatGoalValue(goal.type, goal.target)}: cumplida ${monthStats.goal.daysMet} de ${monthStats.elapsedDays} días`}
-                accessibilityHint="Toca para cambiar la meta"
-                onPress={openGoalEditor}
-                style={({ pressed }) => [styles.section, pressed && styles.pressed]}
-              >
-                <View style={styles.goalRow}>
-                  <Text style={styles.goalTitle}>
-                    Meta cumplida {monthStats.goal.daysMet} de {monthStats.elapsedDays}{' '}
-                    {monthStats.elapsedDays === 1 ? 'día' : 'días'}
-                  </Text>
-                  <Ionicons name="create-outline" size={iconSize.md} color={colors.primary} accessible={false} />
-                </View>
-                <ReadingProgress
-                  percent={monthStats.goal.percent}
-                  accessibilityLabel="Cumplimiento de la meta"
-                  valueText={`${monthStats.goal.daysMet} de ${monthStats.elapsedDays} días`}
-                />
-                <Text style={styles.goalTarget}>Meta diaria: {formatGoalValue(goal.type, goal.target)}</Text>
-              </Pressable>
-            ) : (
-              <SetGoalLink onPress={openGoalEditor} />
-            )}
-
-            {monthlyProgress ? (
-              <MonthlyGoalProgress
-                progress={monthlyProgress}
-                past={compareMonths(cursorMonth, today) < 0}
-                onPress={openMonthlyGoalEditor}
-              />
-            ) : (
-              <SetGoalLink label="Fijar objetivo mensual" onPress={openMonthlyGoalEditor} />
-            )}
-
-            {streaks.longest > 0 ? (
-              <Text style={styles.streak} accessibilityLabel={describeStreaks(streaks.current, streaks.longest)}>
-                Racha: {streaks.current} {streaks.current === 1 ? 'día' : 'días'} · Récord: {streaks.longest}
-              </Text>
-            ) : null}
+            <SplitLayout main={monthChart} aside={monthGoals} />
           </>
         )}
       </ScrollView>

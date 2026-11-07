@@ -10,6 +10,7 @@ import { FadeIn } from '../../../components/FadeIn';
 import { GoalProgress } from '../../../components/GoalProgress';
 import { HomeSkeleton } from '../../../components/HomeSkeleton';
 import { SessionRow } from '../../../components/SessionRow';
+import { SplitLayout } from '../../../components/SplitLayout';
 import { SetGoalLink } from '../../../components/SetGoalLink';
 import { useOwnedBooks } from '../../../hooks/useOwnedBooks';
 import { useDailyGoal } from '../../../hooks/useDailyGoal';
@@ -77,60 +78,68 @@ export function HomeScreen() {
 
   const recent = sessions.sessions.slice(0, RECENT_ACTIVITY_COUNT);
 
+  // Dos bloques: el resumen (racha, meta y acciones) y la actividad reciente. En escritorio van en dos columnas.
+  const summary = (
+    <>
+      <FadeIn>
+        <View style={styles.streak} accessible accessibilityLabel={describeStreak(streaks.current, streaks.longest)}>
+          <View style={styles.streakText}>
+            <Text style={styles.number}>{streaks.current}</Text>
+            <Text style={styles.caption}>{streaks.current === 1 ? 'día seguido' : 'días seguidos'}</Text>
+            {streaks.longest > streaks.current ? <Text style={styles.record}>Récord: {streaks.longest}</Text> : null}
+          </View>
+          <View style={styles.streakBadge}>
+            <Ionicons name="flame" size={iconSize.lg} color={colors.onAccent} accessible={false} />
+          </View>
+        </View>
+      </FadeIn>
+
+      <FadeIn delay={STAGGER_MS}>
+        {goal.progress ? (
+          <GoalProgress progress={goal.progress} onPress={() => setEditingGoal(true)} />
+        ) : (
+          <SetGoalLink onPress={() => setEditingGoal(true)} />
+        )}
+      </FadeIn>
+
+      <FadeIn delay={STAGGER_MS * 2}>
+        <ReadingActions onRegister={() => navigation.navigate('AddSession')} onOpenTimer={() => navigation.navigate('Timer')} />
+      </FadeIn>
+    </>
+  );
+  const activity = (
+    <FadeIn delay={STAGGER_MS * 3} style={styles.activity}>
+      <Text style={styles.heading} accessibilityRole="header">
+        Actividad reciente
+      </Text>
+      {recent.length === 0 ? (
+        <View style={styles.empty}>
+          <View style={styles.emptyBadge}>
+            <Ionicons name="book-outline" size={iconSize.lg} color={colors.primary} accessible={false} />
+          </View>
+          <Text style={styles.emptyTitle}>Aún no has registrado lecturas</Text>
+        </View>
+      ) : (
+        recent.map((session) => {
+          const title = bookTitles.get(session.bookId);
+          const totals = formatTotals({ minutes: session.durationMinutes, pages: session.pagesRead });
+          return (
+            <SessionRow
+              key={session.id}
+              title={title ?? 'Libro eliminado'}
+              detail={`${formatDayLabel(session.dateKey, todayKey)} · ${totals}`}
+              onPress={title ? () => navigation.navigate('BookDetail', { bookId: session.bookId }) : undefined}
+            />
+          );
+        })
+      )}
+    </FadeIn>
+  );
+
   return (
     <>
       <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
-        <FadeIn>
-          <View style={styles.streak} accessible accessibilityLabel={describeStreak(streaks.current, streaks.longest)}>
-            <View style={styles.streakText}>
-              <Text style={styles.number}>{streaks.current}</Text>
-              <Text style={styles.caption}>{streaks.current === 1 ? 'día seguido' : 'días seguidos'}</Text>
-              {streaks.longest > streaks.current ? <Text style={styles.record}>Récord: {streaks.longest}</Text> : null}
-            </View>
-            <View style={styles.streakBadge}>
-              <Ionicons name="flame" size={iconSize.lg} color={colors.onAccent} accessible={false} />
-            </View>
-          </View>
-        </FadeIn>
-
-        <FadeIn delay={STAGGER_MS}>
-          {goal.progress ? (
-            <GoalProgress progress={goal.progress} onPress={() => setEditingGoal(true)} />
-          ) : (
-            <SetGoalLink onPress={() => setEditingGoal(true)} />
-          )}
-        </FadeIn>
-
-        <FadeIn delay={STAGGER_MS * 2}>
-          <ReadingActions onRegister={() => navigation.navigate('AddSession')} onOpenTimer={() => navigation.navigate('Timer')} />
-        </FadeIn>
-
-        <FadeIn delay={STAGGER_MS * 3} style={styles.activity}>
-          <Text style={styles.heading} accessibilityRole="header">
-            Actividad reciente
-          </Text>
-          {recent.length === 0 ? (
-            <View style={styles.empty}>
-              <View style={styles.emptyBadge}>
-                <Ionicons name="book-outline" size={iconSize.lg} color={colors.primary} accessible={false} />
-              </View>
-              <Text style={styles.emptyTitle}>Aún no has registrado lecturas</Text>
-            </View>
-          ) : (
-            recent.map((session) => {
-              const title = bookTitles.get(session.bookId);
-              const totals = formatTotals({ minutes: session.durationMinutes, pages: session.pagesRead });
-              return (
-                <SessionRow
-                  key={session.id}
-                  title={title ?? 'Libro eliminado'}
-                  detail={`${formatDayLabel(session.dateKey, todayKey)} · ${totals}`}
-                  onPress={title ? () => navigation.navigate('BookDetail', { bookId: session.bookId }) : undefined}
-                />
-              );
-            })
-          )}
-        </FadeIn>
+        <SplitLayout gap={spacing.xl} main={summary} aside={activity} />
 
         {error ? (
           <Text style={styles.error} accessibilityRole="alert">

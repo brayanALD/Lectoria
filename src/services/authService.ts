@@ -4,14 +4,18 @@ import {
   EmailAuthProvider,
   GoogleAuthProvider,
   linkWithCredential,
+  linkWithPopup,
   onAuthStateChanged,
   reauthenticateWithCredential,
+  reauthenticateWithPopup,
   signInWithCredential,
+  signInWithPopup,
   signInWithEmailAndPassword,
   signOut as firebaseSignOut,
   updateProfile,
   type User,
 } from 'firebase/auth';
+import { Platform } from 'react-native';
 
 import { auth } from '../../firebaseConfig';
 
@@ -41,6 +45,28 @@ function coded(code: string): Error & { code: string } {
 
 const GOOGLE_PROVIDER = 'google.com';
 const PASSWORD_PROVIDER = 'password';
+
+// En web no hay librería nativa de Google: Firebase abre su propia ventana emergente (signInWithPopup y compañía).
+const isWeb = Platform.OS === 'web';
+
+function googlePopupProvider(): GoogleAuthProvider {
+  const provider = new GoogleAuthProvider();
+  // Siempre ofrece elegir la cuenta (igual que el selector nativo), en lugar de reutilizar la última en silencio.
+  provider.setCustomParameters({ prompt: 'select_account' });
+  return provider;
+}
+
+/** Ejecuta un flujo de Google con ventana emergente. Devuelve false si la persona la cierra sin terminar. */
+async function runGooglePopup(flow: () => Promise<unknown>): Promise<boolean> {
+  try {
+    await flow();
+    return true;
+  } catch (error) {
+    const code = typeof error === 'object' && error !== null && 'code' in error ? String(error.code) : '';
+    if (code === 'auth/popup-closed-by-user' || code === 'auth/cancelled-popup-request') return false;
+    throw error;
+  }
+}
 
 /**
  * Abre el selector de cuentas de Google y devuelve el idToken, o null si el usuario cancela.
@@ -88,6 +114,7 @@ async function getGoogleIdToken(): Promise<string | null> {
 
 /** Inicia sesión con Google. Devuelve false si el usuario cancela el selector de cuentas. */
 export async function signInWithGoogle(): Promise<boolean> {
+  if (isWeb) return runGooglePopup(() => signInWithPopup(auth, googlePopupProvider()));
   const idToken = await getGoogleIdToken();
   if (!idToken) return false;
   await signInWithCredential(auth, GoogleAuthProvider.credential(idToken));
@@ -103,6 +130,7 @@ export function getLinkedProviders(): string[] {
 export async function linkGoogleToCurrentUser(): Promise<boolean> {
   const user = auth.currentUser;
   if (!user) throw coded('auth/user-not-found');
+  if (isWeb) return runGooglePopup(() => linkWithPopup(user, googlePopupProvider()));
   const idToken = await getGoogleIdToken();
   if (!idToken) return false;
   await linkWithCredential(user, GoogleAuthProvider.credential(idToken));
@@ -121,6 +149,8 @@ export { GOOGLE_PROVIDER, PASSWORD_PROVIDER };
 
 /** Cierra también la sesión de Google para que la próxima vez se pueda elegir otra cuenta. */
 async function signOutOfGoogle(): Promise<void> {
+  // En web no hay sesión de Google aparte: la ventana emergente siempre pregunta la cuenta.
+  if (isWeb) return;
   try {
     const { GoogleSignin } = await import('@react-native-google-signin/google-signin');
     // Tras reabrir la app la sesión se restaura sin pasar por el inicio de sesión, así que el cliente no está configurado.
@@ -153,6 +183,7 @@ export async function reauthenticateCurrentUser(password?: string): Promise<bool
     await reauthenticateWithCredential(user, EmailAuthProvider.credential(user.email, password));
     return true;
   }
+  if (isWeb) return runGooglePopup(() => reauthenticateWithPopup(user, googlePopupProvider()));
   const idToken = await getGoogleIdToken();
   if (!idToken) return false;
   await reauthenticateWithCredential(user, GoogleAuthProvider.credential(idToken));

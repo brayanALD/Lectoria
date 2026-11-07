@@ -1,6 +1,6 @@
 # Lectoria
 
-Aplicación móvil para seguir tus lecturas: organiza tu biblioteca, registra cuánto lees y mantén el hábito. El nombre une *lectura* y *trayectoria*.
+Aplicación móvil y web para seguir tus lecturas: organiza tu biblioteca, registra cuánto lees y mantén el hábito. El nombre une *lectura* y *trayectoria*. La versión web (<https://lectoria-rose.vercel.app>) es la misma app: comparte código, cuenta y datos con la móvil.
 
 > **Estado:** versión 1.2 (Fases 1 a 5 cerradas y, de la Fase 6, la lista de deseos, las notas y reseñas, el objetivo mensual, los autores, las sagas, las colecciones y las estanterías). Probada en Android; iOS pendiente. Siguiente, la versión 1.3 (ruleta de no leídos, logros y estantería realista).
 
@@ -37,11 +37,12 @@ El plan completo (alcance, modelo de datos, decisiones y pendientes) está en [`
 - **Autores y sagas:** en «Mi espacio», la lista de autores y la de sagas de tu biblioteca. El detalle de un autor reúne sus libros; el de una saga los muestra en orden, con cuántos llevas terminados, el siguiente por leer y los números que faltan. También se abren tocando el autor o la saga en el detalle de un libro.
 - **Colecciones:** listas de libros que eliges tú (propios o de tu lista de deseos), con buscador para añadirlos; se pueden renombrar, editar y eliminar sin tocar los libros.
 - **Estanterías filtradas:** en Biblioteca, guarda la búsqueda y los filtros activos con un nombre; la estantería se actualiza sola cuando cambian tus libros.
+- **Versión web:** la misma app en el navegador, con la misma cuenta y los mismos datos en tiempo real que la móvil. En escritorio tiene barra lateral, contenido en dos columnas donde hay sitio, diálogos en lugar de hojas inferiores y direcciones propias por pantalla; en una ventana estrecha se ve como la app móvil.
 - **Datos privados:** cada persona solo accede a su propia biblioteca: la app lee de Firestore (reglas de acceso por usuario) y todas las escrituras pasan por una API propia que valida y aplica la lógica de negocio.
 
 ## Tecnología
 
-Expo SDK 57 · React Native 0.86 · TypeScript · React Navigation · Firebase (Authentication y Firestore) · AsyncStorage · expo-camera · Jest. API propia en Node.js + Express + Firebase Admin (carpeta `api/`, desplegable en Render) que también consulta Open Library para el catálogo de libros.
+Expo SDK 57 · React Native 0.86 y React Native Web · TypeScript · React Navigation · Firebase (Authentication y Firestore) · AsyncStorage · expo-camera · Jest. API propia en Node.js + Express + Firebase Admin (carpeta `api/`, desplegable en Render) que también consulta Open Library para el catálogo de libros. La web se despliega en Vercel.
 
 ## Primeros pasos
 
@@ -68,6 +69,15 @@ npx expo start
 
 El escáner de código de barras funciona también en Expo Go. El acceso con **Google** usa código nativo y **no funciona en Expo Go**: requiere una *development build* de EAS. Para generarla, coloca tu `google-services.json` en la raíz (no se versiona) y ejecuta `npx eas-cli build --profile development --platform android`. En EAS Build el archivo se entrega mediante la variable de entorno de tipo archivo `GOOGLE_SERVICES_JSON`. Después, `npx expo start` abre la app en esa build.
 
+### Web
+
+```bash
+npm run web          # servidor de desarrollo en el navegador
+npm run build:web    # genera la web estática en dist/ (lo que despliega Vercel)
+```
+
+La web usa el mismo proyecto de Firebase y la misma API que la app móvil. En Vercel, `vercel.json` reescribe `/v1/*` hacia la API, así que no define `EXPO_PUBLIC_API_URL`. Para desarrollar sin tocar datos reales se puede apuntar a los emuladores de Firebase con `EXPO_PUBLIC_FIREBASE_EMULATOR_HOST` (ver `.env.example`). Detalle en la sección 17 del plan.
+
 ### API
 
 La app guarda a través de la API de `api/` (ver [`api/README.md`](api/README.md) y [`docs/migracion-api.md`](docs/migracion-api.md)): libros, lecturas, colecciones, metas, borrado de cuenta y búsqueda por ISBN. Para ejecutarla en local, copia `api/.env.example` a `api/.env`, completa los valores y ejecuta `npm --prefix api install` y `npm --prefix api run dev`. El despliegue se describe en `render.yaml`.
@@ -87,6 +97,8 @@ Cuando la API esté desplegada y la app la use, las reglas pasan a solo lectura 
 | Comando | Qué hace |
 |---|---|
 | `npm run typecheck` | Comprueba los tipos de TypeScript |
+| `npm run web` | Abre la versión web en el navegador (desarrollo) |
+| `npm run build:web` | Compila la versión web estática en `dist/` |
 | `npm test` | Pruebas unitarias (Jest) |
 | `npm run test:rules` | Reglas de Firestore y pruebas de extremo a extremo (servicios de la app → API → Firestore → suscripciones) contra el emulador |
 | `npm run test:api` | Pruebas de la API real contra el emulador de Firestore |
@@ -106,6 +118,8 @@ src/
 ├── theme/        Tokens de diseño (colores, espaciado, tipografía)
 ├── types/        Modelos de TypeScript
 └── utils/        Lógica pura y probada (validación, filtros, fechas, rachas, cronómetro, meta diaria)
+public/           Plantilla HTML de la versión web
+vercel.json       Despliegue de la web en Vercel (compilación, reescrituras y cabeceras)
 api/              API REST (Express + Firebase Admin), con sus propias pruebas
 tests/rules/      Pruebas contra el emulador de Firestore
 firestore.rules   Reglas de seguridad actuales (escritura directa)

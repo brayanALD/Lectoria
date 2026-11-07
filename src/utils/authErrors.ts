@@ -22,6 +22,8 @@ const MESSAGES: Record<string, string> = {
   'auth/network-request-failed': 'Sin conexión. Revisa tu red e inténtalo de nuevo.',
   'auth/account-exists-with-different-credential':
     'Ese correo ya tiene una cuenta con otro método de acceso. Entra con ese método y vincula este desde Mi espacio.',
+  'auth/popup-blocked': 'El navegador bloqueó la ventana de Google. Permite las ventanas emergentes para este sitio e inténtalo de nuevo.',
+  'auth/unauthorized-domain': 'Este sitio no está autorizado para iniciar sesión con Google.',
   'lectoria/google-not-configured': 'El acceso con Google no está configurado en esta versión de la app.',
   'lectoria/google-unavailable':
     'El acceso con Google no está disponible aquí. Requiere la app de desarrollo, no funciona en Expo Go.',

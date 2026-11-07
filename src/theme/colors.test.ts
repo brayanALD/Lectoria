@@ -84,6 +84,7 @@ describe.each([
     ['texto secundario sobre la superficie elevada', theme.textSecondary, theme.surfaceRaised],
     ['texto principal sobre el dorado suave', theme.textPrimary, theme.accentSoft],
     ['texto sobre la marca clara', theme.onBrandSurface, theme.brandSurface],
+    ['texto sobre el panel de marca', theme.onBrandPanel, theme.brandPanel],
   ];
 
   it.each(text)('%s cumple 4,5:1', (_label, foreground, background) => {
@@ -145,7 +146,7 @@ describe('derivados de la paleta', () => {
   });
 
   it('la marca clara es igual en los dos temas (el logo y el botón de Google necesitan fondo claro)', () => {
-    for (const token of ['brandSurface', 'onBrandSurface', 'brandOutline'] as const) {
+    for (const token of ['brandSurface', 'onBrandSurface', 'brandOutline', 'onBrandPanel'] as const) {
       expect(darkColors[token]).toBe(lightColors[token]);
     }
   });

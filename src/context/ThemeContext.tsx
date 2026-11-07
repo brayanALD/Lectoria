@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
-import { Appearance, View } from 'react-native';
+import { Appearance, Platform, View } from 'react-native';
 
 import { darkColors, lightColors, type ColorTokens } from '../theme/colors';
 import { parseThemeMode, resolveThemeMode, THEME_STORAGE_KEY, type ThemeMode } from '../utils/themeMode';
@@ -37,7 +37,21 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    if (mode) Appearance.setColorScheme(mode);
+    if (!mode) return;
+    if (Platform.OS === 'web') {
+      // En web no existe Appearance.setColorScheme: se le dice al navegador el esquema para que sus controles (barras de
+      // desplazamiento, selectores, autocompletado) coincidan, y se pinta la página para que no asome el blanco al rebotar.
+      const palette = mode === 'dark' ? darkColors : lightColors;
+      const root = document.documentElement;
+      root.style.colorScheme = mode;
+      document.body.style.backgroundColor = palette.background;
+      // Variables que usa public/index.html: anillo de foco, barras de desplazamiento y color de la selección de texto.
+      root.style.setProperty('--lectoria-focus', palette.primary);
+      root.style.setProperty('--lectoria-scroll', palette.outline);
+      root.style.setProperty('--lectoria-selection', palette.accentSoft);
+      return;
+    }
+    Appearance.setColorScheme(mode);
   }, [mode]);
 
   const setMode = useCallback((next: ThemeMode) => {

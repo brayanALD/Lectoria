@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { KeyboardAvoidingView, ScrollView, StyleSheet, View } from 'react-native';
 
 import { makeStyles } from '../context/ThemeContext';
+import { readingColumn } from '../hooks/useLayout';
 import { useWindowTop } from '../hooks/useWindowTop';
 import { spacing } from '../theme/spacing';
 
@@ -16,7 +17,7 @@ export function FormLayout({ children }: { children: ReactNode }) {
   return (
     <View ref={ref} onLayout={onLayout} style={styles.flex}>
       <KeyboardAvoidingView style={styles.flex} behavior="padding" keyboardVerticalOffset={top}>
-        <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
+        <ScrollView contentContainerStyle={[styles.content, readingColumn]} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
           {children}
         </ScrollView>
       </KeyboardAvoidingView>

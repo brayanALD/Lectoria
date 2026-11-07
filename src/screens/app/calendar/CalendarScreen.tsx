@@ -7,14 +7,16 @@ import { CalendarSkeleton } from '../../../components/CalendarSkeleton';
 import { Chip } from '../../../components/Chip';
 import { EmptyState } from '../../../components/EmptyState';
 import { MonthCalendar } from '../../../components/MonthCalendar';
+import { SplitLayout } from '../../../components/SplitLayout';
 import { useBooks } from '../../../hooks/useBooks';
 import { useDailyGoal } from '../../../hooks/useDailyGoal';
 import { useDeleteSession } from '../../../hooks/useDeleteSession';
+import { useLayout } from '../../../hooks/useLayout';
 import { useReadingStats } from '../../../hooks/useReadingStats';
 import { useSessions } from '../../../hooks/useSessions';
 import type { AppStackParamList } from '../../../navigation/types';
 import { makeStyles } from '../../../context/ThemeContext';
-import { spacing } from '../../../theme/spacing';
+import { minTouchSize, spacing } from '../../../theme/spacing';
 import { fontFamily, fontSize } from '../../../theme/typography';
 import { compareMonths, cursorForMonth, monthOf, startOfWeek } from '../../../utils/calendar';
 import { DaySessions } from './DaySessions';
@@ -37,6 +39,7 @@ export function CalendarScreen() {
   const { days, readingDays, todayKey } = useReadingStats();
   const { goal } = useDailyGoal();
   const { confirmDelete, error: actionError } = useDeleteSession();
+  const { isWide } = useLayout();
 
   const today = monthOf(todayKey);
 
@@ -90,8 +93,9 @@ export function CalendarScreen() {
     );
   }
 
-  return (
-    <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
+  // El periodo (selector de vista y calendario) y el detalle del día elegido. En escritorio van en dos columnas.
+  const period = (
+    <>
       <View style={styles.switch}>
         {VIEWS.map((view) => (
           <View key={view.mode} style={styles.switchItem}>
@@ -145,20 +149,29 @@ export function CalendarScreen() {
           }}
         />
       ) : null}
+    </>
+  );
+  const detail = detailKey ? (
+    <DaySessions
+            dateKey={detailKey}
+            todayKey={todayKey}
+            sessions={daySessions}
+            bookTitles={bookTitles}
+            totals={days.get(detailKey) ?? { minutes: 0, pages: 0 }}
+            goal={goal}
+            onRegister={detailKey <= todayKey ? () => navigation.navigate('AddSession', { day: detailKey }) : undefined}
+            onEdit={(session) => navigation.navigate('AddSession', { sessionId: session.id })}
+            onDelete={confirmDelete}
+          />
+  ) : isWide && mode !== 'year' ? (
+    <View style={styles.dayPlaceholder}>
+      <EmptyState icon="calendar-outline" title="Elige un día" />
+    </View>
+  ) : null;
 
-      {detailKey ? (
-        <DaySessions
-          dateKey={detailKey}
-          todayKey={todayKey}
-          sessions={daySessions}
-          bookTitles={bookTitles}
-          totals={days.get(detailKey) ?? { minutes: 0, pages: 0 }}
-          goal={goal}
-          onRegister={detailKey <= todayKey ? () => navigation.navigate('AddSession', { day: detailKey }) : undefined}
-          onEdit={(session) => navigation.navigate('AddSession', { sessionId: session.id })}
-          onDelete={confirmDelete}
-        />
-      ) : null}
+  return (
+    <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
+      <SplitLayout main={period} aside={detail} />
 
       {actionError ? (
         <Text style={styles.error} accessibilityRole="alert">
@@ -174,5 +187,7 @@ const useStyles = makeStyles((colors) => StyleSheet.create({
   content: { padding: spacing.lg, gap: spacing.lg, paddingBottom: spacing.xl * 2 },
   switch: { flexDirection: 'row', gap: spacing.sm },
   switchItem: { flex: 1 },
+  // Reserva el sitio del detalle en escritorio, para que el calendario no cambie de ancho al elegir o quitar un día.
+  dayPlaceholder: { minHeight: minTouchSize * 5, alignSelf: 'stretch' },
   error: { fontSize: fontSize.sm, fontFamily: fontFamily.regular, color: colors.error },
 }));

@@ -1,9 +1,13 @@
-import { getPanelWidth, PANEL_MAX_RATIO, PANEL_MIN_WIDTH, PANEL_RATIO } from './settingsPanel';
+import { getPanelWidth, PANEL_MAX_RATIO, PANEL_MAX_WIDTH, PANEL_MIN_WIDTH, PANEL_RATIO } from './settingsPanel';
 
 describe('getPanelWidth', () => {
-  it('en pantallas grandes ocupa la mitad', () => {
-    expect(getPanelWidth(1000)).toBe(500);
+  it('en pantallas medianas ocupa la mitad', () => {
     expect(getPanelWidth(800)).toBe(400);
+  });
+
+  it('en pantallas grandes (escritorio) no pasa del ancho máximo', () => {
+    expect(getPanelWidth(1000)).toBe(PANEL_MAX_WIDTH);
+    expect(getPanelWidth(1920)).toBe(PANEL_MAX_WIDTH);
   });
 
   it('en un teléfono usa el ancho mínimo, que es más de la mitad', () => {
@@ -20,7 +24,7 @@ describe('getPanelWidth', () => {
   it('en pantallas muy estrechas nunca tapa más del 85 %, para poder cerrar tocando fuera', () => {
     expect(getPanelWidth(320)).toBe(Math.round(320 * PANEL_MAX_RATIO));
     expect(getPanelWidth(200)).toBe(170);
-    for (const width of [200, 320, 360, 412, 560, 800, 1200]) {
+    for (const width of [200, 320, 360, 412, 560, 800, 1200, 2560]) {
       expect(getPanelWidth(width)).toBeLessThanOrEqual(width * PANEL_MAX_RATIO);
     }
   });

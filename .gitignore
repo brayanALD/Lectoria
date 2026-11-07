@@ -42,3 +42,8 @@ Thumbs.db
 
 # Otras cosas
 CLAUDE.md
+
+# Salida de la web (expo export --platform web) y enlace local de Vercel
+dist-web/
+dist-e2e/
+.vercel/

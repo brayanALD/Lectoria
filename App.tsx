@@ -5,6 +5,7 @@ import { useMemo } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
+import { AlertHost } from './src/components/AlertHost';
 import { BlurTarget, BlurTargetProvider } from './src/components/BlurTarget';
 import { SettingsPanel } from './src/components/SettingsPanel';
 import { StartupScreen } from './src/components/StartupScreen';
@@ -14,6 +15,7 @@ import { ReadingTimerProvider } from './src/context/ReadingTimerContext';
 import { SettingsProvider, useSettings } from './src/context/SettingsContext';
 import { ThemeProvider, useTheme } from './src/context/ThemeContext';
 import { AppNavigator } from './src/navigation/AppNavigator';
+import { formatDocumentTitle, linking } from './src/navigation/linking';
 import { fontFiles } from './src/theme/fonts';
 
 // Providers en la raíz: ThemeProvider > (fuentes) > SettingsProvider > AuthProvider > ReadingDataProvider >
@@ -71,7 +73,12 @@ function ThemedApp() {
           <AuthProvider>
             <ReadingDataProvider>
               <ReadingTimerProvider>
-                <NavigationContainer theme={navigationTheme}>
+                <NavigationContainer
+                  theme={navigationTheme}
+                  // Solo en la web: direcciones por pantalla y título de la pestaña del navegador (en móvil se ignoran).
+                  linking={linking}
+                  documentTitle={{ formatter: formatDocumentTitle }}
+                >
                   <AppNavigator />
                 </NavigationContainer>
               </ReadingTimerProvider>
@@ -79,6 +86,8 @@ function ThemedApp() {
           </AuthProvider>
         </BlurTarget>
         <SettingsPanel />
+        {/* Confirmaciones de la web (en el móvil se usan los diálogos nativos). */}
+        <AlertHost />
         <StatusBar style={isDark ? 'light' : 'dark'} />
       </View>
     </BlurTargetProvider>

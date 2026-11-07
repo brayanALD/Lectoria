@@ -76,6 +76,15 @@ const lightColors = {
   brandSurface: palette.porcelain,
   onBrandSurface: palette.evergreen,
   brandOutline: palette.oliveBark,
+  /**
+   * Panel de marca de la web (la pantalla de acceso en escritorio): Evergreen con los lomos de la paleta (en el tema oscuro,
+   * Evergreen aclarado hacia Hunter Green). Es decorativo; el texto que lleve va en `onBrandPanel`.
+   */
+  brandPanel: palette.evergreen,
+  onBrandPanel: palette.porcelain,
+  brandSpineGreen: palette.hunterGreen,
+  brandSpineBark: palette.oliveBark,
+  brandSpineFawn: palette.softFawn,
 };
 
 export type ColorTokens = { readonly [K in keyof typeof lightColors]: string };
@@ -106,6 +115,12 @@ const darkColors: ColorTokens = {
   brandSurface: palette.porcelain,
   onBrandSurface: palette.evergreen,
   brandOutline: palette.oliveBark,
+  // En el tema oscuro el fondo ya es Evergreen: el panel se aclara hacia Hunter Green para seguir destacando del formulario.
+  brandPanel: css(mix(palette.evergreen, palette.hunterGreen, 0.4)),
+  onBrandPanel: palette.porcelain,
+  brandSpineGreen: palette.hunterGreen,
+  brandSpineBark: palette.oliveBark,
+  brandSpineFawn: palette.softFawn,
 };
 
 export { darkColors, lightColors };

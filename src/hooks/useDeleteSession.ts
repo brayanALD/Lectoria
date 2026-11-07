@@ -1,9 +1,9 @@
 import { useCallback, useRef, useState } from 'react';
-import { Alert } from 'react-native';
 
 import { useAuth } from '../context/AuthContext';
 import { deleteSession } from '../services/sessionsService';
 import type { ReadingSessionWithId } from '../types/session';
+import { showAlert } from '../components/alert';
 import { getFirestoreErrorMessage } from '../utils/firestoreErrors';
 import { withTimeout } from '../utils/withTimeout';
 
@@ -42,7 +42,7 @@ export function useDeleteSession(): UseDeleteSessionResult {
 
   const confirmDelete = useCallback(
     (session: ReadingSessionWithId) => {
-      Alert.alert('¿Eliminar esta sesión?', 'El progreso del libro se ajusta solo.', [
+      showAlert('¿Eliminar esta sesión?', 'El progreso del libro se ajusta solo.', [
         { text: 'Cancelar', style: 'cancel' },
         { text: 'Eliminar', style: 'destructive', onPress: () => run(session) },
       ]);

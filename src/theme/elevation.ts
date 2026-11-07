@@ -13,6 +13,14 @@ export const elevation = {
     shadowRadius: 3,
     elevation: 2,
   },
+  /** Diálogos centrados (web): flotan sobre el contenido, con la sombra hacia abajo. */
+  dialog: {
+    shadowColor: palette.evergreen,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.2,
+    shadowRadius: 24,
+    elevation: 16,
+  },
   /** Hojas inferiores: la sombra se proyecta hacia arriba, sobre el contenido que tapan. */
   high: {
     shadowColor: palette.evergreen,

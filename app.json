@@ -26,7 +26,12 @@
       "predictiveBackGestureEnabled": false
     },
     "web": {
-      "favicon": "./assets/favicon.png"
+      "bundler": "metro",
+      "output": "single",
+      "favicon": "./assets/favicon.png",
+      "lang": "es",
+      "description": "Lectoria: tu biblioteca personal, tus sesiones de lectura, rachas y estadísticas.",
+      "themeColor": "#355834"
     },
     "plugins": [
       "expo-font",

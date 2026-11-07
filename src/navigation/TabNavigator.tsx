@@ -3,6 +3,8 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 
 import { SettingsButton } from '../components/SettingsButton';
 import { useTheme } from '../context/ThemeContext';
+import { useLayout } from '../hooks/useLayout';
+import { spacing } from '../theme/spacing';
 import { CalendarScreen } from '../screens/app/calendar/CalendarScreen';
 import { HomeScreen } from '../screens/app/home/HomeScreen';
 import { LibraryScreen } from '../screens/app/library/LibraryScreen';
@@ -25,14 +27,19 @@ const TABS: { name: keyof TabParamList; title: string; icon: IconName; component
 
 export function TabNavigator() {
   const { colors } = useTheme();
+  // En la web de escritorio la barra lateral (WebShell) sustituye a las pestañas inferiores.
+  const { isWide } = useLayout();
 
   return (
     <Tab.Navigator
+      tabBar={isWide ? () => null : undefined}
       screenOptions={{
         ...getHeaderOptions(colors),
         ...getTabBarOptions(colors),
         // La tuerca de configuración, en la esquina superior derecha de todas las pestañas (Biblioteca añade el «+» a su izquierda).
         headerRight: () => <SettingsButton />,
+        // En escritorio el título se alinea con el contenido de la columna (que lleva su propio relleno).
+        headerTitleContainerStyle: isWide ? { marginLeft: spacing.lg } : undefined,
       }}
     >
       {TABS.map(({ name, title, icon, component }) => (

@@ -1,6 +1,6 @@
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useMemo, useState } from 'react';
-import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { BookPickerSheet } from '../../../components/BookPickerSheet';
 import { Button } from '../../../components/Button';
@@ -8,12 +8,14 @@ import { EmptyState } from '../../../components/EmptyState';
 import { PickerRow } from '../../../components/PickerRow';
 import { TimerSkeleton } from '../../../components/TimerSkeleton';
 import { useReadingTimer } from '../../../context/ReadingTimerContext';
+import { readingColumn } from '../../../hooks/useLayout';
 import { useOwnedBooks } from '../../../hooks/useOwnedBooks';
 import { useNow } from '../../../hooks/useNow';
 import type { AppStackParamList } from '../../../navigation/types';
 import { makeStyles } from '../../../context/ThemeContext';
 import { radius, spacing } from '../../../theme/spacing';
 import { fontFamily, fontSize } from '../../../theme/typography';
+import { showAlert } from '../../../components/alert';
 import { describeClock, formatClock, getElapsedMs, isTimerRunning } from '../../../utils/readingTimer';
 import { pickDefaultBook } from '../../../utils/sessionBooks';
 
@@ -82,7 +84,7 @@ export function TimerScreen({ navigation }: Props) {
   const paused = timer !== undefined && !running;
 
   const confirmDiscard = () => {
-    Alert.alert('¿Descartar el cronómetro?', 'Se perderá el tiempo medido.', [
+    showAlert('¿Descartar el cronómetro?', 'Se perderá el tiempo medido.', [
       { text: 'Cancelar', style: 'cancel' },
       { text: 'Descartar', style: 'destructive', onPress: discard },
     ]);
@@ -96,7 +98,7 @@ export function TimerScreen({ navigation }: Props) {
 
   return (
     <>
-      <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
+      <ScrollView style={styles.scroll} contentContainerStyle={[styles.content, readingColumn]}>
         <PickerRow
           label="Libro"
           value={book.title}

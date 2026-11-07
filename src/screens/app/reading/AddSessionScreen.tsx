@@ -11,6 +11,7 @@ import { PickerRow } from '../../../components/PickerRow';
 import { TextField } from '../../../components/TextField';
 import { useAuth } from '../../../context/AuthContext';
 import { useReadingTimer } from '../../../context/ReadingTimerContext';
+import { readingColumn } from '../../../hooks/useLayout';
 import { useOwnedBooks } from '../../../hooks/useOwnedBooks';
 import { useReadingStats } from '../../../hooks/useReadingStats';
 import { useSessions } from '../../../hooks/useSessions';
@@ -227,7 +228,7 @@ function SessionForm({ navigation, books, sessions, fixedBookId, editing, draft,
       <KeyboardAvoidingView style={styles.flex} behavior="padding" keyboardVerticalOffset={top}>
         <ScrollView
           ref={scrollRef}
-          contentContainerStyle={styles.content}
+          contentContainerStyle={[styles.content, readingColumn]}
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode="on-drag"
         >

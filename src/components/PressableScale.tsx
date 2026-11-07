@@ -1,8 +1,8 @@
 import { useRef } from 'react';
-import { Animated, Pressable, type PressableProps, type StyleProp, type ViewStyle } from 'react-native';
+import { Animated, Pressable, type PressableProps, type PressableStateCallbackType, type StyleProp, type ViewStyle } from 'react-native';
 
 import { useReducedMotion } from '../hooks/useReducedMotion';
-import { pressScale } from '../theme/spacing';
+import { opacity, pressScale } from '../theme/spacing';
 
 // Resorte corto y sin rebote: la pulsación se «hunde» y vuelve al soltar.
 const SPRING_SPEED = 40;
@@ -17,10 +17,10 @@ interface PressableScaleProps extends PressableProps {
 }
 
 /**
- * `Pressable` que se encoge un poco al pulsarlo (con resorte, con el driver nativo). Con «reducir movimiento» activado
+ * `Pressable` que se encoge un poco al pulsarlo (con resorte, con el driver nativo) y, en la web, se atenúa levemente al pasar el puntero. Con «reducir movimiento» activado
  * no hay animación: se queda solo el estado presionado del propio componente.
  */
-export function PressableScale({ containerStyle, onPressIn, onPressOut, ...pressableProps }: PressableScaleProps) {
+export function PressableScale({ containerStyle, onPressIn, onPressOut, style, ...pressableProps }: PressableScaleProps) {
   const scale = useRef(new Animated.Value(1)).current;
   const reduceMotion = useReducedMotion();
 
@@ -33,6 +33,11 @@ export function PressableScale({ containerStyle, onPressIn, onPressOut, ...press
     <Animated.View style={[containerStyle, { transform: [{ scale }] }]}>
       <Pressable
         {...pressableProps}
+        // En la web el puntero también da respuesta: un matiz suave mientras está encima (si no se está pulsando).
+        style={(state: PressableStateCallbackType & { hovered?: boolean }) => [
+          typeof style === 'function' ? style(state) : style,
+          state.hovered && !state.pressed && !pressableProps.disabled && { opacity: opacity.hover },
+        ]}
         onPressIn={(event) => {
           animateTo(pressScale);
           onPressIn?.(event);

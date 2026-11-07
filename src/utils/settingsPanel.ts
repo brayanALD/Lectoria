@@ -5,10 +5,14 @@ export const PANEL_MIN_WIDTH = 280;
 /** El panel nunca tapa por completo la pantalla: siempre deja a la vista una franja para cerrarlo tocando fuera. */
 export const PANEL_MAX_RATIO = 0.85;
 
+/** En pantallas grandes (escritorio, tableta) la mitad de la pantalla sería excesiva: el panel no pasa de este ancho. */
+export const PANEL_MAX_WIDTH = 420;
+
 /**
- * Ancho del panel: la mitad de la pantalla; en pantallas pequeñas (teléfonos) sube hasta el mínimo que da una buena
+ * Ancho del panel: la mitad de la pantalla con un máximo (`PANEL_MAX_WIDTH`); en pantallas pequeñas (teléfonos) sube hasta el mínimo que da una buena
  * experiencia y nunca pasa del 85 % para dejar una franja visible.
  */
 export function getPanelWidth(screenWidth: number): number {
-  return Math.round(Math.min(screenWidth * PANEL_MAX_RATIO, Math.max(screenWidth * PANEL_RATIO, PANEL_MIN_WIDTH)));
+  const width = Math.min(screenWidth * PANEL_MAX_RATIO, Math.max(screenWidth * PANEL_RATIO, PANEL_MIN_WIDTH));
+  return Math.round(Math.min(width, PANEL_MAX_WIDTH));
 }

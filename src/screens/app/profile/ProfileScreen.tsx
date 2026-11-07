@@ -10,6 +10,7 @@ import { useAuth } from '../../../context/AuthContext';
 import { makeStyles } from '../../../context/ThemeContext';
 import { useBooks } from '../../../hooks/useBooks';
 import { useCollections } from '../../../hooks/useCollections';
+import { readingColumn } from '../../../hooks/useLayout';
 import type { AppStackParamList } from '../../../navigation/types';
 import { minTouchSize, radius, spacing } from '../../../theme/spacing';
 import { fontFamily, fontSize } from '../../../theme/typography';
@@ -83,7 +84,7 @@ export function ProfileScreen() {
   return (
     <ScrollView
       style={styles.scroll}
-      contentContainerStyle={styles.container}
+      contentContainerStyle={[styles.container, readingColumn]}
       keyboardShouldPersistTaps="handled"
       keyboardDismissMode="on-drag"
     >

@@ -2,6 +2,7 @@ import type { ReactElement, ReactNode } from 'react';
 import { FlatList, StyleSheet, Text, View } from 'react-native';
 
 import { makeStyles } from '../context/ThemeContext';
+import { readingColumn } from '../hooks/useLayout';
 import type { UserBookWithId } from '../types/book';
 import { spacing } from '../theme/spacing';
 import { fontFamily, fontSize, maxFontScale } from '../theme/typography';
@@ -32,7 +33,7 @@ export function BookCardList({ books, header, empty, onOpenBook, leading }: Book
     <FlatList
       data={books}
       keyExtractor={(book) => book.id}
-      contentContainerStyle={styles.content}
+      contentContainerStyle={[styles.content, readingColumn]}
       ListHeaderComponent={header}
       ListEmptyComponent={empty}
       ItemSeparatorComponent={Separator}

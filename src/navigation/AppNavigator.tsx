@@ -22,6 +22,7 @@ import { AuthNavigator } from './AuthNavigator';
 import { getHeaderOptions } from './chrome';
 import { TabNavigator } from './TabNavigator';
 import type { AppStackParamList } from './types';
+import { WebShell } from './WebShell';
 
 const Stack = createNativeStackNavigator<AppStackParamList>();
 
@@ -34,7 +35,15 @@ export function AppNavigator() {
   if (!user) return <AuthNavigator />;
 
   return (
-    <Stack.Navigator screenOptions={{ ...getHeaderOptions(colors), headerShown: false }}>
+    // WebShell es el marco de la web (barra lateral y columna centrada en escritorio); en el móvil no hace nada.
+    <Stack.Navigator
+      screenOptions={{ ...getHeaderOptions(colors), headerShown: false }}
+      layout={({ children, state, navigation }) => (
+        <WebShell state={state} navigation={navigation}>
+          {children}
+        </WebShell>
+      )}
+    >
       <Stack.Screen name="Tabs" component={TabNavigator} />
       {/* Pantallas secundarias: se abren encima de las pestañas, con encabezado y botón de volver. */}
       <Stack.Screen
