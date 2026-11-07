@@ -1,7 +1,7 @@
 # Migración a una API web (noviembre de 2026)
 
 Estado (2026-11-07): **API desplegada en Render y verificada** (`https://lectoria-api-j30x.onrender.com`; ver §4). APK `preview`
-compilado con EAS. **Pendiente: probar la app en un dispositivo contra la API y, solo entonces, publicar las reglas de solo lectura.**
+compilado con EAS. **Reglas de solo lectura publicadas (2026-11-07).** Pendiente: probar la app en un dispositivo contra la API.
 
 ## 1. Proyectos analizados
 
@@ -108,20 +108,23 @@ y `FIREBASE_SERVICE_ACCOUNT` (clave de la cuenta de servicio de Firebase Admin, 
 `preview` de EAS se crearon a partir del `.env` local. El keystore es el mismo de las builds de desarrollo, así que el acceso con
 Google sigue registrado.
 
-**Falta:** probar en un dispositivo (alta de libro, lectura, cronómetro, colección, meta, escáner, borrar cuenta) y **solo después**
-publicar las reglas de solo lectura:
+**Falta:** probar en un dispositivo (alta de libro, lectura, cronómetro, colección, meta, escáner, borrar cuenta).
+
+**Reglas de solo lectura: publicadas el 2026-11-07** con:
    ```bash
    npx firebase-tools deploy --only firestore:rules --config firebase.api.json
    ```
-   (no con `firebase.json`, que carga las reglas anteriores). Tras publicarlas, una versión antigua de la app que escribe
-   directo en Firestore dejaría de poder guardar.
+   (no con `firebase.json`, que carga las reglas anteriores). Verificado en producción con un usuario temporal: la API sigue
+   escribiendo; el cliente lee lo propio (200) y recibe 403 al crear, cambiar o borrar directamente y al leer datos de otra persona.
+   Una versión antigua de la app que escribe directo en Firestore ya no puede guardar. Conjunto de reglas anterior (para volver
+   atrás): `projects/lectoria-1208a/rulesets/94b9fd89-4847-4571-b29e-eb798d9a6c6f`.
 
 ### Recuperación
 
 | Situación | Acción |
 |---|---|
 | La API se cae o se despliega mal | *Rollback* desde Render (despliegue anterior). Los datos no cambian de formato: no hay nada que revertir. Mientras tanto la app lee, pero no escribe |
-| Hay que volver a la escritura directa | Mientras no se publiquen `firestore.api.rules`, las reglas anteriores siguen vigentes. Si ya se publicaron: `npx firebase-tools deploy --only firestore` (carga `firestore.rules`) y volver al commit anterior de la app |
+| Hay que volver a la escritura directa | Las reglas de solo lectura ya están publicadas: `npx firebase-tools deploy --only firestore` (carga `firestore.rules`, la versión anterior) y volver al commit anterior de la app |
 | Se filtró la clave de servicio | Revocarla en Firebase/Google Cloud, generar otra y actualizar `FIREBASE_SERVICE_ACCOUNT` en Render |
 
 ## 5. Seguridad
@@ -154,7 +157,7 @@ escribe por la API real.
 
 ## 7. Problemas conocidos y pendientes
 
-- Falta la prueba en dispositivo y publicar las reglas de solo lectura (arriba).
+- Falta la prueba en dispositivo (arriba).
 - Clave de la cuenta de servicio: la copia de trabajo se creó con `gcloud` y debe borrarse del equipo; la de Render se revoca/rota desde Firebase si hace falta.
 - Escrituras sin conexión (diferencia 1).
 - Open Library comparte IP para todos los usuarios (diferencia 7).
