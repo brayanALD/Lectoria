@@ -1,7 +1,7 @@
 # Migración a una API web (noviembre de 2026)
 
-Estado: **código, pruebas y configuración de despliegue terminados y verificados en local. La API todavía NO está
-desplegada en Render** (ver «Despliegue en Render» y «Pendiente de ti» más abajo).
+Estado (2026-11-07): **API desplegada en Render y verificada** (`https://lectoria-api-j30x.onrender.com`; ver §4). APK `preview`
+compilado con EAS. **Pendiente: probar la app en un dispositivo contra la API y, solo entonces, publicar las reglas de solo lectura.**
 
 ## 1. Proyectos analizados
 
@@ -90,26 +90,26 @@ Ver el diagrama y los endpoints en [`api/README.md`](../api/README.md). Resumen 
 
 ## 4. Despliegue en Render
 
-> No lo he podido hacer yo: en este equipo no hay ninguna herramienta ni clave de Render, y Render despliega desde GitHub.
+**Hecho (2026-11-07).** Servicio `lectoria-api` creado desde `render.yaml` (el nombre `lectoria-api` ya estaba ocupado por otro
+servicio de Render, así que la URL lleva sufijo): **`https://lectoria-api-j30x.onrender.com`**. Variables en Render: `FIREBASE_PROJECT_ID`
+y `FIREBASE_SERVICE_ACCOUNT` (clave de la cuenta de servicio de Firebase Admin, solo en Render; no está en el repositorio).
 
-**Pendiente de ti (≈ 10 minutos):**
+**Verificado contra producción:**
 
-1. **Subir los cambios a GitHub** (están en el árbol de trabajo, sin commitear; `CLAUDE.md` pide que sea yo quien commitee solo
-   si me lo pides). Título de commit sugerido: `feat: API de Lectoria en Node/Express (Render) y migración de las escrituras de la app`.
-2. **Clave de la cuenta de servicio** (Firebase Console › Configuración del proyecto › Cuentas de servicio › *Generar nueva
-   clave privada*). Se pega en Render y **no** se guarda en el repositorio. (Si prefieres, puedo generarla con `gcloud`.)
-3. En Render: **New + › Blueprint** › elige el repositorio › acepta `render.yaml` › rellena `FIREBASE_PROJECT_ID` y
-   `FIREBASE_SERVICE_ACCOUNT` (el JSON, o ese JSON en base64) › *Apply*.
-4. Comprueba el despliegue (solo lectura):
-   ```bash
-   API_URL=https://lectoria-api.onrender.com node api/scripts/verify-deployment.mjs
-   # y con una cuenta de prueba: EMAIL=… PASSWORD=… FIREBASE_API_KEY=<EXPO_PUBLIC_FIREBASE_API_KEY> (comprueba el token real)
-   ```
-5. Pon la URL en `.env` (`EXPO_PUBLIC_API_URL=https://…onrender.com`) y reinicia con `npx expo start -c`. Para un APK
-   independiente: `npx eas-cli build --profile preview --platform android` (hay que añadir el perfil y las variables
-   `EXPO_PUBLIC_*` al entorno `preview` de EAS; la build de desarrollo actual sigue siendo compatible porque no cambió
-   ninguna dependencia nativa).
-6. **Solo cuando todo funcione desde la app:** publicar las reglas de solo lectura:
+- `node api/scripts/verify-deployment.mjs` (con `API_URL`): salud 200, 401 sin token y con token falso.
+- Recorrido autenticado con un usuario temporal de Firebase (creado y eliminado por el script de comprobación): `GET /v1/me`,
+  perfil, meta, libro (la repetición con el mismo `requestId` no duplica), sesión (el libro avanzó en la misma transacción),
+  catálogo por ISBN, validación 400 y `DELETE /v1/me/data`. Sin restos en Firestore ni en Authentication.
+
+**Cómo se usa en la app:** `EXPO_PUBLIC_API_URL` en `.env` (desarrollo: `npx expo start -c`) y en el entorno `preview` de EAS.
+
+**Compilación:** perfil `preview` de `eas.json` (APK independiente, JS y variables incluidas):
+`npx eas-cli build --platform android --profile preview`. Las variables `EXPO_PUBLIC_*` y `GOOGLE_SERVICES_JSON` del entorno
+`preview` de EAS se crearon a partir del `.env` local. El keystore es el mismo de las builds de desarrollo, así que el acceso con
+Google sigue registrado.
+
+**Falta:** probar en un dispositivo (alta de libro, lectura, cronómetro, colección, meta, escáner, borrar cuenta) y **solo después**
+publicar las reglas de solo lectura:
    ```bash
    npx firebase-tools deploy --only firestore:rules --config firebase.api.json
    ```
@@ -149,12 +149,13 @@ Las pruebas por servicio de `tests/rules` (libros, sesiones, colecciones, usuari
 que cubren los mismos escenarios (y los de aislamiento entre usuarios) a través del contrato HTTP; `dataSync` se mantiene y ahora
 escribe por la API real.
 
-**No verificado todavía** (requiere el despliegue): el servicio en Render, la autenticación con un ID token real contra el
-Admin SDK, el arranque en frío, y la app en un dispositivo contra la API pública.
+**Verificado en producción (2026-11-07):** el servicio en Render y la autenticación con un ID token real contra el Admin SDK (§4).
+**No verificado todavía:** el arranque en frío tras dormirse el servicio y la app en un dispositivo contra la API pública.
 
 ## 7. Problemas conocidos y pendientes
 
-- API sin desplegar (arriba). EAS: perfil `preview` por crear cuando exista la URL.
+- Falta la prueba en dispositivo y publicar las reglas de solo lectura (arriba).
+- Clave de la cuenta de servicio: la copia de trabajo se creó con `gcloud` y debe borrarse del equipo; la de Render se revoca/rota desde Firebase si hace falta.
 - Escrituras sin conexión (diferencia 1).
 - Open Library comparte IP para todos los usuarios (diferencia 7).
 - El límite de uso es en memoria (válido con una sola instancia).
