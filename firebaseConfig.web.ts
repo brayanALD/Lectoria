@@ -1,4 +1,10 @@
-import { browserLocalPersistence, connectAuthEmulator, getAuth, initializeAuth } from 'firebase/auth';
+import {
+  browserLocalPersistence,
+  browserPopupRedirectResolver,
+  connectAuthEmulator,
+  getAuth,
+  initializeAuth,
+} from 'firebase/auth';
 import { connectFirestoreEmulator, getFirestore } from 'firebase/firestore';
 
 import { app, isFirstInit } from './firebaseApp';
@@ -10,8 +16,12 @@ import { app, isFirstInit } from './firebaseApp';
 // en lugar de producción. En el despliegue no se define.
 const emulatorHost = process.env.EXPO_PUBLIC_FIREBASE_EMULATOR_HOST;
 
-// initializeAuth solo puede llamarse una vez; en recargas en caliente se reutiliza la instancia.
-export const auth = isFirstInit ? initializeAuth(app, { persistence: browserLocalPersistence }) : getAuth(app);
+// initializeAuth solo puede llamarse una vez; en recargas en caliente se reutiliza la instancia. A diferencia de `getAuth`,
+// `initializeAuth` NO incluye el «resolver» de ventanas emergentes: sin él, `signInWithPopup` (el acceso con Google en
+// web) falla con `auth/argument-error`.
+export const auth = isFirstInit
+  ? initializeAuth(app, { persistence: browserLocalPersistence, popupRedirectResolver: browserPopupRedirectResolver })
+  : getAuth(app);
 
 export const db = getFirestore(app);
 

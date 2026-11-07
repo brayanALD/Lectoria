@@ -536,8 +536,8 @@ la app móvil y la web.
   `web.output: "single"`): pantallas, hooks, servicios, utilidades, tema, tokens de diseño y pruebas son los mismos. No hay una
   segunda copia de la lógica. Lo que difiere por plataforma son archivos `.web` y comprobaciones `Platform.OS === 'web'`.
 - **Adaptaciones de plataforma** (lo único que no es compartido):
-  `firebaseConfig.web.ts` (sesión en el navegador; el proyecto de Firebase es el mismo; `firebaseApp.ts` es la configuración
-  común); acceso con Google por la ventana emergente de Firebase (`signInWithPopup`/`linkWithPopup`/`reauthenticateWithPopup`
+  `firebaseConfig.web.ts` (sesión en el navegador y el resolver de ventanas emergentes, imprescindible para el acceso con Google; el proyecto de Firebase
+  es el mismo; `firebaseApp.ts` es la configuración común); acceso con Google por la ventana emergente de Firebase (`signInWithPopup`/`linkWithPopup`/`reauthenticateWithPopup`
   en `authService`; en el móvil sigue la librería nativa); `components/alert.ts` (`showAlert`) + `components/AlertHost` (en web `Alert.alert` de
   React Native no hace nada, así que las confirmaciones usan un diálogo propio con el tema; **no usar `Alert.alert` directamente**,
   usar `showAlert`); `ThemeContext` (sin `Appearance.setColorScheme` en web: fija `color-scheme` y variables CSS);
